@@ -43,7 +43,7 @@ app
     .use(express_1.default.static(path.join(__dirname, "client")))
     .use("/api", router_1.default)
     .get("*", (req, res) => {
-    res.sendFile(path.join(__dirname, "client", "index.html"));
+    res.sendFile(path.join(__dirname, "build", "index.html"));
 })
     .listen(port, "0.0.0.0", () => {
     console.log("App is listening");
