@@ -22,6 +22,8 @@ const whitelist = [
     "http://192.168.137.1:5173",
     "http://localhost:3000",
     "http://192.168.16.78:3000",
+    "http://localhost:3456",
+    "https://fcsc.onrender.com",
 ];
 const corsOptions = {
     origin: (origin, callback) => {
@@ -40,7 +42,7 @@ app
     .use((0, cookie_parser_1.default)())
     .use((0, cors_1.default)(corsOptions))
     .use(express_1.default.json({ limit: "50mb" }))
-    .use(express_1.default.static(path.join(__dirname, "client")))
+    .use(express_1.default.static(path.join(__dirname, "build")))
     .use("/api", router_1.default)
     .get("*", (req, res) => {
     res.sendFile(path.join(__dirname, "build", "index.html"));

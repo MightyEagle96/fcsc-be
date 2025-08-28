@@ -23,6 +23,8 @@ const whitelist = [
   "http://192.168.137.1:5173",
   "http://localhost:3000",
   "http://192.168.16.78:3000",
+  "http://localhost:3456",
+  "https://fcsc.onrender.com",
 ];
 
 const corsOptions: cors.CorsOptions = {
@@ -47,7 +49,7 @@ app
 
   .use(express.json({ limit: "50mb" }))
 
-  .use(express.static(path.join(__dirname, "client")))
+  .use(express.static(path.join(__dirname, "build")))
 
   .use("/api", appRouter)
 
