@@ -11,6 +11,7 @@ export interface ICandidate {
   phone: string;
   fileNumber: string;
   password: string;
+  mda: string;
   passwords: string[];
   uploadedDocuments: [
     {
@@ -42,6 +43,7 @@ const candidateSchema = new Schema<ICandidate>(
     fileNumber: { type: String, unique: true },
     passwords: [String],
     password: String,
+    mda: String,
     uploadedDocuments: [
       {
         fileType: String,

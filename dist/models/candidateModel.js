@@ -12,6 +12,7 @@ const candidateSchema = new mongoose_1.Schema({
     fileNumber: { type: String, unique: true },
     passwords: [String],
     password: String,
+    mda: String,
     uploadedDocuments: [
         {
             fileType: String,
