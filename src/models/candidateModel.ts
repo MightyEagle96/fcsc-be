@@ -3,15 +3,27 @@ import { Schema, model } from "mongoose";
 
 export interface ICandidate {
   _id: Schema.Types.ObjectId;
-  firstName: string;
-  lastName: string;
-  title: string;
+  ippisNumber: string;
+  fullName: string;
+  dateOfBirth: Date;
   gender: string;
+  stateOfOrigin: string;
+  lga: string;
+  poolOffice: string;
+  currentMDA: string;
+  cadre: string;
+  gradeLevel: string;
+  dateOfFirstAppointment: Date;
+  dateOfConfirmation: Date;
+  dateOfLastPromotion: Date;
+  phoneNumber: string;
   email: string;
-  phone: string;
-  fileNumber: string;
+  stateOfCurrentPosting: string;
+  year2021: string;
+  year2022: string;
+  year2023: string;
+  year2024: string;
   password: string;
-  mda: string;
   passwords: string[];
   uploadedDocuments: [
     {
@@ -34,16 +46,30 @@ export interface AuthenticatedCandidate extends Request {
 
 const candidateSchema = new Schema<ICandidate>(
   {
-    firstName: String,
-    lastName: String,
-    title: String,
+    ippisNumber: { type: String, unique: true },
+    fullName: String,
+    dateOfBirth: Date,
     gender: String,
-    email: { type: String, unique: true, lowercase: true },
-    phone: { type: String, unique: true },
-    fileNumber: { type: String, unique: true },
+    stateOfOrigin: String,
+    lga: String,
+    poolOffice: String,
+    currentMDA: String,
+    cadre: String,
+    gradeLevel: String,
+    dateOfFirstAppointment: Date,
+    dateOfConfirmation: Date,
+    dateOfLastPromotion: Date,
+    phoneNumber: { type: String, unique: true },
+    email: { type: String, unique: true },
+    stateOfCurrentPosting: String,
+    year2021: String,
+    year2022: String,
+    year2023: String,
+    year2024: String,
+
     passwords: [String],
     password: String,
-    mda: String,
+
     uploadedDocuments: [
       {
         fileType: String,

@@ -9,6 +9,9 @@ import bcrypt from "bcrypt";
 import { generateRefreshToken, generateToken, tokens } from "./jwtController";
 import jwt from "jsonwebtoken";
 import { documentsToUpload } from "../utils/documents";
+import { rename } from "fs";
+import { AsyncQueue, ConcurrentJobQueue } from "../utils/DataQueue";
+import path from "path";
 
 export const batchUploadCandidates = async (req: Request, res: Response) => {
   //res.send("Hello");
@@ -87,10 +90,10 @@ export const myProfile = async (req: AuthenticatedCandidate, res: Response) => {
   const candidate: Partial<ICandidate> = req.candidate as ICandidate;
   res.send({
     _id: candidate._id,
-    name: candidate.firstName + " " + candidate.lastName,
+    name: candidate.fullName,
     email: candidate.email,
-    fileNumber: candidate.fileNumber,
-    phoneNumber: candidate.phone,
+    ippisNumber: candidate.ippisNumber,
+    phoneNumber: candidate.phoneNumber,
   });
 };
 
@@ -142,4 +145,42 @@ export const getRefreshToken = async (req: Request, res: Response) => {
     res.status(401).send("Invalid refresh token");
   }
   //  res.send(req.cookies[tokens.refresh_token]);
+};
+
+export const viewMyDocuments = async (
+  req: AuthenticatedCandidate,
+  res: Response
+) => {
+  res.send(req.candidate?.uploadedDocuments);
+};
+
+const uploadQueue = new ConcurrentJobQueue(10, 50);
+export const uploadDocument = async (
+  req: AuthenticatedCandidate,
+  res: Response
+) => {
+  if (!req.file) {
+    return res.status(400).send("No file uploaded");
+  }
+
+  const extension = path.extname(req.file.originalname);
+  const fileData = {
+    oldName: `./uploads/${req.file.filename}`,
+    newName: `./uploads/${req.headers.documentid}${extension}`,
+    path: req.file.path,
+    candidate: req.candidate?._id,
+    documentId: req.headers.documentid,
+  };
+
+  uploadQueue.enqueue(async () => {
+    rename(fileData.oldName, fileData.newName, (err) => {
+      if (err) {
+        console.error("Error renaming file:", err);
+        return res.status(500).send("Error renaming file");
+      }
+      console.log("File renamed successfully:", fileData.newName);
+    });
+  });
+
+  res.send("File uploaded successfully");
 };

@@ -12,13 +12,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getRefreshToken = exports.logoutCandidate = exports.myProfile = exports.loginCandidate = exports.batchUploadCandidates = void 0;
+exports.uploadDocument = exports.viewMyDocuments = exports.getRefreshToken = exports.logoutCandidate = exports.myProfile = exports.loginCandidate = exports.batchUploadCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const generateRandomPassword_1 = __importDefault(require("../utils/generateRandomPassword"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jwtController_1 = require("./jwtController");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const documents_1 = require("../utils/documents");
+const fs_1 = require("fs");
+const DataQueue_1 = require("../utils/DataQueue");
+const path_1 = __importDefault(require("path"));
 const batchUploadCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //res.send("Hello");
     try {
@@ -79,10 +82,10 @@ const myProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const candidate = req.candidate;
     res.send({
         _id: candidate._id,
-        name: candidate.firstName + " " + candidate.lastName,
+        name: candidate.fullName,
         email: candidate.email,
-        fileNumber: candidate.fileNumber,
-        phoneNumber: candidate.phone,
+        ippisNumber: candidate.ippisNumber,
+        phoneNumber: candidate.phoneNumber,
     });
 });
 exports.myProfile = myProfile;
@@ -128,3 +131,34 @@ const getRefreshToken = (req, res) => __awaiter(void 0, void 0, void 0, function
     //  res.send(req.cookies[tokens.refresh_token]);
 });
 exports.getRefreshToken = getRefreshToken;
+const viewMyDocuments = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    res.send((_a = req.candidate) === null || _a === void 0 ? void 0 : _a.uploadedDocuments);
+});
+exports.viewMyDocuments = viewMyDocuments;
+const uploadQueue = new DataQueue_1.ConcurrentJobQueue(10, 50);
+const uploadDocument = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _b;
+    if (!req.file) {
+        return res.status(400).send("No file uploaded");
+    }
+    const extension = path_1.default.extname(req.file.originalname);
+    const fileData = {
+        oldName: `./uploads/${req.file.filename}`,
+        newName: `./uploads/${req.headers.documentid}${extension}`,
+        path: req.file.path,
+        candidate: (_b = req.candidate) === null || _b === void 0 ? void 0 : _b._id,
+        documentId: req.headers.documentid,
+    };
+    uploadQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
+        (0, fs_1.rename)(fileData.oldName, fileData.newName, (err) => {
+            if (err) {
+                console.error("Error renaming file:", err);
+                return res.status(500).send("Error renaming file");
+            }
+            console.log("File renamed successfully:", fileData.newName);
+        });
+    }));
+    res.send("File uploaded successfully");
+});
+exports.uploadDocument = uploadDocument;
