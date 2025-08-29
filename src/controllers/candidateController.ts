@@ -8,6 +8,7 @@ import generateRandomPassword from "../utils/generateRandomPassword";
 import bcrypt from "bcrypt";
 import { generateRefreshToken, generateToken, tokens } from "./jwtController";
 import jwt from "jsonwebtoken";
+import { documentsToUpload } from "../utils/documents";
 
 export const batchUploadCandidates = async (req: Request, res: Response) => {
   //res.send("Hello");
@@ -27,6 +28,7 @@ export const batchUploadCandidates = async (req: Request, res: Response) => {
           password: hashedPassword, // store only hashed password
           // if you want to track that it’s system-generated
           isDefaultPassword: true,
+          uploadedDocuments: documentsToUpload,
         };
       })
     );

@@ -18,6 +18,7 @@ const generateRandomPassword_1 = __importDefault(require("../utils/generateRando
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jwtController_1 = require("./jwtController");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const documents_1 = require("../utils/documents");
 const batchUploadCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //res.send("Hello");
     try {
@@ -28,7 +29,7 @@ const batchUploadCandidates = (req, res) => __awaiter(void 0, void 0, void 0, fu
             const hashedPassword = yield bcrypt_1.default.hash(plainPassword, saltRounds);
             return Object.assign(Object.assign({}, candidate), { passwords: [plainPassword], password: hashedPassword, 
                 // if you want to track that it’s system-generated
-                isDefaultPassword: true });
+                isDefaultPassword: true, uploadedDocuments: documents_1.documentsToUpload });
         })));
         // Bulk insert
         const result = yield candidateModel_1.Candidate.insertMany(processedCandidates, {
