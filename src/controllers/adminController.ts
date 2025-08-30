@@ -11,3 +11,5 @@ export const viewCandidates = async (req: Request, res: Response) => {
 
   res.send(candidates);
 };
+
+//export const login

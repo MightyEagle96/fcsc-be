@@ -21,3 +21,4 @@ const viewCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function*
     res.send(candidates);
 });
 exports.viewCandidates = viewCandidates;
+//export const login
