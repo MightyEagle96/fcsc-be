@@ -12,6 +12,7 @@ const cors_1 = __importDefault(require("cors"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const path = require("path");
 const b2_1 = require("./b2");
+const adminRouter_1 = __importDefault(require("./routers/adminRouter"));
 // import crypto from "crypto";
 // const secret1 = crypto.randomBytes(256).toString("base64");
 // const secret2 = crypto.randomBytes(256).toString("base64");
@@ -46,6 +47,7 @@ app
     .use(express_1.default.json({ limit: "50mb" }))
     .use(express_1.default.static(path.join(__dirname, "build")))
     .use("/api", router_1.default)
+    .use("/api/admin", adminRouter_1.default)
     .get("*", (req, res) => {
     res.sendFile(path.join(__dirname, "build", "index.html"));
 })

@@ -7,6 +7,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import path = require("path");
 import { initB2 } from "./b2";
+import adminRouter from "./routers/adminRouter";
 
 // import crypto from "crypto";
 
@@ -55,6 +56,8 @@ app
   .use(express.static(path.join(__dirname, "build")))
 
   .use("/api", appRouter)
+
+  .use("/api/admin", adminRouter)
 
   .get("*", (req, res) => {
     res.sendFile(path.join(__dirname, "build", "index.html"));
