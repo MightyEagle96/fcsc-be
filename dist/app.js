@@ -11,11 +11,13 @@ const router_1 = __importDefault(require("./routers/router"));
 const cors_1 = __importDefault(require("cors"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const path = require("path");
+const b2_1 = require("./b2");
 // import crypto from "crypto";
 // const secret1 = crypto.randomBytes(256).toString("base64");
 // const secret2 = crypto.randomBytes(256).toString("base64");
 // console.log({ secret1, secret2 });
 dotenv_1.default.config();
+(0, b2_1.initB2)();
 (0, database_1.ConnectDatabase)();
 const app = (0, express_1.default)();
 const whitelist = [

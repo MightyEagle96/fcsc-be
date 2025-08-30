@@ -6,6 +6,7 @@ import appRouter from "./routers/router";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import path = require("path");
+import { initB2 } from "./b2";
 
 // import crypto from "crypto";
 
@@ -15,6 +16,8 @@ import path = require("path");
 // console.log({ secret1, secret2 });
 
 dotenv.config();
+
+initB2();
 
 ConnectDatabase();
 const app = express();

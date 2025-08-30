@@ -22,6 +22,7 @@ const documents_1 = require("../utils/documents");
 const fs_1 = require("fs");
 const DataQueue_1 = require("../utils/DataQueue");
 const path_1 = __importDefault(require("path"));
+const uploadToB2_1 = require("../utils/uploadToB2");
 const batchUploadCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //res.send("Hello");
     try {
@@ -79,6 +80,7 @@ const loginCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function*
 });
 exports.loginCandidate = loginCandidate;
 const myProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
     const candidate = req.candidate;
     res.send({
         _id: candidate._id,
@@ -86,6 +88,7 @@ const myProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         email: candidate.email,
         ippisNumber: candidate.ippisNumber,
         phoneNumber: candidate.phoneNumber,
+        passport: ((_b = (_a = candidate.uploadedDocuments) === null || _a === void 0 ? void 0 : _a.find((c) => c.fileType === "Passport Photograph")) === null || _b === void 0 ? void 0 : _b.fileUrl) || "",
     });
 });
 exports.myProfile = myProfile;
@@ -132,13 +135,20 @@ const getRefreshToken = (req, res) => __awaiter(void 0, void 0, void 0, function
 });
 exports.getRefreshToken = getRefreshToken;
 const viewMyDocuments = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
-    res.send((_a = req.candidate) === null || _a === void 0 ? void 0 : _a.uploadedDocuments);
+    var _c, _d;
+    const uploadedDocuments = (_c = req.candidate) === null || _c === void 0 ? void 0 : _c.uploadedDocuments.filter((c) => c.fileUrl).length;
+    res.send({ documents: (_d = req.candidate) === null || _d === void 0 ? void 0 : _d.uploadedDocuments, uploadedDocuments });
 });
 exports.viewMyDocuments = viewMyDocuments;
-const uploadQueue = new DataQueue_1.ConcurrentJobQueue(10, 50);
+const uploadQueue = new DataQueue_1.ConcurrentJobQueue({
+    concurrency: 10,
+    maxQueueSize: 100,
+    retries: 3,
+    retryDelay: 1000,
+    shutdownTimeout: 20000,
+});
 const uploadDocument = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _b;
+    var _e;
     if (!req.file) {
         return res.status(400).send("No file uploaded");
     }
@@ -147,16 +157,42 @@ const uploadDocument = (req, res) => __awaiter(void 0, void 0, void 0, function*
         oldName: `./uploads/${req.file.filename}`,
         newName: `./uploads/${req.headers.documentid}${extension}`,
         path: req.file.path,
-        candidate: (_b = req.candidate) === null || _b === void 0 ? void 0 : _b._id,
+        candidate: (_e = req.candidate) === null || _e === void 0 ? void 0 : _e._id,
         documentId: req.headers.documentid,
+        mimetype: req.file.mimetype,
     };
     uploadQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
         (0, fs_1.rename)(fileData.oldName, fileData.newName, (err) => {
             if (err) {
                 console.error("Error renaming file:", err);
-                return res.status(500).send("Error renaming file");
             }
-            console.log("File renamed successfully:", fileData.newName);
+            (0, uploadToB2_1.uploadFileToB2)(fileData.newName, fileData.mimetype)
+                .then((result) => __awaiter(void 0, void 0, void 0, function* () {
+                if (result) {
+                    yield candidateModel_1.Candidate.updateOne({
+                        _id: fileData.candidate,
+                        "uploadedDocuments._id": fileData.documentId,
+                    }, {
+                        $set: {
+                            "uploadedDocuments.$.fileUrl": result.fileUrl,
+                            "uploadedDocuments.$.fileName": result.fileName,
+                            "uploadedDocuments.$.fileId": result.fileId,
+                            "uploadedDocuments.$.updatedAt": new Date(),
+                        },
+                    });
+                    console.log(`File uploaded successfully ✅`);
+                }
+            }))
+                .catch((error) => {
+                console.error("Error uploading file to B2:", error);
+            })
+                .finally(() => {
+                (0, fs_1.unlink)(fileData.newName, (err) => {
+                    if (err) {
+                        console.error("Error deleting file:", err);
+                    }
+                });
+            });
         });
     }));
     res.send("File uploaded successfully");

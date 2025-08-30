@@ -9,9 +9,10 @@ import bcrypt from "bcrypt";
 import { generateRefreshToken, generateToken, tokens } from "./jwtController";
 import jwt from "jsonwebtoken";
 import { documentsToUpload } from "../utils/documents";
-import { rename } from "fs";
+import { rename, unlink } from "fs";
 import { AsyncQueue, ConcurrentJobQueue } from "../utils/DataQueue";
 import path from "path";
+import { uploadFileToB2 } from "../utils/uploadToB2";
 
 export const batchUploadCandidates = async (req: Request, res: Response) => {
   //res.send("Hello");
@@ -94,6 +95,10 @@ export const myProfile = async (req: AuthenticatedCandidate, res: Response) => {
     email: candidate.email,
     ippisNumber: candidate.ippisNumber,
     phoneNumber: candidate.phoneNumber,
+    passport:
+      candidate.uploadedDocuments?.find(
+        (c) => c.fileType === "Passport Photograph"
+      )?.fileUrl || "",
   });
 };
 
@@ -151,10 +156,20 @@ export const viewMyDocuments = async (
   req: AuthenticatedCandidate,
   res: Response
 ) => {
-  res.send(req.candidate?.uploadedDocuments);
+  const uploadedDocuments = req.candidate?.uploadedDocuments.filter(
+    (c) => c.fileUrl
+  ).length;
+
+  res.send({ documents: req.candidate?.uploadedDocuments, uploadedDocuments });
 };
 
-const uploadQueue = new ConcurrentJobQueue(10, 50);
+const uploadQueue = new ConcurrentJobQueue({
+  concurrency: 10,
+  maxQueueSize: 100,
+  retries: 3,
+  retryDelay: 1000,
+  shutdownTimeout: 20000,
+});
 export const uploadDocument = async (
   req: AuthenticatedCandidate,
   res: Response
@@ -170,15 +185,45 @@ export const uploadDocument = async (
     path: req.file.path,
     candidate: req.candidate?._id,
     documentId: req.headers.documentid,
+    mimetype: req.file.mimetype,
   };
 
   uploadQueue.enqueue(async () => {
     rename(fileData.oldName, fileData.newName, (err) => {
       if (err) {
         console.error("Error renaming file:", err);
-        return res.status(500).send("Error renaming file");
       }
-      console.log("File renamed successfully:", fileData.newName);
+
+      uploadFileToB2(fileData.newName, fileData.mimetype)
+        .then(async (result) => {
+          if (result) {
+            await Candidate.updateOne(
+              {
+                _id: fileData.candidate,
+                "uploadedDocuments._id": fileData.documentId,
+              },
+              {
+                $set: {
+                  "uploadedDocuments.$.fileUrl": result.fileUrl,
+                  "uploadedDocuments.$.fileName": result.fileName,
+                  "uploadedDocuments.$.fileId": result.fileId,
+                  "uploadedDocuments.$.updatedAt": new Date(),
+                },
+              }
+            );
+            console.log(`File uploaded successfully ✅`);
+          }
+        })
+        .catch((error) => {
+          console.error("Error uploading file to B2:", error);
+        })
+        .finally(() => {
+          unlink(fileData.newName, (err) => {
+            if (err) {
+              console.error("Error deleting file:", err);
+            }
+          });
+        });
     });
   });
 
