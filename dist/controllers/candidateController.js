@@ -24,29 +24,6 @@ const DataQueue_1 = require("../utils/DataQueue");
 const path_1 = __importDefault(require("path"));
 const uploadToB2_1 = require("../utils/uploadToB2");
 const adminLogin_1 = require("../models/adminLogin");
-const REQUIRED_HEADERS = [
-    "IPPIS Number",
-    "Name (Surname, First Name)",
-    "DOB",
-    "Gender",
-    "State of Origin",
-    "Local Government Area",
-    "Pool Office",
-    "Current MDA",
-    "Cadre",
-    "Grade Level",
-    "Date of First Appointment",
-    "Date of Confirmation",
-    "Date of Last Promotion",
-    "Phone Number",
-    "Email",
-    "State of Current Posting",
-    "Year2021",
-    "Year2022",
-    "Year2023",
-    "Year2024",
-    "Remark",
-];
 const batchUploadCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //res.send("Hello");
     try {

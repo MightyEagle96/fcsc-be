@@ -23,6 +23,7 @@ const fs_1 = __importDefault(require("fs"));
 const excelToStaffJson_1 = require("../utils/excelToStaffJson");
 const generateRandomPassword_1 = __importDefault(require("../utils/generateRandomPassword"));
 const documents_1 = require("../utils/documents");
+const normalizeDate_1 = require("../utils/normalizeDate");
 //view candidates
 const viewCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const page = (req.query.page || 1);
@@ -162,7 +163,7 @@ const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             for (const candidate of chunk) {
                 const plainPassword = (0, generateRandomPassword_1.default)(10);
                 const hashedPassword = yield bcrypt_1.default.hash(plainPassword, saltRounds);
-                processedChunk.push(Object.assign(Object.assign({}, candidate), { passwords: [plainPassword], password: hashedPassword, isDefaultPassword: true, uploadedDocuments: documents_1.documentsToUpload }));
+                processedChunk.push(Object.assign(Object.assign({}, candidate), { dateOfBirth: (0, normalizeDate_1.normalizeDate)(candidate.dateOfBirth), dateOfFirstAppointment: (0, normalizeDate_1.normalizeDate)(candidate.dateOfFirstAppointment), dateOfConfirmation: (0, normalizeDate_1.normalizeDate)(candidate.dateOfConfirmation), dateOfLastPromotion: (0, normalizeDate_1.normalizeDate)(candidate.dateOfLastPromotion), passwords: [plainPassword], password: hashedPassword, isDefaultPassword: true, uploadedDocuments: documents_1.documentsToUpload }));
             }
             // Bulk insert chunk
             const inserted = yield candidateModel_1.Candidate.insertMany(processedChunk, {

@@ -20,32 +20,6 @@ import path from "path";
 import { uploadFileToB2 } from "../utils/uploadToB2";
 import { AdminModel, IAdmin } from "../models/adminLogin";
 
-import * as XLSX from "xlsx";
-
-const REQUIRED_HEADERS = [
-  "IPPIS Number",
-  "Name (Surname, First Name)",
-  "DOB",
-  "Gender",
-  "State of Origin",
-  "Local Government Area",
-  "Pool Office",
-  "Current MDA",
-  "Cadre",
-  "Grade Level",
-  "Date of First Appointment",
-  "Date of Confirmation",
-  "Date of Last Promotion",
-  "Phone Number",
-  "Email",
-  "State of Current Posting",
-  "Year2021",
-  "Year2022",
-  "Year2023",
-  "Year2024",
-  "Remark",
-];
-
 export const batchUploadCandidates = async (req: Request, res: Response) => {
   //res.send("Hello");
 

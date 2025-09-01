@@ -75,17 +75,17 @@ export function excelToStaffJson(filePath: string): StaffSchema[] {
       let value = row[excelHeader];
 
       // Attempt date parsing for date fields
-      if (
-        [
-          "DOB",
-          "Date of First Appointment",
-          "Date of Confirmation",
-          "Date of Last Promotion",
-        ].includes(excelHeader) &&
-        value
-      ) {
-        value = new Date(value);
-      }
+      // if (
+      //   [
+      //     "DOB",
+      //     "Date of First Appointment",
+      //     "Date of Confirmation",
+      //     "Date of Last Promotion",
+      //   ].includes(excelHeader) &&
+      //   value
+      // ) {
+      //   value = new Date(value).toISOString();
+      // }
 
       mapped[schemaField] = value;
     }

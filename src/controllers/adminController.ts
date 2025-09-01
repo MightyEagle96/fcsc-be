@@ -9,6 +9,7 @@ import fs from "fs";
 import { excelToStaffJson } from "../utils/excelToStaffJson";
 import generateRandomPassword from "../utils/generateRandomPassword";
 import { documentsToUpload } from "../utils/documents";
+import { normalizeDate } from "../utils/normalizeDate";
 
 //view candidates
 export const viewCandidates = async (req: Request, res: Response) => {
@@ -172,6 +173,12 @@ export const uploadFile = async (req: Request, res: Response) => {
 
         processedChunk.push({
           ...candidate,
+          dateOfBirth: normalizeDate(candidate.dateOfBirth),
+          dateOfFirstAppointment: normalizeDate(
+            candidate.dateOfFirstAppointment
+          ),
+          dateOfConfirmation: normalizeDate(candidate.dateOfConfirmation),
+          dateOfLastPromotion: normalizeDate(candidate.dateOfLastPromotion),
           passwords: [plainPassword], // keep plain for export/communication
           password: hashedPassword, // secure storage
           isDefaultPassword: true,
