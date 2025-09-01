@@ -11,6 +11,8 @@ export interface IAdmin {
   email: string;
 
   password: string;
+  role: string;
+  mda: string;
 
   createdAt: Date;
   updatedAt: Date;
@@ -25,8 +27,10 @@ const adminSchema = new Schema<IAdmin>(
     firstName: String,
     lastName: String,
     phoneNumber: { type: String, unique: true },
-    email: { type: String, unique: true },
+    email: { type: String, unique: true, lowercase: true },
     password: String,
+    mda: { type: String, lowercase: true },
+    role: { type: String, lowercase: true },
   },
   { timestamps: true }
 );

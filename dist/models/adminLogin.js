@@ -6,7 +6,9 @@ const adminSchema = new mongoose_1.Schema({
     firstName: String,
     lastName: String,
     phoneNumber: { type: String, unique: true },
-    email: { type: String, unique: true },
+    email: { type: String, unique: true, lowercase: true },
     password: String,
+    mda: { type: String, lowercase: true },
+    role: { type: String, lowercase: true },
 }, { timestamps: true });
 exports.AdminModel = (0, mongoose_1.model)("Admin", adminSchema);

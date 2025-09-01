@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
+exports.officerDashboard = exports.createOfficerAccount = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const adminLogin_1 = require("../models/adminLogin");
 const DataQueue_1 = require("../utils/DataQueue");
@@ -184,3 +184,36 @@ const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     }
 });
 exports.uploadFile = uploadFile;
+const createOfficerAccount = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        // return res.status(400).send("Admin already exists oooo");
+        /**Check for existing email */
+        const existing = yield adminLogin_1.AdminModel.findOne({ email: req.body.email });
+        if (existing) {
+            return res.status(400).send("Admin already exists");
+        }
+        const hashedPassowrd = yield bcrypt_1.default.hash(req.body.password, 10);
+        const newAdmin = new adminLogin_1.AdminModel(Object.assign(Object.assign({}, req.body), { email: req.body.email, password: hashedPassowrd }));
+        yield newAdmin.save();
+        res.send("Account created");
+    }
+    catch (error) {
+        console.log(error);
+        res.status(500).send("Server error while handling upload");
+    }
+});
+exports.createOfficerAccount = createOfficerAccount;
+const officerDashboard = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const [hrs, promotions] = yield Promise.all([
+            adminLogin_1.AdminModel.countDocuments({ role: "hr" }),
+            adminLogin_1.AdminModel.countDocuments({ role: "promotion" }),
+        ]);
+        res.send({
+            hrs: hrs.toLocaleString(),
+            promotions: promotions.toLocaleString(),
+        });
+    }
+    catch (error) { }
+});
+exports.officerDashboard = officerDashboard;

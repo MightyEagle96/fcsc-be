@@ -2,8 +2,10 @@ import { Router } from "express";
 
 import {
   createAccount,
+  createOfficerAccount,
   dashboardSummary,
   loginAdmin,
+  officerDashboard,
   uploadFile,
 } from "../controllers/adminController";
 import { authenticateToken } from "../controllers/jwtController";
@@ -17,6 +19,8 @@ adminRouter
   .post("/signup", createAccount)
   .post("/login", loginAdmin)
   .get("/dashboardsummary", authenticateToken, dashboardSummary)
-  .post("/uploadfile", authenticateToken, upload.single("file"), uploadFile);
+  .post("/uploadfile", authenticateToken, upload.single("file"), uploadFile)
+  .post("/createaccount", authenticateToken, createOfficerAccount)
+  .get("/officerdashboard", authenticateToken, officerDashboard);
 
 export default adminRouter;

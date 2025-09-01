@@ -203,3 +203,42 @@ export const uploadFile = async (req: Request, res: Response) => {
     fs.unlinkSync(newPath);
   }
 };
+
+export const createOfficerAccount = async (req: Request, res: Response) => {
+  try {
+    // return res.status(400).send("Admin already exists oooo");
+    /**Check for existing email */
+    const existing = await AdminModel.findOne({ email: req.body.email });
+
+    if (existing) {
+      return res.status(400).send("Admin already exists");
+    }
+
+    const hashedPassowrd = await bcrypt.hash(req.body.password, 10);
+
+    const newAdmin = new AdminModel({
+      ...req.body,
+      email: req.body.email,
+      password: hashedPassowrd,
+    });
+    await newAdmin.save();
+    res.send("Account created");
+  } catch (error) {
+    console.log(error);
+    res.status(500).send("Server error while handling upload");
+  }
+};
+
+export const officerDashboard = async (req: Request, res: Response) => {
+  try {
+    const [hrs, promotions] = await Promise.all([
+      AdminModel.countDocuments({ role: "hr" }),
+      AdminModel.countDocuments({ role: "promotion" }),
+    ]);
+
+    res.send({
+      hrs: hrs.toLocaleString(),
+      promotions: promotions.toLocaleString(),
+    });
+  } catch (error) {}
+};

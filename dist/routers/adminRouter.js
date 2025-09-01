@@ -13,5 +13,7 @@ adminRouter
     .post("/signup", adminController_1.createAccount)
     .post("/login", adminController_1.loginAdmin)
     .get("/dashboardsummary", jwtController_1.authenticateToken, adminController_1.dashboardSummary)
-    .post("/uploadfile", jwtController_1.authenticateToken, upload.single("file"), adminController_1.uploadFile);
+    .post("/uploadfile", jwtController_1.authenticateToken, upload.single("file"), adminController_1.uploadFile)
+    .post("/createaccount", jwtController_1.authenticateToken, adminController_1.createOfficerAccount)
+    .get("/officerdashboard", jwtController_1.authenticateToken, adminController_1.officerDashboard);
 exports.default = adminRouter;
