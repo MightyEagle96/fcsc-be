@@ -1,9 +1,17 @@
 import { Router } from "express";
 
-import { createAccount, loginAdmin } from "../controllers/adminController";
+import {
+  createAccount,
+  dashboardSummary,
+  loginAdmin,
+} from "../controllers/adminController";
+import { authenticateToken } from "../controllers/jwtController";
 
 const adminRouter = Router();
 
-adminRouter.post("/signup", createAccount).post("/login", loginAdmin);
+adminRouter
+  .post("/signup", createAccount)
+  .post("/login", loginAdmin)
+  .get("/dashboardsummary", authenticateToken, dashboardSummary);
 
 export default adminRouter;

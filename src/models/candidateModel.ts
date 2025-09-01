@@ -1,5 +1,5 @@
 import { Request } from "express";
-import { Schema, model } from "mongoose";
+import { Schema, Types, model } from "mongoose";
 
 export interface ICandidate {
   _id: Schema.Types.ObjectId;
@@ -38,6 +38,9 @@ export interface ICandidate {
   ];
   createdAt: Date;
   updatedAt: Date;
+  verified: boolean;
+  dateVerified: Date;
+  verifiedBy: Types.ObjectId;
 }
 
 export interface AuthenticatedCandidate extends Request {
@@ -80,6 +83,10 @@ const candidateSchema = new Schema<ICandidate>(
         updatedAt: Date,
       },
     ],
+
+    verified: { type: Boolean, default: false },
+    dateVerified: Date,
+    verifiedBy: { type: Schema.Types.ObjectId, ref: "Admin" },
   },
   { timestamps: true }
 );

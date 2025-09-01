@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
+exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const adminLogin_1 = require("../models/adminLogin");
 const DataQueue_1 = require("../utils/DataQueue");
@@ -91,3 +91,16 @@ const createAccount = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     }
 });
 exports.createAccount = createAccount;
+const dashboardSummary = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const [candidates, verifiedCandidates, unverifiedCandidates] = yield Promise.all([
+        candidateModel_1.Candidate.countDocuments(),
+        candidateModel_1.Candidate.countDocuments({ verified: true }),
+        candidateModel_1.Candidate.countDocuments({ verified: false }),
+    ]);
+    res.send({
+        candidates: candidates.toLocaleString(),
+        verifiedCandidates: verifiedCandidates.toLocaleString(),
+        unverifiedCandidates: unverifiedCandidates.toLocaleString(),
+    });
+});
+exports.dashboardSummary = dashboardSummary;

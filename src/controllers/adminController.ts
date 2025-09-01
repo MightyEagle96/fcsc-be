@@ -86,3 +86,18 @@ export const createAccount = async (req: Request, res: Response) => {
     console.log(error);
   }
 };
+
+export const dashboardSummary = async (req: Request, res: Response) => {
+  const [candidates, verifiedCandidates, unverifiedCandidates] =
+    await Promise.all([
+      Candidate.countDocuments(),
+      Candidate.countDocuments({ verified: true }),
+      Candidate.countDocuments({ verified: false }),
+    ]);
+
+  res.send({
+    candidates: candidates.toLocaleString(),
+    verifiedCandidates: verifiedCandidates.toLocaleString(),
+    unverifiedCandidates: unverifiedCandidates.toLocaleString(),
+  });
+};

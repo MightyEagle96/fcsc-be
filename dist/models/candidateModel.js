@@ -35,5 +35,8 @@ const candidateSchema = new mongoose_1.Schema({
             updatedAt: Date,
         },
     ],
+    verified: { type: Boolean, default: false },
+    dateVerified: Date,
+    verifiedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: "Admin" },
 }, { timestamps: true });
 exports.Candidate = (0, mongoose_1.model)("Candidate", candidateSchema);
