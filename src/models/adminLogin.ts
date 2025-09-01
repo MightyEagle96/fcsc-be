@@ -17,7 +17,7 @@ export interface IAdmin {
 }
 
 export interface AuthenticatedAdmin extends Request {
-  candidate?: IAdmin;
+  admin?: IAdmin;
 }
 
 const adminSchema = new Schema<IAdmin>(

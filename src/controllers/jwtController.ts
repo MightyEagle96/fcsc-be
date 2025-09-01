@@ -6,6 +6,7 @@ import {
   Candidate,
   ICandidate,
 } from "../models/candidateModel";
+import { AdminModel, AuthenticatedAdmin, IAdmin } from "../models/adminLogin";
 // import {
 //   AuthenticatedStudent,
 //   IStudent,
@@ -31,8 +32,13 @@ export function generateRefreshToken(payload: object) {
   });
 }
 
+export interface JointInterface extends Request {
+  candidate?: ICandidate;
+  admin?: IAdmin;
+}
+
 export async function authenticateToken(
-  req: AuthenticatedCandidate,
+  req: JointInterface,
   res: Response,
   next: NextFunction
 ) {
@@ -40,6 +46,7 @@ export async function authenticateToken(
     // Get token from cookie
     const token = req.cookies[tokens.auth_token];
 
+    //console.log(token);
     if (!token) {
       return res.status(401).json({ message: "Not authenticated" });
     }
@@ -53,14 +60,22 @@ export async function authenticateToken(
       return res.status(403).json({ message: "Invalid token payload" });
     }
 
-    // Check student in DB
-    const candidate = await Candidate.findById(decoded._id).lean();
-    if (!candidate) {
-      return res.status(401).send("Not authenticated");
-    }
+    if (decoded.role && decoded.role === "admin") {
+      const admin = await AdminModel.findById(decoded._id);
+      if (!admin) {
+        return res.status(401).send("Not authenticated");
+      }
+      req.admin = admin;
+    } else {
+      const candidate = await Candidate.findById(decoded._id).lean();
+      if (!candidate) {
+        return res.status(401).send("Not authenticated");
+      }
 
-    // Attach to request
-    req.candidate = candidate;
+      req.candidate = candidate;
+    }
+    // Check student in DB
+
     next();
   } catch (err: any) {
     if (err.name === "TokenExpiredError") {

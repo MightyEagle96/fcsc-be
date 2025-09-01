@@ -16,6 +16,7 @@ exports.authenticateToken = exports.generateRefreshToken = exports.generateToken
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const candidateModel_1 = require("../models/candidateModel");
+const adminLogin_1 = require("../models/adminLogin");
 // import {
 //   AuthenticatedStudent,
 //   IStudent,
@@ -43,6 +44,7 @@ function authenticateToken(req, res, next) {
         try {
             // Get token from cookie
             const token = req.cookies[exports.tokens.auth_token];
+            //console.log(token);
             if (!token) {
                 return res.status(401).json({ message: "Not authenticated" });
             }
@@ -51,13 +53,21 @@ function authenticateToken(req, res, next) {
             if (!(decoded === null || decoded === void 0 ? void 0 : decoded._id)) {
                 return res.status(403).json({ message: "Invalid token payload" });
             }
-            // Check student in DB
-            const candidate = yield candidateModel_1.Candidate.findById(decoded._id).lean();
-            if (!candidate) {
-                return res.status(401).send("Not authenticated");
+            if (decoded.role && decoded.role === "admin") {
+                const admin = yield adminLogin_1.AdminModel.findById(decoded._id);
+                if (!admin) {
+                    return res.status(401).send("Not authenticated");
+                }
+                req.admin = admin;
             }
-            // Attach to request
-            req.candidate = candidate;
+            else {
+                const candidate = yield candidateModel_1.Candidate.findById(decoded._id).lean();
+                if (!candidate) {
+                    return res.status(401).send("Not authenticated");
+                }
+                req.candidate = candidate;
+            }
+            // Check student in DB
             next();
         }
         catch (err) {

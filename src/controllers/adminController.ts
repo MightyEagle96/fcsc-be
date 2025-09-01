@@ -3,6 +3,7 @@ import { Candidate } from "../models/candidateModel";
 import { AdminModel } from "../models/adminLogin";
 import { ConcurrentJobQueue } from "../utils/DataQueue";
 import bcrypt from "bcrypt";
+import { generateRefreshToken, generateToken, tokens } from "./jwtController";
 
 //view candidates
 export const viewCandidates = async (req: Request, res: Response) => {
@@ -16,7 +17,43 @@ export const viewCandidates = async (req: Request, res: Response) => {
 };
 
 //export const login
-export const loginAdmin = async (req: Request, res: Response) => {};
+export const loginAdmin = async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body;
+    const admin = await AdminModel.findOne({ email });
+    if (!admin) {
+      return res.status(400).send("Admin not found");
+    }
+    const isPasswordValid = await bcrypt.compare(password, admin.password);
+    if (!isPasswordValid) {
+      return res.status(400).send("Invalid password");
+    }
+
+    const accessToken = generateToken({ _id: admin._id, role: "admin" });
+
+    const refreshToken = generateRefreshToken({
+      _id: admin._id,
+      role: "admin",
+    });
+
+    res
+      .cookie(tokens.auth_token, accessToken, {
+        httpOnly: false,
+        secure: true,
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        maxAge: 1000 * 60 * 60, // 1h
+      })
+      .cookie(tokens.refresh_token, refreshToken, {
+        httpOnly: false,
+        secure: true,
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        maxAge: 1000 * 60 * 60 * 24 * 7, // 7d
+      })
+      .send("Logged In");
+  } catch (error) {
+    console.log(error);
+  }
+};
 
 const jobQueue = new ConcurrentJobQueue({
   concurrency: 50,
@@ -26,19 +63,26 @@ const jobQueue = new ConcurrentJobQueue({
   maxQueueSize: 100,
 });
 export const createAccount = async (req: Request, res: Response) => {
-  const { email, password } = req.body;
+  try {
+    const { email, password } = req.body;
 
-  const admin = await AdminModel.findOne({ email });
+    const admin = await AdminModel.findOne({ email });
 
-  if (admin) {
-    return res.status(400).send("Admin already exists");
+    if (admin) {
+      return res.status(400).send("Admin already exists");
+    }
+
+    res.send("Account created");
+    jobQueue.enqueue(async () => {
+      const hashedPassowrd = await bcrypt.hash(password, 10);
+      const newAdmin = new AdminModel({
+        ...req.body,
+        email,
+        password: hashedPassowrd,
+      });
+      await newAdmin.save();
+    });
+  } catch (error) {
+    console.log(error);
   }
-
-  res.send("Account created");
-  jobQueue.enqueue(async () => {
-    const hashedPassowrd = await bcrypt.hash(password, 10);
-    const newAdmin = new AdminModel({ email, password: hashedPassowrd });
-    await newAdmin.save();
-    return newAdmin;
-  });
 };

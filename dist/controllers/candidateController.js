@@ -23,6 +23,7 @@ const fs_1 = require("fs");
 const DataQueue_1 = require("../utils/DataQueue");
 const path_1 = __importDefault(require("path"));
 const uploadToB2_1 = require("../utils/uploadToB2");
+const adminLogin_1 = require("../models/adminLogin");
 const batchUploadCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //res.send("Hello");
     try {
@@ -81,15 +82,28 @@ const loginCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function*
 exports.loginCandidate = loginCandidate;
 const myProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
-    const candidate = req.candidate;
-    res.send({
-        _id: candidate._id,
-        name: candidate.fullName,
-        email: candidate.email,
-        ippisNumber: candidate.ippisNumber,
-        phoneNumber: candidate.phoneNumber,
-        passport: ((_b = (_a = candidate.uploadedDocuments) === null || _a === void 0 ? void 0 : _a.find((c) => c.fileType === "Passport Photograph")) === null || _b === void 0 ? void 0 : _b.fileUrl) || "",
-    });
+    try {
+        if (req.candidate) {
+            const candidate = req.candidate;
+            res.send({
+                _id: candidate._id,
+                name: candidate.fullName,
+                email: candidate.email,
+                ippisNumber: candidate.ippisNumber,
+                phoneNumber: candidate.phoneNumber,
+                passport: ((_b = (_a = candidate.uploadedDocuments) === null || _a === void 0 ? void 0 : _a.find((c) => c.fileType === "Passport Photograph")) === null || _b === void 0 ? void 0 : _b.fileUrl) || "",
+            });
+        }
+        if (req.admin) {
+            const admin = yield adminLogin_1.AdminModel.findById(req.admin._id);
+            const result = admin === null || admin === void 0 ? void 0 : admin.toObject();
+            res.send(Object.assign(Object.assign({}, result), { role: "admin" }));
+        }
+    }
+    catch (error) {
+        //console.error(error);
+        res.status(500).send("Internal Server Error");
+    }
 });
 exports.myProfile = myProfile;
 const logoutCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {

@@ -6,13 +6,19 @@ import {
 } from "../models/candidateModel";
 import generateRandomPassword from "../utils/generateRandomPassword";
 import bcrypt from "bcrypt";
-import { generateRefreshToken, generateToken, tokens } from "./jwtController";
+import {
+  generateRefreshToken,
+  generateToken,
+  JointInterface,
+  tokens,
+} from "./jwtController";
 import jwt from "jsonwebtoken";
 import { documentsToUpload } from "../utils/documents";
 import { rename, unlink } from "fs";
 import { AsyncQueue, ConcurrentJobQueue } from "../utils/DataQueue";
 import path from "path";
 import { uploadFileToB2 } from "../utils/uploadToB2";
+import { AdminModel, IAdmin } from "../models/adminLogin";
 
 export const batchUploadCandidates = async (req: Request, res: Response) => {
   //res.send("Hello");
@@ -87,19 +93,33 @@ export const loginCandidate = async (req: Request, res: Response) => {
   }
 };
 
-export const myProfile = async (req: AuthenticatedCandidate, res: Response) => {
-  const candidate: Partial<ICandidate> = req.candidate as ICandidate;
-  res.send({
-    _id: candidate._id,
-    name: candidate.fullName,
-    email: candidate.email,
-    ippisNumber: candidate.ippisNumber,
-    phoneNumber: candidate.phoneNumber,
-    passport:
-      candidate.uploadedDocuments?.find(
-        (c) => c.fileType === "Passport Photograph"
-      )?.fileUrl || "",
-  });
+export const myProfile = async (req: JointInterface, res: Response) => {
+  try {
+    if (req.candidate) {
+      const candidate: Partial<ICandidate> = req.candidate as ICandidate;
+      res.send({
+        _id: candidate._id,
+        name: candidate.fullName,
+        email: candidate.email,
+        ippisNumber: candidate.ippisNumber,
+        phoneNumber: candidate.phoneNumber,
+        passport:
+          candidate.uploadedDocuments?.find(
+            (c) => c.fileType === "Passport Photograph"
+          )?.fileUrl || "",
+      });
+    }
+
+    if (req.admin) {
+      const admin = await AdminModel.findById(req.admin._id);
+
+      const result = admin?.toObject();
+      res.send({ ...result, role: "admin" });
+    }
+  } catch (error) {
+    //console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
 };
 
 export const logoutCandidate = async (req: Request, res: Response) => {
