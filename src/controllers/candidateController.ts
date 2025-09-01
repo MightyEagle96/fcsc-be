@@ -20,6 +20,32 @@ import path from "path";
 import { uploadFileToB2 } from "../utils/uploadToB2";
 import { AdminModel, IAdmin } from "../models/adminLogin";
 
+import * as XLSX from "xlsx";
+
+const REQUIRED_HEADERS = [
+  "IPPIS Number",
+  "Name (Surname, First Name)",
+  "DOB",
+  "Gender",
+  "State of Origin",
+  "Local Government Area",
+  "Pool Office",
+  "Current MDA",
+  "Cadre",
+  "Grade Level",
+  "Date of First Appointment",
+  "Date of Confirmation",
+  "Date of Last Promotion",
+  "Phone Number",
+  "Email",
+  "State of Current Posting",
+  "Year2021",
+  "Year2022",
+  "Year2023",
+  "Year2024",
+  "Remark",
+];
+
 export const batchUploadCandidates = async (req: Request, res: Response) => {
   //res.send("Hello");
 
@@ -144,29 +170,57 @@ export const getRefreshToken = async (req: Request, res: Response) => {
 
     const candidate = await Candidate.findById(decoded._id);
 
-    if (!candidate) {
-      return res.status(401).send("Invalid refresh token");
+    const admin = await AdminModel.findById(decoded._id);
+
+    if (candidate) {
+      const accessToken = generateToken({ _id: candidate._id });
+
+      const newRefreshToken = generateRefreshToken({ _id: candidate._id });
+
+      return res
+        .cookie(tokens.auth_token, accessToken, {
+          httpOnly: false,
+          secure: true,
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+          maxAge: 1000 * 60 * 60, // 1h
+        })
+        .cookie(tokens.refresh_token, newRefreshToken, {
+          httpOnly: false,
+          secure: true,
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+          maxAge: 1000 * 60 * 60 * 24 * 7, // 7d
+        })
+        .send("Logged In");
+      //console.log("na here o");
+      //return res.status(401).send("Invalid refresh token");
     }
 
-    const accessToken = generateToken({ _id: candidate._id });
+    if (admin) {
+      const accessToken = generateToken({ _id: admin._id, role: "admin" });
 
-    const newRefreshToken = generateRefreshToken({ _id: candidate._id });
-    res
-      .cookie(tokens.auth_token, accessToken, {
-        httpOnly: false,
-        secure: true,
-        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-        maxAge: 1000 * 60 * 60, // 1h
-      })
-      .cookie(tokens.refresh_token, newRefreshToken, {
-        httpOnly: false,
-        secure: true,
-        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-        maxAge: 1000 * 60 * 60 * 24 * 7, // 7d
-      })
-      .send("Logged In");
+      const refreshToken = generateRefreshToken({
+        _id: admin._id,
+        role: "admin",
+      });
+
+      return res
+        .cookie(tokens.auth_token, accessToken, {
+          httpOnly: false,
+          secure: true,
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+          maxAge: 1000 * 60 * 60, // 1h
+        })
+        .cookie(tokens.refresh_token, refreshToken, {
+          httpOnly: false,
+          secure: true,
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+          maxAge: 1000 * 60 * 60 * 24 * 7, // 7d
+        })
+        .send("Logged In");
+    }
+
+    return res.status(401).send("Invalid refresh token");
   } catch (error) {
-    console.error(error);
     res.status(401).send("Invalid refresh token");
   }
   //  res.send(req.cookies[tokens.refresh_token]);

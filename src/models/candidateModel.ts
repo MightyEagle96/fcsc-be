@@ -36,6 +36,7 @@ export interface ICandidate {
       updatedAt: Date;
     }
   ];
+  remark: string;
   createdAt: Date;
   updatedAt: Date;
   verified: boolean;

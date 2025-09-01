@@ -24,6 +24,29 @@ const DataQueue_1 = require("../utils/DataQueue");
 const path_1 = __importDefault(require("path"));
 const uploadToB2_1 = require("../utils/uploadToB2");
 const adminLogin_1 = require("../models/adminLogin");
+const REQUIRED_HEADERS = [
+    "IPPIS Number",
+    "Name (Surname, First Name)",
+    "DOB",
+    "Gender",
+    "State of Origin",
+    "Local Government Area",
+    "Pool Office",
+    "Current MDA",
+    "Cadre",
+    "Grade Level",
+    "Date of First Appointment",
+    "Date of Confirmation",
+    "Date of Last Promotion",
+    "Phone Number",
+    "Email",
+    "State of Current Posting",
+    "Year2021",
+    "Year2022",
+    "Year2023",
+    "Year2024",
+    "Remark",
+];
 const batchUploadCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //res.send("Hello");
     try {
@@ -121,28 +144,51 @@ const getRefreshToken = (req, res) => __awaiter(void 0, void 0, void 0, function
     try {
         const decoded = jsonwebtoken_1.default.verify(refreshToken, process.env.REFRESH_TOKEN);
         const candidate = yield candidateModel_1.Candidate.findById(decoded._id);
-        if (!candidate) {
-            return res.status(401).send("Invalid refresh token");
+        const admin = yield adminLogin_1.AdminModel.findById(decoded._id);
+        if (candidate) {
+            const accessToken = (0, jwtController_1.generateToken)({ _id: candidate._id });
+            const newRefreshToken = (0, jwtController_1.generateRefreshToken)({ _id: candidate._id });
+            return res
+                .cookie(jwtController_1.tokens.auth_token, accessToken, {
+                httpOnly: false,
+                secure: true,
+                sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+                maxAge: 1000 * 60 * 60, // 1h
+            })
+                .cookie(jwtController_1.tokens.refresh_token, newRefreshToken, {
+                httpOnly: false,
+                secure: true,
+                sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+                maxAge: 1000 * 60 * 60 * 24 * 7, // 7d
+            })
+                .send("Logged In");
+            //console.log("na here o");
+            //return res.status(401).send("Invalid refresh token");
         }
-        const accessToken = (0, jwtController_1.generateToken)({ _id: candidate._id });
-        const newRefreshToken = (0, jwtController_1.generateRefreshToken)({ _id: candidate._id });
-        res
-            .cookie(jwtController_1.tokens.auth_token, accessToken, {
-            httpOnly: false,
-            secure: true,
-            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-            maxAge: 1000 * 60 * 60, // 1h
-        })
-            .cookie(jwtController_1.tokens.refresh_token, newRefreshToken, {
-            httpOnly: false,
-            secure: true,
-            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-            maxAge: 1000 * 60 * 60 * 24 * 7, // 7d
-        })
-            .send("Logged In");
+        if (admin) {
+            const accessToken = (0, jwtController_1.generateToken)({ _id: admin._id, role: "admin" });
+            const refreshToken = (0, jwtController_1.generateRefreshToken)({
+                _id: admin._id,
+                role: "admin",
+            });
+            return res
+                .cookie(jwtController_1.tokens.auth_token, accessToken, {
+                httpOnly: false,
+                secure: true,
+                sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+                maxAge: 1000 * 60 * 60, // 1h
+            })
+                .cookie(jwtController_1.tokens.refresh_token, refreshToken, {
+                httpOnly: false,
+                secure: true,
+                sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+                maxAge: 1000 * 60 * 60 * 24 * 7, // 7d
+            })
+                .send("Logged In");
+        }
+        return res.status(401).send("Invalid refresh token");
     }
     catch (error) {
-        console.error(error);
         res.status(401).send("Invalid refresh token");
     }
     //  res.send(req.cookies[tokens.refresh_token]);
