@@ -13,19 +13,36 @@ import { normalizeDate } from "../utils/normalizeDate";
 
 //view candidates
 export const viewCandidates = async (req: Request, res: Response) => {
-  const page = (req.query.page || 1) as number;
-  const limit = (req.query.limit || 50) as number;
-  const candidates = await Candidate.find()
-    .skip((page - 1) * limit)
-    .limit(limit);
+  try {
+    const page = (req.query.page || 1) as number;
+    const limit = (req.query.limit || 50) as number;
+    const candidates = await Candidate.find()
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean();
 
-  const totalCandidates = candidates.map((c, i) => {
-    return {
-      ...c.toObject(),
-      id: (page - 1) * limit + i + 1,
-    };
-  });
-  res.send(totalCandidates);
+    const total = await Candidate.countDocuments();
+
+    const totalCandidates = candidates.map((c, i) => {
+      return {
+        ...c,
+        id: (page - 1) * limit + i + 1,
+      };
+    });
+    res.send({
+      candidates: totalCandidates,
+      total,
+      page,
+      limit,
+    });
+  } catch (error) {
+    res.send({
+      candidates: [],
+      total: 0,
+      page: 0,
+      limit: 0,
+    });
+  }
 };
 
 //export const login

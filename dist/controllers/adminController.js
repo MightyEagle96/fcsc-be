@@ -26,15 +26,32 @@ const documents_1 = require("../utils/documents");
 const normalizeDate_1 = require("../utils/normalizeDate");
 //view candidates
 const viewCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const page = (req.query.page || 1);
-    const limit = (req.query.limit || 50);
-    const candidates = yield candidateModel_1.Candidate.find()
-        .skip((page - 1) * limit)
-        .limit(limit);
-    const totalCandidates = candidates.map((c, i) => {
-        return Object.assign(Object.assign({}, c.toObject()), { id: (page - 1) * limit + i + 1 });
-    });
-    res.send(totalCandidates);
+    try {
+        const page = (req.query.page || 1);
+        const limit = (req.query.limit || 50);
+        const candidates = yield candidateModel_1.Candidate.find()
+            .skip((page - 1) * limit)
+            .limit(limit)
+            .lean();
+        const total = yield candidateModel_1.Candidate.countDocuments();
+        const totalCandidates = candidates.map((c, i) => {
+            return Object.assign(Object.assign({}, c), { id: (page - 1) * limit + i + 1 });
+        });
+        res.send({
+            candidates: totalCandidates,
+            total,
+            page,
+            limit,
+        });
+    }
+    catch (error) {
+        res.send({
+            candidates: [],
+            total: 0,
+            page: 0,
+            limit: 0,
+        });
+    }
 });
 exports.viewCandidates = viewCandidates;
 //export const login
