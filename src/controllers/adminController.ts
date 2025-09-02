@@ -310,6 +310,7 @@ export const viewMdaCandidates = async (req: Request, res: Response) => {
     const totalCandidates = candidates.map((c, i) => {
       return {
         ...c,
+        uploadedDocuments: c.uploadedDocuments.filter((c) => c.fileUrl).length,
         id: (page - 1) * limit + i + 1,
       };
     });
@@ -327,4 +328,16 @@ export const viewMdaCandidates = async (req: Request, res: Response) => {
       limit: 0,
     });
   }
+};
+
+export const viewUploadedDocuments = async (req: Request, res: Response) => {
+  const data = await Candidate.findById(req.query._id).lean();
+
+  if (!data) {
+    return res.status(404).send("Candidate not found");
+  }
+  const uploadedDocuments = data.uploadedDocuments.map((c, i) => {
+    return { ...c, id: i + 1 };
+  });
+  res.send(uploadedDocuments);
 };

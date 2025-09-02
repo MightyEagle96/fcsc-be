@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.viewMdaCandidates = exports.mdaCandidates = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
+exports.viewUploadedDocuments = exports.viewMdaCandidates = exports.mdaCandidates = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const adminLogin_1 = require("../models/adminLogin");
 const DataQueue_1 = require("../utils/DataQueue");
@@ -274,7 +274,7 @@ const viewMdaCandidates = (req, res) => __awaiter(void 0, void 0, void 0, functi
             currentMDA: req.query.slug,
         });
         const totalCandidates = candidates.map((c, i) => {
-            return Object.assign(Object.assign({}, c), { id: (page - 1) * limit + i + 1 });
+            return Object.assign(Object.assign({}, c), { uploadedDocuments: c.uploadedDocuments.filter((c) => c.fileUrl).length, id: (page - 1) * limit + i + 1 });
         });
         res.send({
             candidates: totalCandidates,
@@ -293,3 +293,14 @@ const viewMdaCandidates = (req, res) => __awaiter(void 0, void 0, void 0, functi
     }
 });
 exports.viewMdaCandidates = viewMdaCandidates;
+const viewUploadedDocuments = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const data = yield candidateModel_1.Candidate.findById(req.query._id).lean();
+    if (!data) {
+        return res.status(404).send("Candidate not found");
+    }
+    const uploadedDocuments = data.uploadedDocuments.map((c, i) => {
+        return Object.assign(Object.assign({}, c), { id: i + 1 });
+    });
+    res.send(uploadedDocuments);
+});
+exports.viewUploadedDocuments = viewUploadedDocuments;

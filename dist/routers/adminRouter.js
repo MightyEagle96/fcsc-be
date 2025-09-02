@@ -18,5 +18,6 @@ adminRouter
     .get("/officerdashboard", jwtController_1.authenticateToken, adminController_1.officerDashboard)
     .get("/adminstaff/:slug", jwtController_1.authenticateToken, adminController_1.viewAdminStaff)
     .get("/mdacandidates", jwtController_1.authenticateToken, adminController_1.mdaCandidates)
-    .get("/viewmdacandidates", jwtController_1.authenticateToken, adminController_1.viewMdaCandidates);
+    .get("/viewmdacandidates", jwtController_1.authenticateToken, adminController_1.viewMdaCandidates)
+    .get("/uploadeddocuments", jwtController_1.authenticateToken, adminController_1.viewUploadedDocuments);
 exports.default = adminRouter;
