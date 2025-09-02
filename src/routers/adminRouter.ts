@@ -5,6 +5,7 @@ import {
   createOfficerAccount,
   dashboardSummary,
   loginAdmin,
+  mdaCandidates,
   officerDashboard,
   uploadFile,
   viewAdminStaff,
@@ -23,6 +24,7 @@ adminRouter
   .post("/uploadfile", authenticateToken, upload.single("file"), uploadFile)
   .post("/createaccount", authenticateToken, createOfficerAccount)
   .get("/officerdashboard", authenticateToken, officerDashboard)
-  .get("/adminstaff/:slug", authenticateToken, viewAdminStaff);
+  .get("/adminstaff/:slug", authenticateToken, viewAdminStaff)
+  .get("/mdacandidates", authenticateToken, mdaCandidates);
 
 export default adminRouter;

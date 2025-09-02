@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
+exports.mdaCandidates = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const adminLogin_1 = require("../models/adminLogin");
 const DataQueue_1 = require("../utils/DataQueue");
@@ -66,10 +66,15 @@ const loginAdmin = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         if (!isPasswordValid) {
             return res.status(400).send("Invalid password");
         }
-        const accessToken = (0, jwtController_1.generateToken)({ _id: admin._id, role: "admin" });
+        const accessToken = (0, jwtController_1.generateToken)({
+            _id: admin._id,
+            role: "admin",
+            specificRole: admin.role,
+        });
         const refreshToken = (0, jwtController_1.generateRefreshToken)({
             _id: admin._id,
             role: "admin",
+            specificRole: admin.role,
         });
         res
             .cookie(jwtController_1.tokens.auth_token, accessToken, {
@@ -208,12 +213,14 @@ const createOfficerAccount = (req, res) => __awaiter(void 0, void 0, void 0, fun
     try {
         // return res.status(400).send("Admin already exists oooo");
         /**Check for existing email */
-        const existing = yield adminLogin_1.AdminModel.findOne({ email: req.body.email });
+        const existing = yield adminLogin_1.AdminModel.findOne({
+            $or: [{ email: req.body.email }, { phoneNumber: req.body.phoneNumber }],
+        });
         if (existing) {
-            return res.status(400).send("Admin already exists");
+            return res.status(400).send("Email or phone number already exists");
         }
         const hashedPassowrd = yield bcrypt_1.default.hash(req.body.password, 10);
-        const newAdmin = new adminLogin_1.AdminModel(Object.assign(Object.assign({}, req.body), { email: req.body.email, password: hashedPassowrd }));
+        const newAdmin = new adminLogin_1.AdminModel(Object.assign(Object.assign({}, req.body), { email: req.body.email, password: hashedPassowrd, yetToChangePassword: true }));
         yield newAdmin.save();
         res.send("Account created");
     }
@@ -242,3 +249,14 @@ const viewAdminStaff = (req, res) => __awaiter(void 0, void 0, void 0, function*
     res.send(data);
 });
 exports.viewAdminStaff = viewAdminStaff;
+const mdaCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const [candidates, recommended] = yield Promise.all([
+        candidateModel_1.Candidate.countDocuments({ currentMDA: req.query.slug }),
+        candidateModel_1.Candidate.countDocuments({ currentMDA: req.query.slug, recommended: true }),
+    ]);
+    res.send({
+        candidates: candidates.toLocaleString(),
+        recommended: recommended.toLocaleString(),
+    });
+});
+exports.mdaCandidates = mdaCandidates;

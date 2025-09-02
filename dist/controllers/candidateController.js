@@ -97,7 +97,7 @@ const myProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         if (req.admin) {
             const admin = yield adminLogin_1.AdminModel.findById(req.admin._id);
             const result = admin === null || admin === void 0 ? void 0 : admin.toObject();
-            res.send(Object.assign(Object.assign({}, result), { role: "admin" }));
+            res.send(Object.assign(Object.assign({}, result), { role: "admin", specificRole: admin === null || admin === void 0 ? void 0 : admin.role }));
         }
     }
     catch (error) {

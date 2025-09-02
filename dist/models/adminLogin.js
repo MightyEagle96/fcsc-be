@@ -10,5 +10,6 @@ const adminSchema = new mongoose_1.Schema({
     password: String,
     mda: { type: String, lowercase: true },
     role: { type: String, lowercase: true },
+    yetToChangePassword: { type: Boolean },
 }, { timestamps: true });
 exports.AdminModel = (0, mongoose_1.model)("Admin", adminSchema);

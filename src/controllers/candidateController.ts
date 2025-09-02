@@ -114,7 +114,7 @@ export const myProfile = async (req: JointInterface, res: Response) => {
       const admin = await AdminModel.findById(req.admin._id);
 
       const result = admin?.toObject();
-      res.send({ ...result, role: "admin" });
+      res.send({ ...result, role: "admin", specificRole: admin?.role });
     }
   } catch (error) {
     //console.error(error);

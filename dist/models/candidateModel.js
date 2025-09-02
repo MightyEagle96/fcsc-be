@@ -23,6 +23,10 @@ const candidateSchema = new mongoose_1.Schema({
     year2022: String,
     year2023: String,
     year2024: String,
+    remark: String,
+    recommended: { type: Boolean, default: false },
+    dateRecommended: Date,
+    recommendedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: "Admin" },
     passwords: [String],
     password: String,
     uploadedDocuments: [

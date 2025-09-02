@@ -58,11 +58,16 @@ export const loginAdmin = async (req: Request, res: Response) => {
       return res.status(400).send("Invalid password");
     }
 
-    const accessToken = generateToken({ _id: admin._id, role: "admin" });
+    const accessToken = generateToken({
+      _id: admin._id,
+      role: "admin",
+      specificRole: admin.role,
+    });
 
     const refreshToken = generateRefreshToken({
       _id: admin._id,
       role: "admin",
+      specificRole: admin.role,
     });
 
     res
@@ -231,10 +236,12 @@ export const createOfficerAccount = async (req: Request, res: Response) => {
   try {
     // return res.status(400).send("Admin already exists oooo");
     /**Check for existing email */
-    const existing = await AdminModel.findOne({ email: req.body.email });
+    const existing = await AdminModel.findOne({
+      $or: [{ email: req.body.email }, { phoneNumber: req.body.phoneNumber }],
+    });
 
     if (existing) {
-      return res.status(400).send("Admin already exists");
+      return res.status(400).send("Email or phone number already exists");
     }
 
     const hashedPassowrd = await bcrypt.hash(req.body.password, 10);
@@ -243,6 +250,7 @@ export const createOfficerAccount = async (req: Request, res: Response) => {
       ...req.body,
       email: req.body.email,
       password: hashedPassowrd,
+      yetToChangePassword: true,
     });
     await newAdmin.save();
     res.send("Account created");
@@ -270,4 +278,16 @@ export const viewAdminStaff = async (req: Request, res: Response) => {
   const data = await AdminModel.find({ role: req.params.slug });
 
   res.send(data);
+};
+
+export const mdaCandidates = async (req: Request, res: Response) => {
+  const [candidates, recommended] = await Promise.all([
+    Candidate.countDocuments({ currentMDA: req.query.slug }),
+    Candidate.countDocuments({ currentMDA: req.query.slug, recommended: true }),
+  ]);
+
+  res.send({
+    candidates: candidates.toLocaleString(),
+    recommended: recommended.toLocaleString(),
+  });
 };

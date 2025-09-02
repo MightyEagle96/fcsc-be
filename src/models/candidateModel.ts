@@ -40,6 +40,9 @@ export interface ICandidate {
   createdAt: Date;
   updatedAt: Date;
   verified: boolean;
+  recommended: boolean;
+  dateRecommended: Date;
+  recommendedBy: Types.ObjectId;
   dateVerified: Date;
   verifiedBy: Types.ObjectId;
 }
@@ -70,6 +73,11 @@ const candidateSchema = new Schema<ICandidate>(
     year2022: String,
     year2023: String,
     year2024: String,
+
+    remark: String,
+    recommended: { type: Boolean, default: false },
+    dateRecommended: Date,
+    recommendedBy: { type: Schema.Types.ObjectId, ref: "Admin" },
 
     passwords: [String],
     password: String,

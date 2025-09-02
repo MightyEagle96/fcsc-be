@@ -16,6 +16,8 @@ export interface IAdmin {
 
   createdAt: Date;
   updatedAt: Date;
+
+  yetToChangePassword: boolean;
 }
 
 export interface AuthenticatedAdmin extends Request {
@@ -31,6 +33,7 @@ const adminSchema = new Schema<IAdmin>(
     password: String,
     mda: { type: String, lowercase: true },
     role: { type: String, lowercase: true },
+    yetToChangePassword: { type: Boolean },
   },
   { timestamps: true }
 );
