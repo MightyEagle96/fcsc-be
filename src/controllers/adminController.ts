@@ -19,7 +19,13 @@ export const viewCandidates = async (req: Request, res: Response) => {
     .skip((page - 1) * limit)
     .limit(limit);
 
-  res.send(candidates);
+  const totalCandidates = candidates.map((c, i) => {
+    return {
+      ...c.toObject(),
+      id: (page - 1) * limit + i + 1,
+    };
+  });
+  res.send(totalCandidates);
 };
 
 //export const login

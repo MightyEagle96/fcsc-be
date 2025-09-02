@@ -31,7 +31,10 @@ const viewCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function*
     const candidates = yield candidateModel_1.Candidate.find()
         .skip((page - 1) * limit)
         .limit(limit);
-    res.send(candidates);
+    const totalCandidates = candidates.map((c, i) => {
+        return Object.assign(Object.assign({}, c.toObject()), { id: (page - 1) * limit + i + 1 });
+    });
+    res.send(totalCandidates);
 });
 exports.viewCandidates = viewCandidates;
 //export const login
