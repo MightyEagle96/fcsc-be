@@ -281,14 +281,33 @@ export const viewAdminStaff = async (req: Request, res: Response) => {
 };
 
 export const mdaCandidates = async (req: Request, res: Response) => {
-  const [candidates, recommended] = await Promise.all([
+  const [candidates, recommended, totalUploadedDocuments] = await Promise.all([
     Candidate.countDocuments({ currentMDA: req.query.slug }),
     Candidate.countDocuments({ currentMDA: req.query.slug, recommended: true }),
+    Candidate.aggregate([
+      {
+        $match: {
+          currentMDA: req.query.slug, // replace with the MDA you're filtering for
+        },
+      },
+      {
+        $unwind: "$uploadedDocuments",
+      },
+      {
+        $match: {
+          "uploadedDocuments.fileUrl": { $exists: true, $ne: "" },
+        },
+      },
+      {
+        $count: "totalDocuments",
+      },
+    ]),
   ]);
 
   res.send({
     candidates: candidates.toLocaleString(),
     recommended: recommended.toLocaleString(),
+    totalUploadedDocuments: totalUploadedDocuments[0]?.totalDocuments || 0,
   });
 };
 

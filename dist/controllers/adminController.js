@@ -250,13 +250,33 @@ const viewAdminStaff = (req, res) => __awaiter(void 0, void 0, void 0, function*
 });
 exports.viewAdminStaff = viewAdminStaff;
 const mdaCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const [candidates, recommended] = yield Promise.all([
+    var _a;
+    const [candidates, recommended, totalUploadedDocuments] = yield Promise.all([
         candidateModel_1.Candidate.countDocuments({ currentMDA: req.query.slug }),
         candidateModel_1.Candidate.countDocuments({ currentMDA: req.query.slug, recommended: true }),
+        candidateModel_1.Candidate.aggregate([
+            {
+                $match: {
+                    currentMDA: req.query.slug, // replace with the MDA you're filtering for
+                },
+            },
+            {
+                $unwind: "$uploadedDocuments",
+            },
+            {
+                $match: {
+                    "uploadedDocuments.fileUrl": { $exists: true, $ne: "" },
+                },
+            },
+            {
+                $count: "totalDocuments",
+            },
+        ]),
     ]);
     res.send({
         candidates: candidates.toLocaleString(),
         recommended: recommended.toLocaleString(),
+        totalUploadedDocuments: ((_a = totalUploadedDocuments[0]) === null || _a === void 0 ? void 0 : _a.totalDocuments) || 0,
     });
 });
 exports.mdaCandidates = mdaCandidates;
