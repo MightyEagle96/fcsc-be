@@ -3,13 +3,19 @@ import { Candidate, ICandidate } from "../models/candidateModel";
 import { AdminModel } from "../models/adminLogin";
 import { ConcurrentJobQueue } from "../utils/DataQueue";
 import bcrypt from "bcrypt";
-import { generateRefreshToken, generateToken, tokens } from "./jwtController";
+import {
+  generateRefreshToken,
+  generateToken,
+  JointInterface,
+  tokens,
+} from "./jwtController";
 import path from "path";
 import fs from "fs";
 import { excelToStaffJson } from "../utils/excelToStaffJson";
 import generateRandomPassword from "../utils/generateRandomPassword";
 import { documentsToUpload } from "../utils/documents";
 import { normalizeDate } from "../utils/normalizeDate";
+import mongoose from "mongoose";
 
 //view candidates
 export const viewCandidates = async (req: Request, res: Response) => {
@@ -136,30 +142,6 @@ export const dashboardSummary = async (req: Request, res: Response) => {
   });
 };
 
-const HEADER_MAP: Record<string, keyof ICandidate> = {
-  "IPPIS Number": "ippisNumber",
-  "Name (Surname, First Name)": "fullName",
-  DOB: "dateOfBirth",
-  Gender: "gender",
-  "State of Origin": "stateOfOrigin",
-  "Local Government Area": "lga",
-  "Pool Office": "poolOffice",
-  "Current MDA": "currentMDA",
-  Cadre: "cadre",
-  "Grade Level": "gradeLevel",
-  "Date of First Appointment": "dateOfFirstAppointment",
-  "Date of Confirmation": "dateOfConfirmation",
-  "Date of Last Promotion": "dateOfLastPromotion",
-  "Phone Number": "phoneNumber",
-  Email: "email",
-  "State of Current Posting": "stateOfCurrentPosting",
-  Year2021: "year2021",
-  Year2022: "year2022",
-  Year2023: "year2023",
-  Year2024: "year2024",
-  Remark: "remark",
-};
-
 export const uploadFile = async (req: Request, res: Response) => {
   if (!req.file) {
     return res.status(400).send("No file uploaded");
@@ -232,6 +214,11 @@ export const uploadFile = async (req: Request, res: Response) => {
   }
 };
 
+export const deleteCandidates = async (req: Request, res: Response) => {
+  await Candidate.deleteMany();
+  res.send("All candidates deleted");
+};
+
 export const createOfficerAccount = async (req: Request, res: Response) => {
   try {
     // return res.status(400).send("Admin already exists oooo");
@@ -280,75 +267,6 @@ export const viewAdminStaff = async (req: Request, res: Response) => {
   res.send(data);
 };
 
-export const mdaCandidates = async (req: Request, res: Response) => {
-  const [candidates, recommended, totalUploadedDocuments] = await Promise.all([
-    Candidate.countDocuments({ currentMDA: req.query.slug }),
-    Candidate.countDocuments({ currentMDA: req.query.slug, recommended: true }),
-    Candidate.aggregate([
-      {
-        $match: {
-          currentMDA: req.query.slug, // replace with the MDA you're filtering for
-        },
-      },
-      {
-        $unwind: "$uploadedDocuments",
-      },
-      {
-        $match: {
-          "uploadedDocuments.fileUrl": { $exists: true, $ne: "" },
-        },
-      },
-      {
-        $count: "totalDocuments",
-      },
-    ]),
-  ]);
-
-  res.send({
-    candidates: candidates.toLocaleString(),
-    recommended: recommended.toLocaleString(),
-    totalUploadedDocuments: totalUploadedDocuments[0]?.totalDocuments || 0,
-  });
-};
-
-export const viewMdaCandidates = async (req: Request, res: Response) => {
-  try {
-    const page = (req.query.page || 1) as number;
-    const limit = (req.query.limit || 50) as number;
-    const candidates = await Candidate.find({
-      currentMDA: req.query.slug,
-    })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .lean();
-
-    const total = await Candidate.countDocuments({
-      currentMDA: req.query.slug,
-    });
-
-    const totalCandidates = candidates.map((c, i) => {
-      return {
-        ...c,
-        uploadedDocuments: c.uploadedDocuments.filter((c) => c.fileUrl).length,
-        id: (page - 1) * limit + i + 1,
-      };
-    });
-    res.send({
-      candidates: totalCandidates,
-      total,
-      page,
-      limit,
-    });
-  } catch (error) {
-    res.send({
-      candidates: [],
-      total: 0,
-      page: 0,
-      limit: 0,
-    });
-  }
-};
-
 export const viewUploadedDocuments = async (req: Request, res: Response) => {
   const data = await Candidate.findById(req.query._id).lean();
 
@@ -359,4 +277,26 @@ export const viewUploadedDocuments = async (req: Request, res: Response) => {
     return { ...c, id: i + 1 };
   });
   res.send(uploadedDocuments);
+};
+
+export const mdaOverview = async (req: Request, res: Response) => {
+  const result = await Candidate.aggregate([
+    {
+      $group: {
+        _id: "$currentMDA", // group by currentMDA
+        totalCandidates: { $sum: 1 }, // count records in each group
+      },
+    },
+    {
+      $sort: { totalCandidates: -1 }, // optional: sort by count (descending)
+    },
+  ]);
+  const rows = result.map((r, i) => {
+    return {
+      id: i + 1,
+      name: r._id,
+      value: r.totalCandidates,
+    };
+  });
+  res.send(rows);
 };

@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.uploadFileToB2 = void 0;
+exports.uploadFileToB2 = exports.safeB2Call = void 0;
 const promises_1 = __importDefault(require("fs/promises"));
 const path_1 = __importDefault(require("path"));
 const b2_1 = require("../b2");
@@ -35,6 +35,7 @@ function safeB2Call(fn) {
         }
     });
 }
+exports.safeB2Call = safeB2Call;
 const uploadFileToB2 = (localFilePath, mimeType) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         //await b2.authorize();

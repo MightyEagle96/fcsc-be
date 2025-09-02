@@ -1,7 +1,18 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Candidate = void 0;
 const mongoose_1 = require("mongoose");
+const uploadToB2_1 = require("../utils/uploadToB2");
+const b2_1 = require("../b2");
 const candidateSchema = new mongoose_1.Schema({
     ippisNumber: { type: String, unique: true },
     fullName: { type: String, lowercase: true },
@@ -39,8 +50,56 @@ const candidateSchema = new mongoose_1.Schema({
             updatedAt: Date,
         },
     ],
-    verified: { type: Boolean, default: false },
-    dateVerified: Date,
-    verifiedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: "Admin" },
+    rejected: { type: Boolean, default: false },
+    dateRejected: Date,
+    rejectedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: "Admin" },
+    rejectedReason: String,
 }, { timestamps: true });
+candidateSchema.pre("deleteOne", { document: true, query: false }, function (next) {
+    return __awaiter(this, void 0, void 0, function* () {
+        var _a;
+        try {
+            const candidate = this;
+            if ((_a = candidate.uploadedDocuments) === null || _a === void 0 ? void 0 : _a.length) {
+                for (const doc of candidate.uploadedDocuments) {
+                    if (doc.fileId && doc.fileName) {
+                        yield (0, uploadToB2_1.safeB2Call)(() => b2_1.b2.deleteFileVersion({
+                            fileId: doc.fileId,
+                            fileName: doc.fileName,
+                        }));
+                    }
+                }
+            }
+            next();
+        }
+        catch (err) {
+            next(err);
+        }
+    });
+});
+candidateSchema.pre("deleteMany", { document: false, query: true }, function (next) {
+    return __awaiter(this, void 0, void 0, function* () {
+        var _a;
+        try {
+            const candidates = yield exports.Candidate.find(this.getFilter());
+            for (const candidate of candidates) {
+                if ((_a = candidate.uploadedDocuments) === null || _a === void 0 ? void 0 : _a.length) {
+                    for (const doc of candidate.uploadedDocuments) {
+                        if (doc.fileId && doc.fileName) {
+                            yield (0, uploadToB2_1.safeB2Call)(() => b2_1.b2.deleteFileVersion({
+                                fileId: doc.fileId,
+                                fileName: doc.fileName,
+                            }));
+                            // await deleteFileFromB2(doc.fileId, doc.fileName);
+                        }
+                    }
+                }
+            }
+            next();
+        }
+        catch (err) {
+            next(err);
+        }
+    });
+});
 exports.Candidate = (0, mongoose_1.model)("Candidate", candidateSchema);

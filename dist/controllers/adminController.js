@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.viewUploadedDocuments = exports.viewMdaCandidates = exports.mdaCandidates = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
+exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const adminLogin_1 = require("../models/adminLogin");
 const DataQueue_1 = require("../utils/DataQueue");
@@ -135,29 +135,6 @@ const dashboardSummary = (req, res) => __awaiter(void 0, void 0, void 0, functio
     });
 });
 exports.dashboardSummary = dashboardSummary;
-const HEADER_MAP = {
-    "IPPIS Number": "ippisNumber",
-    "Name (Surname, First Name)": "fullName",
-    DOB: "dateOfBirth",
-    Gender: "gender",
-    "State of Origin": "stateOfOrigin",
-    "Local Government Area": "lga",
-    "Pool Office": "poolOffice",
-    "Current MDA": "currentMDA",
-    Cadre: "cadre",
-    "Grade Level": "gradeLevel",
-    "Date of First Appointment": "dateOfFirstAppointment",
-    "Date of Confirmation": "dateOfConfirmation",
-    "Date of Last Promotion": "dateOfLastPromotion",
-    "Phone Number": "phoneNumber",
-    Email: "email",
-    "State of Current Posting": "stateOfCurrentPosting",
-    Year2021: "year2021",
-    Year2022: "year2022",
-    Year2023: "year2023",
-    Year2024: "year2024",
-    Remark: "remark",
-};
 const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     if (!req.file) {
         return res.status(400).send("No file uploaded");
@@ -209,6 +186,11 @@ const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     }
 });
 exports.uploadFile = uploadFile;
+const deleteCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    yield candidateModel_1.Candidate.deleteMany();
+    res.send("All candidates deleted");
+});
+exports.deleteCandidates = deleteCandidates;
 const createOfficerAccount = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // return res.status(400).send("Admin already exists oooo");
@@ -249,70 +231,6 @@ const viewAdminStaff = (req, res) => __awaiter(void 0, void 0, void 0, function*
     res.send(data);
 });
 exports.viewAdminStaff = viewAdminStaff;
-const mdaCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
-    const [candidates, recommended, totalUploadedDocuments] = yield Promise.all([
-        candidateModel_1.Candidate.countDocuments({ currentMDA: req.query.slug }),
-        candidateModel_1.Candidate.countDocuments({ currentMDA: req.query.slug, recommended: true }),
-        candidateModel_1.Candidate.aggregate([
-            {
-                $match: {
-                    currentMDA: req.query.slug, // replace with the MDA you're filtering for
-                },
-            },
-            {
-                $unwind: "$uploadedDocuments",
-            },
-            {
-                $match: {
-                    "uploadedDocuments.fileUrl": { $exists: true, $ne: "" },
-                },
-            },
-            {
-                $count: "totalDocuments",
-            },
-        ]),
-    ]);
-    res.send({
-        candidates: candidates.toLocaleString(),
-        recommended: recommended.toLocaleString(),
-        totalUploadedDocuments: ((_a = totalUploadedDocuments[0]) === null || _a === void 0 ? void 0 : _a.totalDocuments) || 0,
-    });
-});
-exports.mdaCandidates = mdaCandidates;
-const viewMdaCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const page = (req.query.page || 1);
-        const limit = (req.query.limit || 50);
-        const candidates = yield candidateModel_1.Candidate.find({
-            currentMDA: req.query.slug,
-        })
-            .skip((page - 1) * limit)
-            .limit(limit)
-            .lean();
-        const total = yield candidateModel_1.Candidate.countDocuments({
-            currentMDA: req.query.slug,
-        });
-        const totalCandidates = candidates.map((c, i) => {
-            return Object.assign(Object.assign({}, c), { uploadedDocuments: c.uploadedDocuments.filter((c) => c.fileUrl).length, id: (page - 1) * limit + i + 1 });
-        });
-        res.send({
-            candidates: totalCandidates,
-            total,
-            page,
-            limit,
-        });
-    }
-    catch (error) {
-        res.send({
-            candidates: [],
-            total: 0,
-            page: 0,
-            limit: 0,
-        });
-    }
-});
-exports.viewMdaCandidates = viewMdaCandidates;
 const viewUploadedDocuments = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const data = yield candidateModel_1.Candidate.findById(req.query._id).lean();
     if (!data) {
@@ -324,3 +242,25 @@ const viewUploadedDocuments = (req, res) => __awaiter(void 0, void 0, void 0, fu
     res.send(uploadedDocuments);
 });
 exports.viewUploadedDocuments = viewUploadedDocuments;
+const mdaOverview = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield candidateModel_1.Candidate.aggregate([
+        {
+            $group: {
+                _id: "$currentMDA", // group by currentMDA
+                totalCandidates: { $sum: 1 }, // count records in each group
+            },
+        },
+        {
+            $sort: { totalCandidates: -1 }, // optional: sort by count (descending)
+        },
+    ]);
+    const rows = result.map((r, i) => {
+        return {
+            id: i + 1,
+            name: r._id,
+            value: r.totalCandidates,
+        };
+    });
+    res.send(rows);
+});
+exports.mdaOverview = mdaOverview;

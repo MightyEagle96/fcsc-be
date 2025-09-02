@@ -1,5 +1,7 @@
 import { Request } from "express";
 import { Schema, Types, model } from "mongoose";
+import { safeB2Call } from "../utils/uploadToB2";
+import { b2 } from "../b2";
 
 export interface ICandidate {
   _id: Schema.Types.ObjectId;
@@ -39,12 +41,13 @@ export interface ICandidate {
   remark: string;
   createdAt: Date;
   updatedAt: Date;
-  verified: boolean;
   recommended: boolean;
   dateRecommended: Date;
   recommendedBy: Types.ObjectId;
-  dateVerified: Date;
-  verifiedBy: Types.ObjectId;
+  rejectedBy: Types.ObjectId;
+  dateRejected: Date;
+  rejected: boolean;
+  rejectedReason: string;
 }
 
 export interface AuthenticatedCandidate extends Request {
@@ -93,11 +96,68 @@ const candidateSchema = new Schema<ICandidate>(
       },
     ],
 
-    verified: { type: Boolean, default: false },
-    dateVerified: Date,
-    verifiedBy: { type: Schema.Types.ObjectId, ref: "Admin" },
+    rejected: { type: Boolean, default: false },
+    dateRejected: Date,
+    rejectedBy: { type: Schema.Types.ObjectId, ref: "Admin" },
+    rejectedReason: String,
   },
   { timestamps: true }
+);
+
+candidateSchema.pre(
+  "deleteOne",
+  { document: true, query: false },
+  async function (next) {
+    try {
+      const candidate = this as unknown as ICandidate;
+
+      if (candidate.uploadedDocuments?.length) {
+        for (const doc of candidate.uploadedDocuments) {
+          if (doc.fileId && doc.fileName) {
+            await safeB2Call(() =>
+              b2.deleteFileVersion({
+                fileId: doc.fileId,
+                fileName: doc.fileName,
+              })
+            );
+          }
+        }
+      }
+      next();
+    } catch (err) {
+      next(err as any);
+    }
+  }
+);
+
+candidateSchema.pre(
+  "deleteMany",
+  { document: false, query: true },
+  async function (next) {
+    try {
+      const candidates = await Candidate.find(this.getFilter());
+
+      for (const candidate of candidates) {
+        if (candidate.uploadedDocuments?.length) {
+          for (const doc of candidate.uploadedDocuments) {
+            if (doc.fileId && doc.fileName) {
+              await safeB2Call(() =>
+                b2.deleteFileVersion({
+                  fileId: doc.fileId,
+                  fileName: doc.fileName,
+                })
+              );
+              // await deleteFileFromB2(doc.fileId, doc.fileName);
+            }
+          }
+        }
+      }
+
+      next();
+    } catch (err) {
+      next(err as any);
+    }
+  }
 );
 
 export const Candidate = model<ICandidate>("Candidate", candidateSchema);

@@ -12,7 +12,7 @@ type IResult = {
 /**
  * Wrapper to retry B2 calls if token expired (401 Unauthorized).
  */
-async function safeB2Call<T>(fn: () => Promise<T>): Promise<T> {
+export async function safeB2Call<T>(fn: () => Promise<T>): Promise<T> {
   try {
     return await fn();
   } catch (err: any) {

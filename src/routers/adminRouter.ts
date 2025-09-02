@@ -4,16 +4,22 @@ import {
   createAccount,
   createOfficerAccount,
   dashboardSummary,
+  deleteCandidates,
   loginAdmin,
-  mdaCandidates,
+  mdaOverview,
   officerDashboard,
   uploadFile,
   viewAdminStaff,
-  viewMdaCandidates,
   viewUploadedDocuments,
 } from "../controllers/adminController";
 import { authenticateToken } from "../controllers/jwtController";
 import multer from "multer";
+import {
+  mdaCandidates,
+  recommendCandidate,
+  viewMdaCandidates,
+} from "../controllers/hrController";
+import { promotionDashboard } from "../controllers/promotionController";
 
 const adminRouter = Router();
 
@@ -29,6 +35,12 @@ adminRouter
   .get("/adminstaff/:slug", authenticateToken, viewAdminStaff)
   .get("/mdacandidates", authenticateToken, mdaCandidates)
   .get("/viewmdacandidates", authenticateToken, viewMdaCandidates)
-  .get("/uploadeddocuments", authenticateToken, viewUploadedDocuments);
+  .get("/uploadeddocuments", authenticateToken, viewUploadedDocuments)
+  .get("/recommendcandidate", authenticateToken, recommendCandidate)
+  .get("/promotiondashboard", authenticateToken, promotionDashboard)
+
+  .get("/deleteallcandidates", authenticateToken, deleteCandidates)
+
+  .get("/mdaoverview", authenticateToken, mdaOverview);
 
 export default adminRouter;

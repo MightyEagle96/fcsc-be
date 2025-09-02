@@ -7,6 +7,8 @@ const express_1 = require("express");
 const adminController_1 = require("../controllers/adminController");
 const jwtController_1 = require("../controllers/jwtController");
 const multer_1 = __importDefault(require("multer"));
+const hrController_1 = require("../controllers/hrController");
+const promotionController_1 = require("../controllers/promotionController");
 const adminRouter = (0, express_1.Router)();
 const upload = (0, multer_1.default)({ dest: "adminuploads/" });
 adminRouter
@@ -17,7 +19,11 @@ adminRouter
     .post("/createaccount", jwtController_1.authenticateToken, adminController_1.createOfficerAccount)
     .get("/officerdashboard", jwtController_1.authenticateToken, adminController_1.officerDashboard)
     .get("/adminstaff/:slug", jwtController_1.authenticateToken, adminController_1.viewAdminStaff)
-    .get("/mdacandidates", jwtController_1.authenticateToken, adminController_1.mdaCandidates)
-    .get("/viewmdacandidates", jwtController_1.authenticateToken, adminController_1.viewMdaCandidates)
-    .get("/uploadeddocuments", jwtController_1.authenticateToken, adminController_1.viewUploadedDocuments);
+    .get("/mdacandidates", jwtController_1.authenticateToken, hrController_1.mdaCandidates)
+    .get("/viewmdacandidates", jwtController_1.authenticateToken, hrController_1.viewMdaCandidates)
+    .get("/uploadeddocuments", jwtController_1.authenticateToken, adminController_1.viewUploadedDocuments)
+    .get("/recommendcandidate", jwtController_1.authenticateToken, hrController_1.recommendCandidate)
+    .get("/promotiondashboard", jwtController_1.authenticateToken, promotionController_1.promotionDashboard)
+    .get("/deleteallcandidates", jwtController_1.authenticateToken, adminController_1.deleteCandidates)
+    .get("/mdaoverview", jwtController_1.authenticateToken, adminController_1.mdaOverview);
 exports.default = adminRouter;
