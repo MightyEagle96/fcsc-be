@@ -9,6 +9,7 @@ import {
   officerDashboard,
   uploadFile,
   viewAdminStaff,
+  viewMdaCandidates,
 } from "../controllers/adminController";
 import { authenticateToken } from "../controllers/jwtController";
 import multer from "multer";
@@ -25,6 +26,7 @@ adminRouter
   .post("/createaccount", authenticateToken, createOfficerAccount)
   .get("/officerdashboard", authenticateToken, officerDashboard)
   .get("/adminstaff/:slug", authenticateToken, viewAdminStaff)
-  .get("/mdacandidates", authenticateToken, mdaCandidates);
+  .get("/mdacandidates", authenticateToken, mdaCandidates)
+  .get("/viewmdacandidates", authenticateToken, viewMdaCandidates);
 
 export default adminRouter;
