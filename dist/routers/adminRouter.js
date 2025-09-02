@@ -15,5 +15,6 @@ adminRouter
     .get("/dashboardsummary", jwtController_1.authenticateToken, adminController_1.dashboardSummary)
     .post("/uploadfile", jwtController_1.authenticateToken, upload.single("file"), adminController_1.uploadFile)
     .post("/createaccount", jwtController_1.authenticateToken, adminController_1.createOfficerAccount)
-    .get("/officerdashboard", jwtController_1.authenticateToken, adminController_1.officerDashboard);
+    .get("/officerdashboard", jwtController_1.authenticateToken, adminController_1.officerDashboard)
+    .get("/adminstaff/:slug", jwtController_1.authenticateToken, adminController_1.viewAdminStaff);
 exports.default = adminRouter;

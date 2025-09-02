@@ -242,3 +242,9 @@ export const officerDashboard = async (req: Request, res: Response) => {
     });
   } catch (error) {}
 };
+
+export const viewAdminStaff = async (req: Request, res: Response) => {
+  const data = await AdminModel.find({ role: req.params.slug });
+
+  res.send(data);
+};

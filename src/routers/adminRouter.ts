@@ -7,6 +7,7 @@ import {
   loginAdmin,
   officerDashboard,
   uploadFile,
+  viewAdminStaff,
 } from "../controllers/adminController";
 import { authenticateToken } from "../controllers/jwtController";
 import multer from "multer";
@@ -21,6 +22,7 @@ adminRouter
   .get("/dashboardsummary", authenticateToken, dashboardSummary)
   .post("/uploadfile", authenticateToken, upload.single("file"), uploadFile)
   .post("/createaccount", authenticateToken, createOfficerAccount)
-  .get("/officerdashboard", authenticateToken, officerDashboard);
+  .get("/officerdashboard", authenticateToken, officerDashboard)
+  .get("/adminstaff/:slug", authenticateToken, viewAdminStaff);
 
 export default adminRouter;

@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.officerDashboard = exports.createOfficerAccount = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
+exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const adminLogin_1 = require("../models/adminLogin");
 const DataQueue_1 = require("../utils/DataQueue");
@@ -217,3 +217,8 @@ const officerDashboard = (req, res) => __awaiter(void 0, void 0, void 0, functio
     catch (error) { }
 });
 exports.officerDashboard = officerDashboard;
+const viewAdminStaff = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const data = yield adminLogin_1.AdminModel.find({ role: req.params.slug });
+    res.send(data);
+});
+exports.viewAdminStaff = viewAdminStaff;
