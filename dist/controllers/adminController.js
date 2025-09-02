@@ -20,10 +20,8 @@ const bcrypt_1 = __importDefault(require("bcrypt"));
 const jwtController_1 = require("./jwtController");
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
-const excelToStaffJson_1 = require("../utils/excelToStaffJson");
+const convert_excel_to_json_1 = __importDefault(require("convert-excel-to-json"));
 const generateRandomPassword_1 = __importDefault(require("../utils/generateRandomPassword"));
-const documents_1 = require("../utils/documents");
-const normalizeDate_1 = require("../utils/normalizeDate");
 //view candidates
 const viewCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -151,29 +149,42 @@ const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         newPath = path_1.default.join(uploadDir, newFileName);
         // Rename (move) the file
         fs_1.default.renameSync(req.file.path, newPath);
-        // Convert Excel to schema-ready JSON
-        const results = (0, excelToStaffJson_1.excelToStaffJson)(newPath);
-        const candidates = results;
-        const saltRounds = 10;
-        // ✅ Process candidates in chunks
-        const chunkSize = 1000;
-        let totalInserted = 0;
-        for (let i = 0; i < candidates.length; i += chunkSize) {
-            const chunk = candidates.slice(i, i + chunkSize);
-            // Process this chunk: hash + enrich data
-            const processedChunk = [];
-            for (const candidate of chunk) {
-                const plainPassword = (0, generateRandomPassword_1.default)(10);
-                const hashedPassword = yield bcrypt_1.default.hash(plainPassword, saltRounds);
-                processedChunk.push(Object.assign(Object.assign({}, candidate), { dateOfBirth: (0, normalizeDate_1.normalizeDate)(candidate.dateOfBirth), dateOfFirstAppointment: (0, normalizeDate_1.normalizeDate)(candidate.dateOfFirstAppointment), dateOfConfirmation: (0, normalizeDate_1.normalizeDate)(candidate.dateOfConfirmation), dateOfLastPromotion: (0, normalizeDate_1.normalizeDate)(candidate.dateOfLastPromotion), passwords: [plainPassword], password: hashedPassword, isDefaultPassword: true, uploadedDocuments: documents_1.documentsToUpload }));
-            }
-            // Bulk insert chunk
-            const inserted = yield candidateModel_1.Candidate.insertMany(processedChunk, {
-                ordered: false,
-            });
-            totalInserted += inserted.length;
+        const result = (0, convert_excel_to_json_1.default)({
+            sourceFile: newPath,
+            header: { rows: 1 },
+            columnToKey: {
+                A: "ippisNumber",
+                B: "fullName",
+                C: "dateOfBirth",
+                D: "gender",
+                E: "stateOfOrigin",
+                F: "lga",
+                G: "poolOffice",
+                H: "currentMDA",
+                I: "cadre",
+                J: "gradeLevel",
+                K: "dateOfFirstAppointment",
+                L: "dateOfConfirmation",
+                M: "dateOfLastPromotion",
+                N: "phoneNumber",
+                O: "email",
+                P: "stateOfCurrentPosting",
+                Q: "year2021",
+                R: "year2022",
+                S: "year2023",
+                T: "year2024",
+                U: "remark",
+            },
+        });
+        const allRows = Object.values(result).flat();
+        for (let i = 0; i < allRows.length; i += 500) {
+            const batch = allRows.slice(i, i + 500);
+            const plainPassword = (0, generateRandomPassword_1.default)(8);
+            const hashedPassword = yield bcrypt_1.default.hash(plainPassword, 10);
+            const preparedBatch = batch.map((c) => (Object.assign(Object.assign({}, c), { password: hashedPassword, passwords: [plainPassword] })));
+            yield candidateModel_1.Candidate.insertMany(preparedBatch);
         }
-        res.send(`${totalInserted} candidates uploaded successfully`);
+        res.send(`Length is ${allRows.length}`);
     }
     catch (err) {
         console.error(err);

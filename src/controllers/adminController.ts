@@ -11,11 +11,8 @@ import {
 } from "./jwtController";
 import path from "path";
 import fs from "fs";
-import { excelToStaffJson } from "../utils/excelToStaffJson";
+import excelToJson from "convert-excel-to-json";
 import generateRandomPassword from "../utils/generateRandomPassword";
-import { documentsToUpload } from "../utils/documents";
-import { normalizeDate } from "../utils/normalizeDate";
-import mongoose from "mongoose";
 
 //view candidates
 export const viewCandidates = async (req: Request, res: Response) => {
@@ -162,48 +159,51 @@ export const uploadFile = async (req: Request, res: Response) => {
     // Rename (move) the file
     fs.renameSync(req.file.path, newPath);
 
-    // Convert Excel to schema-ready JSON
-    const results = excelToStaffJson(newPath);
-    const candidates: any[] = results;
+    const result = excelToJson({
+      sourceFile: newPath,
+      header: { rows: 1 },
+      columnToKey: {
+        A: "ippisNumber",
+        B: "fullName",
+        C: "dateOfBirth",
+        D: "gender",
+        E: "stateOfOrigin",
+        F: "lga",
+        G: "poolOffice",
+        H: "currentMDA",
+        I: "cadre",
+        J: "gradeLevel",
+        K: "dateOfFirstAppointment",
+        L: "dateOfConfirmation",
+        M: "dateOfLastPromotion",
+        N: "phoneNumber",
+        O: "email",
+        P: "stateOfCurrentPosting",
+        Q: "year2021",
+        R: "year2022",
+        S: "year2023",
+        T: "year2024",
+        U: "remark",
+      },
+    });
 
-    const saltRounds = 10;
+    const allRows = Object.values(result).flat();
 
-    // ✅ Process candidates in chunks
-    const chunkSize = 1000;
-    let totalInserted = 0;
+    for (let i = 0; i < allRows.length; i += 500) {
+      const batch = allRows.slice(i, i + 500);
 
-    for (let i = 0; i < candidates.length; i += chunkSize) {
-      const chunk = candidates.slice(i, i + chunkSize);
+      const plainPassword = generateRandomPassword(8);
+      const hashedPassword = await bcrypt.hash(plainPassword, 10);
 
-      // Process this chunk: hash + enrich data
-      const processedChunk = [];
-      for (const candidate of chunk) {
-        const plainPassword = generateRandomPassword(10);
-        const hashedPassword = await bcrypt.hash(plainPassword, saltRounds);
+      const preparedBatch = batch.map((c: ICandidate) => ({
+        ...c,
+        password: hashedPassword,
+        passwords: [plainPassword],
+      }));
 
-        processedChunk.push({
-          ...candidate,
-          dateOfBirth: normalizeDate(candidate.dateOfBirth),
-          dateOfFirstAppointment: normalizeDate(
-            candidate.dateOfFirstAppointment
-          ),
-          dateOfConfirmation: normalizeDate(candidate.dateOfConfirmation),
-          dateOfLastPromotion: normalizeDate(candidate.dateOfLastPromotion),
-          passwords: [plainPassword], // keep plain for export/communication
-          password: hashedPassword, // secure storage
-          isDefaultPassword: true,
-          uploadedDocuments: documentsToUpload, // from your context
-        });
-      }
-
-      // Bulk insert chunk
-      const inserted = await Candidate.insertMany(processedChunk, {
-        ordered: false,
-      });
-      totalInserted += inserted.length;
+      await Candidate.insertMany(preparedBatch);
     }
-
-    res.send(`${totalInserted} candidates uploaded successfully`);
+    res.send(`Length is ${allRows.length}`);
   } catch (err: any) {
     console.error(err);
     // res.status(500).send("Server error while handling upload");
