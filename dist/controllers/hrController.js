@@ -61,7 +61,7 @@ const viewMdaCandidates = (req, res) => __awaiter(void 0, void 0, void 0, functi
             currentMDA: req.query.slug,
         });
         const totalCandidates = candidates.map((c, i) => {
-            return Object.assign(Object.assign({}, c), { uploadedDocuments: c.uploadedDocuments.filter((c) => c.fileUrl).length, defaultPassword: c.passwords[0], id: (page - 1) * limit + i + 1 });
+            return Object.assign(Object.assign({}, c), { recommended: c.recommended, uploadedDocuments: c.uploadedDocuments.filter((c) => c.fileUrl).length, defaultPassword: c.passwords[0], id: (page - 1) * limit + i + 1 });
         });
         res.send({
             candidates: totalCandidates,
