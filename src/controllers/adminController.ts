@@ -325,7 +325,52 @@ export const searchCandidate = async (req: Request, res: Response) => {
       { email: { $regex: req.query.q, $options: "i" } },
       { phoneNumber: { $regex: req.query.q, $options: "i" } },
       { ippisNumber: { $regex: req.query.q, $options: "i" } },
+      { status: { $regex: req.query.q, $options: "i" } },
     ],
-  }).limit(50);
-  res.send(candidates);
+  })
+    .populate("recommendedBy approvedBy")
+    .lean()
+    .limit(50);
+
+  const mapCandidates = candidates.map((c: any, i) => {
+    return {
+      ...c,
+      id: i + 1,
+      password: c.passwords[0],
+      uploadedDocuments: c.uploadedDocuments.filter((c: any) => c.fileUrl)
+        .length,
+      recommendedBy: c.recommendedBy
+        ? `${c.recommendedBy.firstName} ${c.recommendedBy.lastName}`
+        : "-",
+      approvedBy: c.approvedBy
+        ? `${c.approvedBy.firstName} ${c.approvedBy.lastName}`
+        : "-",
+      dateRecommended: c.dateRecommended
+        ? new Date(c.dateRecommended).toLocaleString()
+        : "-",
+      dateApproved: c.dateApproved
+        ? new Date(c.dateApproved).toLocaleString()
+        : "-",
+    };
+  });
+  res.send(mapCandidates);
+};
+
+export const reverseApproval = async (req: Request, res: Response) => {
+  const candidate = await Candidate.findById(req.query._id);
+  if (!candidate) {
+    return res.status(404).send("Candidate not found");
+  }
+
+  await Candidate.findByIdAndUpdate(req.query._id, {
+    status: "pending",
+    $unset: {
+      recommendedBy: null,
+      dateRecommended: null,
+      approvedBy: null,
+      dateApproved: null,
+    },
+  });
+
+  res.send("Approval reversed");
 };

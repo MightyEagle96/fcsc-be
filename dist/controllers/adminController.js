@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.searchCandidate = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
+exports.reverseApproval = exports.searchCandidate = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const adminLogin_1 = require("../models/adminLogin");
 const DataQueue_1 = require("../utils/DataQueue");
@@ -293,8 +293,41 @@ const searchCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function
             { email: { $regex: req.query.q, $options: "i" } },
             { phoneNumber: { $regex: req.query.q, $options: "i" } },
             { ippisNumber: { $regex: req.query.q, $options: "i" } },
+            { status: { $regex: req.query.q, $options: "i" } },
         ],
-    }).limit(50);
-    res.send(candidates);
+    })
+        .populate("recommendedBy approvedBy")
+        .lean()
+        .limit(50);
+    const mapCandidates = candidates.map((c, i) => {
+        return Object.assign(Object.assign({}, c), { id: i + 1, password: c.passwords[0], uploadedDocuments: c.uploadedDocuments.filter((c) => c.fileUrl)
+                .length, recommendedBy: c.recommendedBy
+                ? `${c.recommendedBy.firstName} ${c.recommendedBy.lastName}`
+                : "-", approvedBy: c.approvedBy
+                ? `${c.approvedBy.firstName} ${c.approvedBy.lastName}`
+                : "-", dateRecommended: c.dateRecommended
+                ? new Date(c.dateRecommended).toLocaleString()
+                : "-", dateApproved: c.dateApproved
+                ? new Date(c.dateApproved).toLocaleString()
+                : "-" });
+    });
+    res.send(mapCandidates);
 });
 exports.searchCandidate = searchCandidate;
+const reverseApproval = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const candidate = yield candidateModel_1.Candidate.findById(req.query._id);
+    if (!candidate) {
+        return res.status(404).send("Candidate not found");
+    }
+    yield candidateModel_1.Candidate.findByIdAndUpdate(req.query._id, {
+        status: "pending",
+        $unset: {
+            recommendedBy: null,
+            dateRecommended: null,
+            approvedBy: null,
+            dateApproved: null,
+        },
+    });
+    res.send("Approval reversed");
+});
+exports.reverseApproval = reverseApproval;

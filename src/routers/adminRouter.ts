@@ -8,6 +8,7 @@ import {
   loginAdmin,
   mdaOverview,
   officerDashboard,
+  reverseApproval,
   searchCandidate,
   uploadFile,
   viewAdminStaff,
@@ -56,6 +57,7 @@ adminRouter
   //
   .get("/recommendedcandidates", recommendedCandidates)
   .get("/approvedcandidates", approvedCandidates)
-  .get("/approvecandidate", approveCandidate);
+  .get("/approvecandidate", approveCandidate)
+  .get("/reverseapproval", reverseApproval);
 
 export default adminRouter;
