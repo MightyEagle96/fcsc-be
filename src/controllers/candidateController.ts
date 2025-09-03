@@ -103,6 +103,9 @@ export const myProfile = async (req: JointInterface, res: Response) => {
         email: candidate.email,
         ippisNumber: candidate.ippisNumber,
         phoneNumber: candidate.phoneNumber,
+        mda: candidate.currentMDA,
+        gradeLevel: candidate.gradeLevel,
+        cadre: candidate.cadre,
         passport:
           candidate.uploadedDocuments?.find(
             (c) => c.fileType === "Passport Photograph"

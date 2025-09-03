@@ -189,6 +189,7 @@ const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     }
     catch (err) {
         console.error(err);
+        yield candidateModel_1.Candidate.deleteMany();
         // res.status(500).send("Server error while handling upload");
         res.status(500).send(new Error(err).message);
     }

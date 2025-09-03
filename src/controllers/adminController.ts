@@ -209,6 +209,8 @@ export const uploadFile = async (req: Request, res: Response) => {
     res.send(`Length is ${allRows.length}`);
   } catch (err: any) {
     console.error(err);
+
+    await Candidate.deleteMany();
     // res.status(500).send("Server error while handling upload");
     res.status(500).send(new Error(err).message);
   } finally {
