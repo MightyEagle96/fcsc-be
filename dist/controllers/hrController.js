@@ -18,9 +18,16 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const DataQueue_1 = require("../utils/DataQueue");
 const mdaCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
-    const [candidates, recommended, totalUploadedDocuments] = yield Promise.all([
+    const [candidates, recommended, approved, totalUploadedDocuments] = yield Promise.all([
         candidateModel_1.Candidate.countDocuments({ currentMDA: req.query.slug }),
-        candidateModel_1.Candidate.countDocuments({ currentMDA: req.query.slug, recommended: true }),
+        candidateModel_1.Candidate.countDocuments({
+            currentMDA: req.query.slug,
+            status: "recommended",
+        }),
+        candidateModel_1.Candidate.countDocuments({
+            currentMDA: req.query.slug,
+            status: "approved",
+        }),
         candidateModel_1.Candidate.aggregate([
             {
                 $match: {
@@ -43,6 +50,7 @@ const mdaCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     res.send({
         candidates: candidates.toLocaleString(),
         recommended: recommended.toLocaleString(),
+        approved: approved.toLocaleString(),
         totalUploadedDocuments: ((_a = totalUploadedDocuments[0]) === null || _a === void 0 ? void 0 : _a.totalDocuments) || 0,
     });
 });
@@ -61,7 +69,7 @@ const viewMdaCandidates = (req, res) => __awaiter(void 0, void 0, void 0, functi
             currentMDA: req.query.slug,
         });
         const totalCandidates = candidates.map((c, i) => {
-            return Object.assign(Object.assign({}, c), { recommended: c.recommended, uploadedDocuments: c.uploadedDocuments.filter((c) => c.fileUrl).length, defaultPassword: c.passwords[0], id: (page - 1) * limit + i + 1 });
+            return Object.assign(Object.assign({}, c), { uploadedDocuments: c.uploadedDocuments.filter((c) => c.fileUrl).length, defaultPassword: c.passwords[0], id: (page - 1) * limit + i + 1 });
         });
         res.send({
             candidates: totalCandidates,
@@ -92,10 +100,10 @@ const recommendCandidate = (req, res) => __awaiter(void 0, void 0, void 0, funct
         recommendationQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
             var _b;
             const candidate = yield candidateModel_1.Candidate.findById(req.query.candidate);
-            if (candidate && candidate.recommended === false) {
+            if (candidate && candidate.status !== "recommended") {
                 candidate.recommendedBy = new mongoose_1.default.Types.ObjectId((_b = req.admin) === null || _b === void 0 ? void 0 : _b._id.toString());
                 candidate.dateRecommended = new Date();
-                candidate.recommended = true;
+                candidate.status = "recommended";
                 yield candidate.save();
             }
         }));

@@ -41,15 +41,12 @@ export interface ICandidate {
   remark: string;
   createdAt: Date;
   updatedAt: Date;
-  recommended: boolean;
+  status: "pending" | "recommended" | "approved" | "rejected";
+
   dateRecommended: Date;
   recommendedBy: Types.ObjectId;
   rejectedBy: Types.ObjectId;
   dateRejected: Date;
-  rejected: boolean;
-  rejectedReason: string;
-
-  approved: boolean;
   dateApproved: Date;
   approvedBy: Types.ObjectId;
 }
@@ -80,12 +77,7 @@ const candidateSchema = new Schema<ICandidate>(
     year2022: Number,
     year2023: Number,
     year2024: Number,
-
     remark: Number,
-    recommended: { type: Boolean, default: false },
-    dateRecommended: Date,
-    recommendedBy: { type: Schema.Types.ObjectId, ref: "Admin" },
-
     passwords: [String],
     password: String,
 
@@ -100,12 +92,15 @@ const candidateSchema = new Schema<ICandidate>(
       },
     ],
 
-    rejected: { type: Boolean, default: false },
-    dateRejected: Date,
+    status: {
+      type: String,
+      enum: ["pending", "recommended", "approved", "rejected"],
+      default: "pending",
+    },
+    dateRecommended: Date,
+    recommendedBy: { type: Schema.Types.ObjectId, ref: "Admin" },
     rejectedBy: { type: Schema.Types.ObjectId, ref: "Admin" },
-    rejectedReason: String,
-
-    approved: { type: Boolean, default: false },
+    dateRejected: Date,
     dateApproved: Date,
     approvedBy: { type: Schema.Types.ObjectId, ref: "Admin" },
   },

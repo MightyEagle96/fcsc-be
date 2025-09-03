@@ -9,18 +9,23 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.approveCandidate = exports.recommendedCandidates = exports.promotionDashboard = void 0;
+exports.approvedCandidates = exports.approveCandidate = exports.recommendedCandidates = exports.promotionDashboard = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const promotionDashboard = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const [recommended, notRecommended, rejected] = yield Promise.all([
-        candidateModel_1.Candidate.countDocuments({ recommended: true }),
-        candidateModel_1.Candidate.countDocuments({ recommended: false }),
-        candidateModel_1.Candidate.countDocuments({ rejected: true }),
+    // const [recommended, notRecommended, rejected] = await Promise.all([
+    //   Candidate.countDocuments({ recommended: true }),
+    //   Candidate.countDocuments({ recommended: false }),
+    //   Candidate.countDocuments({ rejected: true }),
+    // ]);
+    const [recommended, approved] = yield Promise.all([
+        candidateModel_1.Candidate.countDocuments({ status: "recommended" }),
+        candidateModel_1.Candidate.countDocuments({ status: "approved" }),
     ]);
     res.send({
         recommended: recommended.toLocaleString(),
-        notRecommended: notRecommended.toLocaleString(),
-        rejected: rejected.toLocaleString(),
+        approved: approved.toLocaleString(),
+        // notRecommended: notRecommended.toLocaleString(),
+        // rejected: rejected.toLocaleString(),
     });
 });
 exports.promotionDashboard = promotionDashboard;
@@ -28,7 +33,7 @@ const recommendedCandidates = (req, res) => __awaiter(void 0, void 0, void 0, fu
     try {
         const page = (req.query.page || 1);
         const limit = (req.query.limit || 50);
-        const candidates = yield candidateModel_1.Candidate.find({ recommended: true })
+        const candidates = yield candidateModel_1.Candidate.find({ status: "recommended" })
             .populate("recommendedBy")
             .select({
             fullName: 1,
@@ -47,7 +52,7 @@ const recommendedCandidates = (req, res) => __awaiter(void 0, void 0, void 0, fu
             .skip((page - 1) * limit)
             .limit(limit)
             .lean();
-        const total = yield candidateModel_1.Candidate.countDocuments({ recommended: true });
+        const total = yield candidateModel_1.Candidate.countDocuments({ status: "recommended" });
         const totalCandidates = candidates.map((c, i) => {
             return Object.assign(Object.assign({}, c), { recommendedBy: `${c.recommendedBy.firstName} ${c.recommendedBy.lastName}`, remark: c.remark, id: (page - 1) * limit + i + 1 });
         });
@@ -71,10 +76,48 @@ exports.recommendedCandidates = recommendedCandidates;
 const approveCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     yield candidateModel_1.Candidate.findByIdAndUpdate(req.query.candidate, {
-        approved: true,
+        status: "approved",
         dateApproved: new Date(),
         approvedBy: (_a = req.admin) === null || _a === void 0 ? void 0 : _a._id,
     });
     res.send("Candidate approved");
 });
 exports.approveCandidate = approveCandidate;
+const approvedCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const page = (req.query.page || 1);
+        const limit = (req.query.limit || 50);
+        const candidates = yield candidateModel_1.Candidate.find({ status: "approved" })
+            .populate("approvedBy")
+            .select({
+            fullName: 1,
+            currentMDA: 1,
+            approvedBy: 1,
+            remark: 1,
+            status: 1,
+            dateApproved: 1,
+        })
+            .skip((page - 1) * limit)
+            .limit(limit)
+            .lean();
+        const total = yield candidateModel_1.Candidate.countDocuments({ status: "approved" });
+        const totalCandidates = candidates.map((c, i) => {
+            return Object.assign(Object.assign({}, c), { approvedBy: `${c.approvedBy.firstName} ${c.approvedBy.lastName}`, remark: c.remark, id: (page - 1) * limit + i + 1 });
+        });
+        res.send({
+            candidates: totalCandidates,
+            total,
+            page,
+            limit,
+        });
+    }
+    catch (error) {
+        res.send({
+            candidates: [],
+            total: 0,
+            page: 0,
+            limit: 0,
+        });
+    }
+});
+exports.approvedCandidates = approvedCandidates;

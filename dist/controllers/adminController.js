@@ -123,15 +123,19 @@ const createAccount = (req, res) => __awaiter(void 0, void 0, void 0, function* 
 });
 exports.createAccount = createAccount;
 const dashboardSummary = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const [candidates, verifiedCandidates, unverifiedCandidates] = yield Promise.all([
+    const [candidates, pending, recommended, approved, rejected] = yield Promise.all([
         candidateModel_1.Candidate.countDocuments(),
-        candidateModel_1.Candidate.countDocuments({ verified: true }),
-        candidateModel_1.Candidate.countDocuments({ verified: false }),
+        candidateModel_1.Candidate.countDocuments({ status: "pending" }),
+        candidateModel_1.Candidate.countDocuments({ status: "recommended" }),
+        candidateModel_1.Candidate.countDocuments({ status: "approved" }),
+        candidateModel_1.Candidate.countDocuments({ status: "rejected" }),
     ]);
     res.send({
         candidates: candidates.toLocaleString(),
-        verifiedCandidates: verifiedCandidates.toLocaleString(),
-        unverifiedCandidates: unverifiedCandidates.toLocaleString(),
+        pending: pending.toLocaleString(),
+        recommended: recommended.toLocaleString(),
+        approved: approved.toLocaleString(),
+        rejected: rejected.toLocaleString(),
     });
 });
 exports.dashboardSummary = dashboardSummary;
@@ -255,7 +259,7 @@ const viewUploadedDocuments = (req, res) => __awaiter(void 0, void 0, void 0, fu
     });
     res.send({
         uploadedDocuments,
-        recommended: data.recommended,
+        //recommended: data.recommended,
         dateRecommended: data.dateRecommended,
         enableButton: uploadedDocuments.filter((c) => c.fileUrl).length === 0,
     });
@@ -265,21 +269,19 @@ const mdaOverview = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     const result = yield candidateModel_1.Candidate.aggregate([
         {
             $group: {
-                _id: "$currentMDA", // group by currentMDA
-                totalCandidates: { $sum: 1 }, // count records in each group
+                _id: "$currentMDA",
+                totalCandidates: { $sum: 1 },
             },
         },
         {
-            $sort: { totalCandidates: -1 }, // optional: sort by count (descending)
+            $sort: { _id: 1 }, // sort alphabetically by currentMDA directly in Mongo
         },
     ]);
-    const rows = result.map((r, i) => {
-        return {
-            id: i + 1,
-            name: r._id,
-            value: r.totalCandidates,
-        };
-    });
+    const rows = result.map((r, i) => ({
+        id: i + 1,
+        name: r._id,
+        value: r.totalCandidates,
+    }));
     res.send(rows);
 });
 exports.mdaOverview = mdaOverview;

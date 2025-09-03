@@ -21,6 +21,7 @@ import {
 } from "../controllers/hrController";
 import {
   approveCandidate,
+  approvedCandidates,
   promotionDashboard,
   recommendedCandidates,
 } from "../controllers/promotionController";
@@ -51,6 +52,7 @@ adminRouter
 
   //
   .get("/recommendedcandidates", recommendedCandidates)
+  .get("/approvedcandidates", approvedCandidates)
   .get("/approvecandidate", approveCandidate);
 
 export default adminRouter;

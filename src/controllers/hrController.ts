@@ -5,32 +5,41 @@ import mongoose from "mongoose";
 import { ConcurrentJobQueue } from "../utils/DataQueue";
 
 export const mdaCandidates = async (req: Request, res: Response) => {
-  const [candidates, recommended, totalUploadedDocuments] = await Promise.all([
-    Candidate.countDocuments({ currentMDA: req.query.slug }),
-    Candidate.countDocuments({ currentMDA: req.query.slug, recommended: true }),
-    Candidate.aggregate([
-      {
-        $match: {
-          currentMDA: req.query.slug, // replace with the MDA you're filtering for
+  const [candidates, recommended, approved, totalUploadedDocuments] =
+    await Promise.all([
+      Candidate.countDocuments({ currentMDA: req.query.slug }),
+      Candidate.countDocuments({
+        currentMDA: req.query.slug,
+        status: "recommended",
+      }),
+      Candidate.countDocuments({
+        currentMDA: req.query.slug,
+        status: "approved",
+      }),
+      Candidate.aggregate([
+        {
+          $match: {
+            currentMDA: req.query.slug, // replace with the MDA you're filtering for
+          },
         },
-      },
-      {
-        $unwind: "$uploadedDocuments",
-      },
-      {
-        $match: {
-          "uploadedDocuments.fileUrl": { $exists: true, $ne: "" },
+        {
+          $unwind: "$uploadedDocuments",
         },
-      },
-      {
-        $count: "totalDocuments",
-      },
-    ]),
-  ]);
+        {
+          $match: {
+            "uploadedDocuments.fileUrl": { $exists: true, $ne: "" },
+          },
+        },
+        {
+          $count: "totalDocuments",
+        },
+      ]),
+    ]);
 
   res.send({
     candidates: candidates.toLocaleString(),
     recommended: recommended.toLocaleString(),
+    approved: approved.toLocaleString(),
     totalUploadedDocuments: totalUploadedDocuments[0]?.totalDocuments || 0,
   });
 };
@@ -53,7 +62,7 @@ export const viewMdaCandidates = async (req: Request, res: Response) => {
     const totalCandidates = candidates.map((c, i) => {
       return {
         ...c,
-        recommended: c.recommended,
+
         uploadedDocuments: c.uploadedDocuments.filter((c) => c.fileUrl).length,
         defaultPassword: c.passwords[0],
         id: (page - 1) * limit + i + 1,
@@ -90,12 +99,12 @@ export const recommendCandidate = async (
   try {
     recommendationQueue.enqueue(async () => {
       const candidate = await Candidate.findById(req.query.candidate);
-      if (candidate && candidate.recommended === false) {
+      if (candidate && candidate.status !== "recommended") {
         candidate.recommendedBy = new mongoose.Types.ObjectId(
           req.admin?._id.toString()
         );
         candidate.dateRecommended = new Date();
-        candidate.recommended = true;
+        candidate.status = "recommended";
         await candidate.save();
       }
     });

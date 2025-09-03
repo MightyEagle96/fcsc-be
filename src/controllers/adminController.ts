@@ -128,17 +128,21 @@ export const createAccount = async (req: Request, res: Response) => {
 };
 
 export const dashboardSummary = async (req: Request, res: Response) => {
-  const [candidates, verifiedCandidates, unverifiedCandidates] =
+  const [candidates, pending, recommended, approved, rejected] =
     await Promise.all([
       Candidate.countDocuments(),
-      Candidate.countDocuments({ verified: true }),
-      Candidate.countDocuments({ verified: false }),
+      Candidate.countDocuments({ status: "pending" }),
+      Candidate.countDocuments({ status: "recommended" }),
+      Candidate.countDocuments({ status: "approved" }),
+      Candidate.countDocuments({ status: "rejected" }),
     ]);
 
   res.send({
     candidates: candidates.toLocaleString(),
-    verifiedCandidates: verifiedCandidates.toLocaleString(),
-    unverifiedCandidates: unverifiedCandidates.toLocaleString(),
+    pending: pending.toLocaleString(),
+    recommended: recommended.toLocaleString(),
+    approved: approved.toLocaleString(),
+    rejected: rejected.toLocaleString(),
   });
 };
 
@@ -285,7 +289,7 @@ export const viewUploadedDocuments = async (req: Request, res: Response) => {
   });
   res.send({
     uploadedDocuments,
-    recommended: data.recommended,
+    //recommended: data.recommended,
     dateRecommended: data.dateRecommended,
     enableButton: uploadedDocuments.filter((c) => c.fileUrl).length === 0,
   });
@@ -295,20 +299,20 @@ export const mdaOverview = async (req: Request, res: Response) => {
   const result = await Candidate.aggregate([
     {
       $group: {
-        _id: "$currentMDA", // group by currentMDA
-        totalCandidates: { $sum: 1 }, // count records in each group
+        _id: "$currentMDA",
+        totalCandidates: { $sum: 1 },
       },
     },
     {
-      $sort: { totalCandidates: -1 }, // optional: sort by count (descending)
+      $sort: { _id: 1 }, // sort alphabetically by currentMDA directly in Mongo
     },
   ]);
-  const rows = result.map((r, i) => {
-    return {
-      id: i + 1,
-      name: r._id,
-      value: r.totalCandidates,
-    };
-  });
+
+  const rows = result.map((r, i) => ({
+    id: i + 1,
+    name: r._id,
+    value: r.totalCandidates,
+  }));
+
   res.send(rows);
 };

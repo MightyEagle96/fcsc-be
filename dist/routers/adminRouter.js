@@ -29,5 +29,6 @@ adminRouter
     .get("/mdaoverview", adminController_1.mdaOverview)
     //
     .get("/recommendedcandidates", promotionController_1.recommendedCandidates)
+    .get("/approvedcandidates", promotionController_1.approvedCandidates)
     .get("/approvecandidate", promotionController_1.approveCandidate);
 exports.default = adminRouter;

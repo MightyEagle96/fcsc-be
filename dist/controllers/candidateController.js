@@ -94,6 +94,7 @@ const myProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 mda: candidate.currentMDA,
                 gradeLevel: candidate.gradeLevel,
                 cadre: candidate.cadre,
+                status: candidate.status,
                 passport: ((_b = (_a = candidate.uploadedDocuments) === null || _a === void 0 ? void 0 : _a.find((c) => c.fileType === "Passport Photograph")) === null || _b === void 0 ? void 0 : _b.fileUrl) || "",
             });
         }
