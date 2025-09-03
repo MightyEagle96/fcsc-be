@@ -54,6 +54,7 @@ export const viewMdaCandidates = async (req: Request, res: Response) => {
       return {
         ...c,
         uploadedDocuments: c.uploadedDocuments.filter((c) => c.fileUrl).length,
+        defaultPassword: c.passwords[0],
         id: (page - 1) * limit + i + 1,
       };
     });

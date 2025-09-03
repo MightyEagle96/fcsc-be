@@ -13,6 +13,7 @@ import path from "path";
 import fs from "fs";
 import excelToJson from "convert-excel-to-json";
 import generateRandomPassword from "../utils/generateRandomPassword";
+import { documentsToUpload } from "../utils/documents";
 
 //view candidates
 export const viewCandidates = async (req: Request, res: Response) => {
@@ -29,6 +30,7 @@ export const viewCandidates = async (req: Request, res: Response) => {
     const totalCandidates = candidates.map((c, i) => {
       return {
         ...c,
+        defaultPassword: c.passwords[0],
         id: (page - 1) * limit + i + 1,
       };
     });
@@ -199,6 +201,7 @@ export const uploadFile = async (req: Request, res: Response) => {
         ...c,
         password: hashedPassword,
         passwords: [plainPassword],
+        uploadedDocuments: documentsToUpload,
       }));
 
       await Candidate.insertMany(preparedBatch);
