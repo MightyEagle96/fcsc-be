@@ -317,6 +317,41 @@ export const mdaOverview = async (req: Request, res: Response) => {
   res.send(rows);
 };
 
+export const uploadAnalysis = async (req: Request, res: Response) => {
+  const result = await Candidate.aggregate([
+    {
+      $project: {
+        uploadsCount: {
+          $size: {
+            $filter: {
+              input: "$uploadedDocuments",
+              as: "doc",
+              cond: { $ifNull: ["$$doc.fileUrl", false] },
+            },
+          },
+        },
+      },
+    },
+    {
+      $group: {
+        _id: "$uploadsCount",
+        totalCandidates: { $sum: 1 },
+      },
+    },
+    {
+      $sort: { _id: 1 },
+    },
+  ]);
+
+  // Format response
+  const analysis = result.map((r) => ({
+    uploads: r._id,
+    candidates: r.totalCandidates,
+  }));
+
+  res.send(analysis);
+};
+
 export const searchCandidate = async (req: Request, res: Response) => {
   console.log(req.query);
   const candidates = await Candidate.find({

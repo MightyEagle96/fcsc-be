@@ -32,5 +32,6 @@ adminRouter
     .get("/recommendedcandidates", promotionController_1.recommendedCandidates)
     .get("/approvedcandidates", promotionController_1.approvedCandidates)
     .get("/approvecandidate", promotionController_1.approveCandidate)
-    .get("/reverseapproval", adminController_1.reverseApproval);
+    .get("/reverseapproval", adminController_1.reverseApproval)
+    .get("/uploadanalysis", adminController_1.uploadAnalysis);
 exports.default = adminRouter;

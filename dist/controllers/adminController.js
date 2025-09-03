@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.reverseApproval = exports.searchCandidate = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
+exports.reverseApproval = exports.searchCandidate = exports.uploadAnalysis = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const adminLogin_1 = require("../models/adminLogin");
 const DataQueue_1 = require("../utils/DataQueue");
@@ -285,6 +285,39 @@ const mdaOverview = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     res.send(rows);
 });
 exports.mdaOverview = mdaOverview;
+const uploadAnalysis = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield candidateModel_1.Candidate.aggregate([
+        {
+            $project: {
+                uploadsCount: {
+                    $size: {
+                        $filter: {
+                            input: "$uploadedDocuments",
+                            as: "doc",
+                            cond: { $ifNull: ["$$doc.fileUrl", false] },
+                        },
+                    },
+                },
+            },
+        },
+        {
+            $group: {
+                _id: "$uploadsCount",
+                totalCandidates: { $sum: 1 },
+            },
+        },
+        {
+            $sort: { _id: 1 },
+        },
+    ]);
+    // Format response
+    const analysis = result.map((r) => ({
+        uploads: r._id,
+        candidates: r.totalCandidates,
+    }));
+    res.send(analysis);
+});
+exports.uploadAnalysis = uploadAnalysis;
 const searchCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     console.log(req.query);
     const candidates = yield candidateModel_1.Candidate.find({

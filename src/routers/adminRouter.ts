@@ -10,6 +10,7 @@ import {
   officerDashboard,
   reverseApproval,
   searchCandidate,
+  uploadAnalysis,
   uploadFile,
   viewAdminStaff,
   viewUploadedDocuments,
@@ -58,6 +59,8 @@ adminRouter
   .get("/recommendedcandidates", recommendedCandidates)
   .get("/approvedcandidates", approvedCandidates)
   .get("/approvecandidate", approveCandidate)
-  .get("/reverseapproval", reverseApproval);
+  .get("/reverseapproval", reverseApproval)
+
+  .get("/uploadanalysis", uploadAnalysis);
 
 export default adminRouter;
