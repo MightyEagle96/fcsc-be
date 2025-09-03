@@ -29,6 +29,7 @@ const whitelist = [
   "http://192.168.16.78:3000",
   "http://localhost:3456",
   "https://fcsc.onrender.com",
+  "https://accreditation.jamb.gov.ng",
 ];
 
 const corsOptions: cors.CorsOptions = {
