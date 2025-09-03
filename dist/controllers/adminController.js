@@ -252,7 +252,12 @@ const viewUploadedDocuments = (req, res) => __awaiter(void 0, void 0, void 0, fu
     const uploadedDocuments = data.uploadedDocuments.map((c, i) => {
         return Object.assign(Object.assign({}, c), { id: i + 1 });
     });
-    res.send(uploadedDocuments);
+    res.send({
+        uploadedDocuments,
+        recommended: data.recommended,
+        dateRecommended: data.dateRecommended,
+        enableButton: uploadedDocuments.filter((c) => c.fileUrl).length === 0,
+    });
 });
 exports.viewUploadedDocuments = viewUploadedDocuments;
 const mdaOverview = (req, res) => __awaiter(void 0, void 0, void 0, function* () {

@@ -281,7 +281,12 @@ export const viewUploadedDocuments = async (req: Request, res: Response) => {
   const uploadedDocuments = data.uploadedDocuments.map((c, i) => {
     return { ...c, id: i + 1 };
   });
-  res.send(uploadedDocuments);
+  res.send({
+    uploadedDocuments,
+    recommended: data.recommended,
+    dateRecommended: data.dateRecommended,
+    enableButton: uploadedDocuments.filter((c) => c.fileUrl).length === 0,
+  });
 };
 
 export const mdaOverview = async (req: Request, res: Response) => {
