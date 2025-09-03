@@ -23,6 +23,7 @@ const fs_1 = __importDefault(require("fs"));
 const convert_excel_to_json_1 = __importDefault(require("convert-excel-to-json"));
 const generateRandomPassword_1 = __importDefault(require("../utils/generateRandomPassword"));
 const documents_1 = require("../utils/documents");
+const calculateRemark_1 = __importDefault(require("../utils/calculateRemark"));
 //view candidates
 const viewCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -182,7 +183,7 @@ const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             const batch = allRows.slice(i, i + 500);
             const plainPassword = (0, generateRandomPassword_1.default)(8);
             const hashedPassword = yield bcrypt_1.default.hash(plainPassword, 10);
-            const preparedBatch = batch.map((c) => (Object.assign(Object.assign({}, c), { password: hashedPassword, passwords: [plainPassword], uploadedDocuments: documents_1.documentsToUpload })));
+            const preparedBatch = batch.map((c) => (Object.assign(Object.assign({}, c), { password: hashedPassword, passwords: [plainPassword], uploadedDocuments: documents_1.documentsToUpload, remark: (0, calculateRemark_1.default)(c) })));
             yield candidateModel_1.Candidate.insertMany(preparedBatch);
         }
         res.send(`Length is ${allRows.length}`);

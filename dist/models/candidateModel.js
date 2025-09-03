@@ -30,11 +30,11 @@ const candidateSchema = new mongoose_1.Schema({
     phoneNumber: { type: String, unique: true },
     email: { type: String, unique: true },
     stateOfCurrentPosting: { type: String, lowercase: true },
-    year2021: String,
-    year2022: String,
-    year2023: String,
-    year2024: String,
-    remark: String,
+    year2021: Number,
+    year2022: Number,
+    year2023: Number,
+    year2024: Number,
+    remark: Number,
     recommended: { type: Boolean, default: false },
     dateRecommended: Date,
     recommendedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: "Admin" },
@@ -54,6 +54,9 @@ const candidateSchema = new mongoose_1.Schema({
     dateRejected: Date,
     rejectedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: "Admin" },
     rejectedReason: String,
+    approved: { type: Boolean, default: false },
+    dateApproved: Date,
+    approvedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: "Admin" },
 }, { timestamps: true });
 candidateSchema.pre("deleteOne", { document: true, query: false }, function (next) {
     return __awaiter(this, void 0, void 0, function* () {

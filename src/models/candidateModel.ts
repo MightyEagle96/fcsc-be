@@ -48,6 +48,10 @@ export interface ICandidate {
   dateRejected: Date;
   rejected: boolean;
   rejectedReason: string;
+
+  approved: boolean;
+  dateApproved: Date;
+  approvedBy: Types.ObjectId;
 }
 
 export interface AuthenticatedCandidate extends Request {
@@ -72,12 +76,12 @@ const candidateSchema = new Schema<ICandidate>(
     phoneNumber: { type: String, unique: true },
     email: { type: String, unique: true },
     stateOfCurrentPosting: { type: String, lowercase: true },
-    year2021: String,
-    year2022: String,
-    year2023: String,
-    year2024: String,
+    year2021: Number,
+    year2022: Number,
+    year2023: Number,
+    year2024: Number,
 
-    remark: String,
+    remark: Number,
     recommended: { type: Boolean, default: false },
     dateRecommended: Date,
     recommendedBy: { type: Schema.Types.ObjectId, ref: "Admin" },
@@ -100,6 +104,10 @@ const candidateSchema = new Schema<ICandidate>(
     dateRejected: Date,
     rejectedBy: { type: Schema.Types.ObjectId, ref: "Admin" },
     rejectedReason: String,
+
+    approved: { type: Boolean, default: false },
+    dateApproved: Date,
+    approvedBy: { type: Schema.Types.ObjectId, ref: "Admin" },
   },
   { timestamps: true }
 );

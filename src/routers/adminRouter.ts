@@ -19,7 +19,11 @@ import {
   recommendCandidate,
   viewMdaCandidates,
 } from "../controllers/hrController";
-import { promotionDashboard } from "../controllers/promotionController";
+import {
+  approveCandidate,
+  promotionDashboard,
+  recommendedCandidates,
+} from "../controllers/promotionController";
 
 const adminRouter = Router();
 
@@ -28,19 +32,25 @@ const upload = multer({ dest: "adminuploads/" });
 adminRouter
   .post("/signup", createAccount)
   .post("/login", loginAdmin)
-  .get("/dashboardsummary", authenticateToken, dashboardSummary)
-  .post("/uploadfile", authenticateToken, upload.single("file"), uploadFile)
-  .post("/createaccount", authenticateToken, createOfficerAccount)
-  .get("/officerdashboard", authenticateToken, officerDashboard)
-  .get("/adminstaff/:slug", authenticateToken, viewAdminStaff)
-  .get("/mdacandidates", authenticateToken, mdaCandidates)
-  .get("/viewmdacandidates", authenticateToken, viewMdaCandidates)
-  .get("/uploadeddocuments", authenticateToken, viewUploadedDocuments)
-  .get("/recommendcandidate", authenticateToken, recommendCandidate)
-  .get("/promotiondashboard", authenticateToken, promotionDashboard)
 
-  .get("/deleteallcandidates", authenticateToken, deleteCandidates)
+  .use(authenticateToken)
+  .get("/dashboardsummary", dashboardSummary)
+  .post("/uploadfile", upload.single("file"), uploadFile)
+  .post("/createaccount", createOfficerAccount)
+  .get("/officerdashboard", officerDashboard)
+  .get("/adminstaff/:slug", viewAdminStaff)
+  .get("/mdacandidates", mdaCandidates)
+  .get("/viewmdacandidates", viewMdaCandidates)
+  .get("/uploadeddocuments", viewUploadedDocuments)
+  .get("/recommendcandidate", recommendCandidate)
+  .get("/promotiondashboard", promotionDashboard)
 
-  .get("/mdaoverview", authenticateToken, mdaOverview);
+  .get("/deleteallcandidates", deleteCandidates)
+
+  .get("/mdaoverview", mdaOverview)
+
+  //
+  .get("/recommendedcandidates", recommendedCandidates)
+  .get("/approvecandidate", approveCandidate);
 
 export default adminRouter;

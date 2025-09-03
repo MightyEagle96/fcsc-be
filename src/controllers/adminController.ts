@@ -14,6 +14,7 @@ import fs from "fs";
 import excelToJson from "convert-excel-to-json";
 import generateRandomPassword from "../utils/generateRandomPassword";
 import { documentsToUpload } from "../utils/documents";
+import calculateRemark from "../utils/calculateRemark";
 
 //view candidates
 export const viewCandidates = async (req: Request, res: Response) => {
@@ -202,6 +203,7 @@ export const uploadFile = async (req: Request, res: Response) => {
         password: hashedPassword,
         passwords: [plainPassword],
         uploadedDocuments: documentsToUpload,
+        remark: calculateRemark(c),
       }));
 
       await Candidate.insertMany(preparedBatch);

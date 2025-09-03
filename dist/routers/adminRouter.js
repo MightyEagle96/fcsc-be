@@ -14,16 +14,20 @@ const upload = (0, multer_1.default)({ dest: "adminuploads/" });
 adminRouter
     .post("/signup", adminController_1.createAccount)
     .post("/login", adminController_1.loginAdmin)
-    .get("/dashboardsummary", jwtController_1.authenticateToken, adminController_1.dashboardSummary)
-    .post("/uploadfile", jwtController_1.authenticateToken, upload.single("file"), adminController_1.uploadFile)
-    .post("/createaccount", jwtController_1.authenticateToken, adminController_1.createOfficerAccount)
-    .get("/officerdashboard", jwtController_1.authenticateToken, adminController_1.officerDashboard)
-    .get("/adminstaff/:slug", jwtController_1.authenticateToken, adminController_1.viewAdminStaff)
-    .get("/mdacandidates", jwtController_1.authenticateToken, hrController_1.mdaCandidates)
-    .get("/viewmdacandidates", jwtController_1.authenticateToken, hrController_1.viewMdaCandidates)
-    .get("/uploadeddocuments", jwtController_1.authenticateToken, adminController_1.viewUploadedDocuments)
-    .get("/recommendcandidate", jwtController_1.authenticateToken, hrController_1.recommendCandidate)
-    .get("/promotiondashboard", jwtController_1.authenticateToken, promotionController_1.promotionDashboard)
-    .get("/deleteallcandidates", jwtController_1.authenticateToken, adminController_1.deleteCandidates)
-    .get("/mdaoverview", jwtController_1.authenticateToken, adminController_1.mdaOverview);
+    .use(jwtController_1.authenticateToken)
+    .get("/dashboardsummary", adminController_1.dashboardSummary)
+    .post("/uploadfile", upload.single("file"), adminController_1.uploadFile)
+    .post("/createaccount", adminController_1.createOfficerAccount)
+    .get("/officerdashboard", adminController_1.officerDashboard)
+    .get("/adminstaff/:slug", adminController_1.viewAdminStaff)
+    .get("/mdacandidates", hrController_1.mdaCandidates)
+    .get("/viewmdacandidates", hrController_1.viewMdaCandidates)
+    .get("/uploadeddocuments", adminController_1.viewUploadedDocuments)
+    .get("/recommendcandidate", hrController_1.recommendCandidate)
+    .get("/promotiondashboard", promotionController_1.promotionDashboard)
+    .get("/deleteallcandidates", adminController_1.deleteCandidates)
+    .get("/mdaoverview", adminController_1.mdaOverview)
+    //
+    .get("/recommendedcandidates", promotionController_1.recommendedCandidates)
+    .get("/approvecandidate", promotionController_1.approveCandidate);
 exports.default = adminRouter;
