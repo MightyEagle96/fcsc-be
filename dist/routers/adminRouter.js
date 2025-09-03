@@ -25,6 +25,7 @@ adminRouter
     .get("/uploadeddocuments", adminController_1.viewUploadedDocuments)
     .get("/recommendcandidate", hrController_1.recommendCandidate)
     .get("/promotiondashboard", promotionController_1.promotionDashboard)
+    .get("/searchcandidate", adminController_1.searchCandidate)
     .get("/deleteallcandidates", adminController_1.deleteCandidates)
     .get("/mdaoverview", adminController_1.mdaOverview)
     //

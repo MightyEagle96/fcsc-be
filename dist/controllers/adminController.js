@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
+exports.searchCandidate = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const adminLogin_1 = require("../models/adminLogin");
 const DataQueue_1 = require("../utils/DataQueue");
@@ -285,3 +285,16 @@ const mdaOverview = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     res.send(rows);
 });
 exports.mdaOverview = mdaOverview;
+const searchCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log(req.query);
+    const candidates = yield candidateModel_1.Candidate.find({
+        $or: [
+            { fullName: { $regex: req.query.q, $options: "i" } },
+            { email: { $regex: req.query.q, $options: "i" } },
+            { phoneNumber: { $regex: req.query.q, $options: "i" } },
+            { ippisNumber: { $regex: req.query.q, $options: "i" } },
+        ],
+    }).limit(50);
+    res.send(candidates);
+});
+exports.searchCandidate = searchCandidate;

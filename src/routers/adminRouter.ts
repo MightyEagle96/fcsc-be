@@ -8,6 +8,7 @@ import {
   loginAdmin,
   mdaOverview,
   officerDashboard,
+  searchCandidate,
   uploadFile,
   viewAdminStaff,
   viewUploadedDocuments,
@@ -45,6 +46,8 @@ adminRouter
   .get("/uploadeddocuments", viewUploadedDocuments)
   .get("/recommendcandidate", recommendCandidate)
   .get("/promotiondashboard", promotionDashboard)
+
+  .get("/searchcandidate", searchCandidate)
 
   .get("/deleteallcandidates", deleteCandidates)
 

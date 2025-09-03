@@ -316,3 +316,16 @@ export const mdaOverview = async (req: Request, res: Response) => {
 
   res.send(rows);
 };
+
+export const searchCandidate = async (req: Request, res: Response) => {
+  console.log(req.query);
+  const candidates = await Candidate.find({
+    $or: [
+      { fullName: { $regex: req.query.q, $options: "i" } },
+      { email: { $regex: req.query.q, $options: "i" } },
+      { phoneNumber: { $regex: req.query.q, $options: "i" } },
+      { ippisNumber: { $regex: req.query.q, $options: "i" } },
+    ],
+  }).limit(50);
+  res.send(candidates);
+};
