@@ -353,7 +353,6 @@ export const uploadAnalysis = async (req: Request, res: Response) => {
 };
 
 export const searchCandidate = async (req: Request, res: Response) => {
-  console.log(req.query);
   const candidates = await Candidate.find({
     $or: [
       { fullName: { $regex: req.query.q, $options: "i" } },

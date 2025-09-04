@@ -319,7 +319,6 @@ const uploadAnalysis = (req, res) => __awaiter(void 0, void 0, void 0, function*
 });
 exports.uploadAnalysis = uploadAnalysis;
 const searchCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log(req.query);
     const candidates = yield candidateModel_1.Candidate.find({
         $or: [
             { fullName: { $regex: req.query.q, $options: "i" } },
