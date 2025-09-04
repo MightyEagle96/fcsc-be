@@ -113,7 +113,7 @@ const createAccount = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         res.send("Account created");
         jobQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
             const hashedPassowrd = yield bcrypt_1.default.hash(password, 10);
-            const newAdmin = new adminLogin_1.AdminModel(Object.assign(Object.assign({}, req.body), { email, password: hashedPassowrd }));
+            const newAdmin = new adminLogin_1.AdminModel(Object.assign(Object.assign({}, req.body), { email, password: hashedPassowrd, role: "admin" }));
             yield newAdmin.save();
         }));
     }

@@ -24,14 +24,19 @@ const DataQueue_1 = require("../utils/DataQueue");
 const path_1 = __importDefault(require("path"));
 const uploadToB2_1 = require("../utils/uploadToB2");
 const adminLogin_1 = require("../models/adminLogin");
+const console_1 = require("console");
 const batchUploadCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //res.send("Hello");
     try {
         const candidates = req.body; // expect array of candidate objects
         const saltRounds = 10;
         const processedCandidates = yield Promise.all(candidates.map((candidate) => __awaiter(void 0, void 0, void 0, function* () {
+            var _a;
             const plainPassword = (0, generateRandomPassword_1.default)(10);
             const hashedPassword = yield bcrypt_1.default.hash(plainPassword, saltRounds);
+            if (((_a = candidate.phoneNumber) === null || _a === void 0 ? void 0 : _a.length) !== 11) {
+                throw (0, console_1.error)("Phone number must be 11 digits");
+            }
             return Object.assign(Object.assign({}, candidate), { passwords: [plainPassword], password: hashedPassword, 
                 // if you want to track that it’s system-generated
                 isDefaultPassword: true, uploadedDocuments: documents_1.documentsToUpload });
@@ -81,7 +86,7 @@ const loginCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function*
 });
 exports.loginCandidate = loginCandidate;
 const myProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b;
+    var _b, _c;
     try {
         if (req.candidate) {
             const candidate = req.candidate;
@@ -95,7 +100,7 @@ const myProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 gradeLevel: candidate.gradeLevel,
                 cadre: candidate.cadre,
                 status: candidate.status,
-                passport: ((_b = (_a = candidate.uploadedDocuments) === null || _a === void 0 ? void 0 : _a.find((c) => c.fileType === "Passport Photograph")) === null || _b === void 0 ? void 0 : _b.fileUrl) || "",
+                passport: ((_c = (_b = candidate.uploadedDocuments) === null || _b === void 0 ? void 0 : _b.find((c) => c.fileType === "Passport Photograph")) === null || _c === void 0 ? void 0 : _c.fileUrl) || "",
             });
         }
         if (req.admin) {
@@ -176,9 +181,9 @@ const getRefreshToken = (req, res) => __awaiter(void 0, void 0, void 0, function
 });
 exports.getRefreshToken = getRefreshToken;
 const viewMyDocuments = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _c, _d;
-    const uploadedDocuments = (_c = req.candidate) === null || _c === void 0 ? void 0 : _c.uploadedDocuments.filter((c) => c.fileUrl).length;
-    res.send({ documents: (_d = req.candidate) === null || _d === void 0 ? void 0 : _d.uploadedDocuments, uploadedDocuments });
+    var _d, _e;
+    const uploadedDocuments = (_d = req.candidate) === null || _d === void 0 ? void 0 : _d.uploadedDocuments.filter((c) => c.fileUrl).length;
+    res.send({ documents: (_e = req.candidate) === null || _e === void 0 ? void 0 : _e.uploadedDocuments, uploadedDocuments });
 });
 exports.viewMyDocuments = viewMyDocuments;
 const uploadQueue = new DataQueue_1.ConcurrentJobQueue({
@@ -189,7 +194,7 @@ const uploadQueue = new DataQueue_1.ConcurrentJobQueue({
     shutdownTimeout: 20000,
 });
 const uploadDocument = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _e;
+    var _f;
     if (!req.file) {
         return res.status(400).send("No file uploaded");
     }
@@ -198,7 +203,7 @@ const uploadDocument = (req, res) => __awaiter(void 0, void 0, void 0, function*
         oldName: `./uploads/${req.file.filename}`,
         newName: `./uploads/${req.headers.documentid}${extension}`,
         path: req.file.path,
-        candidate: (_e = req.candidate) === null || _e === void 0 ? void 0 : _e._id,
+        candidate: (_f = req.candidate) === null || _f === void 0 ? void 0 : _f._id,
         documentId: req.headers.documentid,
         mimetype: req.file.mimetype,
     };

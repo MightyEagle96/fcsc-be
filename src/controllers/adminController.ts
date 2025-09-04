@@ -119,6 +119,7 @@ export const createAccount = async (req: Request, res: Response) => {
         ...req.body,
         email,
         password: hashedPassowrd,
+        role: "admin",
       });
       await newAdmin.save();
     });

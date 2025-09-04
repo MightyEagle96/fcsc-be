@@ -19,6 +19,7 @@ import { AsyncQueue, ConcurrentJobQueue } from "../utils/DataQueue";
 import path from "path";
 import { uploadFileToB2 } from "../utils/uploadToB2";
 import { AdminModel, IAdmin } from "../models/adminLogin";
+import { error } from "console";
 
 export const batchUploadCandidates = async (req: Request, res: Response) => {
   //res.send("Hello");
@@ -32,6 +33,9 @@ export const batchUploadCandidates = async (req: Request, res: Response) => {
         const plainPassword = generateRandomPassword(10);
         const hashedPassword = await bcrypt.hash(plainPassword, saltRounds);
 
+        if (candidate.phoneNumber?.length !== 11) {
+          throw error("Phone number must be 11 digits");
+        }
         return {
           ...candidate,
           passwords: [plainPassword],
