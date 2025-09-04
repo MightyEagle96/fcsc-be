@@ -296,36 +296,41 @@ const mdaOverview = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
 });
 exports.mdaOverview = mdaOverview;
 const uploadAnalysis = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield candidateModel_1.Candidate.aggregate([
-        {
-            $project: {
-                uploadsCount: {
-                    $size: {
-                        $filter: {
-                            input: "$uploadedDocuments",
-                            as: "doc",
-                            cond: { $ifNull: ["$$doc.fileUrl", false] },
+    try {
+        const result = yield candidateModel_1.Candidate.aggregate([
+            {
+                $project: {
+                    uploadsCount: {
+                        $size: {
+                            $filter: {
+                                input: "$uploadedDocuments",
+                                as: "doc",
+                                cond: { $ifNull: ["$$doc.fileUrl", false] },
+                            },
                         },
                     },
                 },
             },
-        },
-        {
-            $group: {
-                _id: "$uploadsCount",
-                totalCandidates: { $sum: 1 },
+            {
+                $group: {
+                    _id: "$uploadsCount",
+                    totalCandidates: { $sum: 1 },
+                },
             },
-        },
-        {
-            $sort: { _id: 1 },
-        },
-    ]);
-    // Format response
-    const analysis = result.map((r) => ({
-        uploads: r._id,
-        candidates: r.totalCandidates,
-    }));
-    res.send(analysis);
+            {
+                $sort: { _id: 1 },
+            },
+        ]);
+        // Format response
+        const analysis = result.map((r) => ({
+            uploads: r._id,
+            candidates: r.totalCandidates,
+        }));
+        res.send(analysis);
+    }
+    catch (error) {
+        res.status(500).send([]);
+    }
 });
 exports.uploadAnalysis = uploadAnalysis;
 const searchCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
