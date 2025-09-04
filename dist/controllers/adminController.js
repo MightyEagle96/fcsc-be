@@ -190,13 +190,23 @@ const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             const preparedBatch = batch.map((c) => (Object.assign(Object.assign({}, c), { password: hashedPassword, passwords: [plainPassword], uploadedDocuments: documents_1.documentsToUpload, remark: (0, calculateRemark_1.default)(c) })));
             yield candidateModel_1.Candidate.insertMany(preparedBatch);
         }
-        res.send(`Length is ${allRows.length}`);
+        res.send(`Created ${allRows.length.toLocaleString()} candidates`);
     }
     catch (err) {
+        // console.error(err);
+        // await Candidate.deleteMany();
+        // res.status(500).send(new Error(err).message);
         console.error(err);
-        yield candidateModel_1.Candidate.deleteMany();
-        // res.status(500).send("Server error while handling upload");
-        res.status(500).send(new Error(err).message);
+        // Duplicate key error
+        if (err.code === 11000) {
+            const field = Object.keys(err.keyPattern)[0]; // e.g. "email"
+            const value = err.keyValue[field];
+            return res
+                .status(500)
+                .send(`Duplicate value for ${field}: "${value}". Please ensure this field is unique.`);
+        }
+        // Fallback for other errors
+        res.status(500).send(err.message || "An unexpected error occurred");
     }
     finally {
         // Delete the uploaded file
