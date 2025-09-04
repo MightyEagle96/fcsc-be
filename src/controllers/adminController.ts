@@ -215,7 +215,7 @@ export const uploadFile = async (req: Request, res: Response) => {
     }
     res.send(`Created ${allRows.length.toLocaleString()} candidates`);
   } catch (err: any) {
-    console.error("Mongo error:", err);
+    //console.error("Mongo error:", err);
 
     if (err.code === 11000) {
       return res

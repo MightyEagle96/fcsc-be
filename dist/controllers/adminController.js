@@ -193,7 +193,7 @@ const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         res.send(`Created ${allRows.length.toLocaleString()} candidates`);
     }
     catch (err) {
-        console.error("Mongo error:", err);
+        //console.error("Mongo error:", err);
         if (err.code === 11000) {
             return res
                 .status(400)
