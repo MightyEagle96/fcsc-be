@@ -215,26 +215,16 @@ export const uploadFile = async (req: Request, res: Response) => {
     }
     res.send(`Created ${allRows.length.toLocaleString()} candidates`);
   } catch (err: any) {
-    // console.error(err);
+    console.error("Mongo error:", err);
 
-    // await Candidate.deleteMany();
-    // res.status(500).send(new Error(err).message);
-
-    console.error(err);
-
-    // Duplicate key error
     if (err.code === 11000) {
-      const field = Object.keys(err.keyPattern)[0]; // e.g. "email"
-      const value = err.keyValue[field];
-
       return res
-        .status(500)
+        .status(400)
         .send(
-          `Duplicate value for ${field}: "${value}". Please ensure this field is unique.`
+          "Duplicate records in IPPIS number, email or phone number. Please ensure this field is unique."
         );
     }
 
-    // Fallback for other errors
     res.status(500).send(err.message || "An unexpected error occurred");
   } finally {
     // Delete the uploaded file

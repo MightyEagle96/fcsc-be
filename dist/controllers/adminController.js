@@ -193,19 +193,12 @@ const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         res.send(`Created ${allRows.length.toLocaleString()} candidates`);
     }
     catch (err) {
-        // console.error(err);
-        // await Candidate.deleteMany();
-        // res.status(500).send(new Error(err).message);
-        console.error(err);
-        // Duplicate key error
+        console.error("Mongo error:", err);
         if (err.code === 11000) {
-            const field = Object.keys(err.keyPattern)[0]; // e.g. "email"
-            const value = err.keyValue[field];
             return res
-                .status(500)
-                .send(`Duplicate value for ${field}: "${value}". Please ensure this field is unique.`);
+                .status(400)
+                .send("Duplicate records in IPPIS number, email or phone number. Please ensure this field is unique.");
         }
-        // Fallback for other errors
         res.status(500).send(err.message || "An unexpected error occurred");
     }
     finally {
