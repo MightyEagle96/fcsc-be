@@ -341,5 +341,9 @@ export const myCorrections = async (
   const corrections = await CorrectionModel.find({
     candidate: req.candidate?._id,
   });
-  res.send(corrections);
+
+  const correctionsOrdered = corrections.map((c, i) => {
+    return { ...c.toObject(), id: i + 1 };
+  });
+  res.send(correctionsOrdered);
 };

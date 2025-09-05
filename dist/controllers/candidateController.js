@@ -288,6 +288,9 @@ const myCorrections = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     const corrections = yield correctionData_1.CorrectionModel.find({
         candidate: (_j = req.candidate) === null || _j === void 0 ? void 0 : _j._id,
     });
-    res.send(corrections);
+    const correctionsOrdered = corrections.map((c, i) => {
+        return Object.assign(Object.assign({}, c.toObject()), { id: i + 1 });
+    });
+    res.send(correctionsOrdered);
 });
 exports.myCorrections = myCorrections;
