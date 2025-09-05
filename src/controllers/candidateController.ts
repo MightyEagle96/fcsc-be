@@ -115,6 +115,7 @@ export const myProfile = async (req: JointInterface, res: Response) => {
           candidate.uploadedDocuments?.find(
             (c) => c.fileType === "Passport Photograph"
           )?.fileUrl || "",
+        role: candidate.role,
       });
     }
 
@@ -130,6 +131,18 @@ export const myProfile = async (req: JointInterface, res: Response) => {
   }
 };
 
+export const fullCandidateProfile = async (
+  req: AuthenticatedCandidate,
+  res: Response
+) => {
+  const candidate = await Candidate.findById(req.candidate?._id).select({
+    uploadedDocuments: 0,
+    passwords: 0,
+    password: 0,
+  });
+
+  res.send(candidate);
+};
 export const logoutCandidate = async (req: Request, res: Response) => {
   res
     .clearCookie(tokens.auth_token)

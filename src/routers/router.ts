@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   batchUploadCandidates,
+  fullCandidateProfile,
   getRefreshToken,
   loginCandidate,
   logoutCandidate,
@@ -20,14 +21,19 @@ const appRouter = Router();
 appRouter
   .post("/uploadcandidates", batchUploadCandidates)
   .post("/logincandidate", loginCandidate)
-
-  .get("/myprofile", authenticateToken, myProfile)
-
-  .post("/uploadfile", authenticateToken, upload.single("file"), uploadDocument)
-
-  .get("/mydocuments", authenticateToken, viewMyDocuments)
   .get("/refresh", getRefreshToken)
+
+  .use(authenticateToken)
+
+  .get("/myprofile", myProfile)
+
+  .post("/uploadfile", upload.single("file"), uploadDocument)
+
+  .get("/mydocuments", viewMyDocuments)
+
   .get("/logout", logoutCandidate)
+
+  .get("/myfullprofile", fullCandidateProfile)
 
   //admin session
   .get("/viewcandidates", viewCandidates);

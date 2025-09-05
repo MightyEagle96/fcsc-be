@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.uploadDocument = exports.viewMyDocuments = exports.getRefreshToken = exports.logoutCandidate = exports.myProfile = exports.loginCandidate = exports.batchUploadCandidates = void 0;
+exports.uploadDocument = exports.viewMyDocuments = exports.getRefreshToken = exports.logoutCandidate = exports.fullCandidateProfile = exports.myProfile = exports.loginCandidate = exports.batchUploadCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const generateRandomPassword_1 = __importDefault(require("../utils/generateRandomPassword"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
@@ -101,6 +101,7 @@ const myProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 cadre: candidate.cadre,
                 status: candidate.status,
                 passport: ((_c = (_b = candidate.uploadedDocuments) === null || _b === void 0 ? void 0 : _b.find((c) => c.fileType === "Passport Photograph")) === null || _c === void 0 ? void 0 : _c.fileUrl) || "",
+                role: candidate.role,
             });
         }
         if (req.admin) {
@@ -115,6 +116,16 @@ const myProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.myProfile = myProfile;
+const fullCandidateProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _d;
+    const candidate = yield candidateModel_1.Candidate.findById((_d = req.candidate) === null || _d === void 0 ? void 0 : _d._id).select({
+        uploadedDocuments: 0,
+        passwords: 0,
+        password: 0,
+    });
+    res.send(candidate);
+});
+exports.fullCandidateProfile = fullCandidateProfile;
 const logoutCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     res
         .clearCookie(jwtController_1.tokens.auth_token)
@@ -181,9 +192,9 @@ const getRefreshToken = (req, res) => __awaiter(void 0, void 0, void 0, function
 });
 exports.getRefreshToken = getRefreshToken;
 const viewMyDocuments = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _d, _e;
-    const uploadedDocuments = (_d = req.candidate) === null || _d === void 0 ? void 0 : _d.uploadedDocuments.filter((c) => c.fileUrl).length;
-    res.send({ documents: (_e = req.candidate) === null || _e === void 0 ? void 0 : _e.uploadedDocuments, uploadedDocuments });
+    var _e, _f;
+    const uploadedDocuments = (_e = req.candidate) === null || _e === void 0 ? void 0 : _e.uploadedDocuments.filter((c) => c.fileUrl).length;
+    res.send({ documents: (_f = req.candidate) === null || _f === void 0 ? void 0 : _f.uploadedDocuments, uploadedDocuments });
 });
 exports.viewMyDocuments = viewMyDocuments;
 const uploadQueue = new DataQueue_1.ConcurrentJobQueue({
@@ -194,7 +205,7 @@ const uploadQueue = new DataQueue_1.ConcurrentJobQueue({
     shutdownTimeout: 20000,
 });
 const uploadDocument = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _f;
+    var _g;
     if (!req.file) {
         return res.status(400).send("No file uploaded");
     }
@@ -203,7 +214,7 @@ const uploadDocument = (req, res) => __awaiter(void 0, void 0, void 0, function*
         oldName: `./uploads/${req.file.filename}`,
         newName: `./uploads/${req.headers.documentid}${extension}`,
         path: req.file.path,
-        candidate: (_f = req.candidate) === null || _f === void 0 ? void 0 : _f._id,
+        candidate: (_g = req.candidate) === null || _g === void 0 ? void 0 : _g._id,
         documentId: req.headers.documentid,
         mimetype: req.file.mimetype,
     };

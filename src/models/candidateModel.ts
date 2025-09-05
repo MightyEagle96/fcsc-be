@@ -49,6 +49,7 @@ export interface ICandidate {
   dateRejected: Date;
   dateApproved: Date;
   approvedBy: Types.ObjectId;
+  role: string;
 }
 
 export interface AuthenticatedCandidate extends Request {
@@ -110,6 +111,7 @@ const candidateSchema = new Schema<ICandidate>(
     dateRejected: Date,
     dateApproved: Date,
     approvedBy: { type: Schema.Types.ObjectId, ref: "Admin" },
+    role: { type: String, lowercase: true, default: "candidate" },
   },
   { timestamps: true }
 );
