@@ -5,6 +5,7 @@ import {
   recommendCandidate,
   recommendMultipleCandidates,
   viewMdaCandidates,
+  viewRecommendedCandidates,
 } from "../controllers/hrController";
 import { authenticateToken } from "../controllers/jwtController";
 
@@ -18,6 +19,11 @@ hrRouter
     "/recommendmultiplecandidates",
     authenticateToken,
     recommendMultipleCandidates
+  )
+  .get(
+    "/viewrecommendedcandidates",
+    authenticateToken,
+    viewRecommendedCandidates
   );
 
 export default hrRouter;

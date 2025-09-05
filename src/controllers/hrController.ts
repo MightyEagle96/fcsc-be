@@ -178,3 +178,27 @@ export const recommendMultipleCandidates = async (
     res.send("Candidates recommended");
   }
 };
+
+export const viewRecommendedCandidates = async (
+  req: JointInterface,
+  res: Response
+) => {
+  const candidates = await Candidate.find({
+    status: "recommended",
+    currentMDA: req.admin?.mda,
+  })
+    .populate("recommendedBy")
+    .lean();
+
+  const filteredCandidates = candidates.map((c: any, i) => {
+    return {
+      ...c,
+      id: i + 1,
+      uploadedDocuments: c.uploadedDocuments.filter((c: any) => c.fileUrl)
+        .length,
+      recommendedBy: `${c.recommendedBy.firstName} ${c.recommendedBy.lastName}`,
+      dateRecommended: new Date(c.dateRecommended).toLocaleString(),
+    };
+  });
+  res.send(filteredCandidates);
+};

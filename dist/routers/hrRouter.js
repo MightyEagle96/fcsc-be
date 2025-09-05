@@ -11,5 +11,6 @@ hrRouter
     .get("/mdacandidates", jwtController_1.authenticateToken, hrController_1.mdaCandidates)
     .get("/viewmdacandidates", jwtController_1.authenticateToken, hrController_1.viewMdaCandidates)
     .get("/recommendcandidate", jwtController_1.authenticateToken, hrController_1.recommendCandidate)
-    .get("/recommendmultiplecandidates", jwtController_1.authenticateToken, hrController_1.recommendMultipleCandidates);
+    .get("/recommendmultiplecandidates", jwtController_1.authenticateToken, hrController_1.recommendMultipleCandidates)
+    .get("/viewrecommendedcandidates", jwtController_1.authenticateToken, hrController_1.viewRecommendedCandidates);
 exports.default = hrRouter;

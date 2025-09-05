@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.recommendMultipleCandidates = exports.recommendCandidate = exports.viewMdaCandidates = exports.mdaCandidates = void 0;
+exports.viewRecommendedCandidates = exports.recommendMultipleCandidates = exports.recommendCandidate = exports.viewMdaCandidates = exports.mdaCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const mongoose_1 = __importDefault(require("mongoose"));
 const DataQueue_1 = require("../utils/DataQueue");
@@ -177,3 +177,18 @@ const recommendMultipleCandidates = (req, res) => __awaiter(void 0, void 0, void
     }
 });
 exports.recommendMultipleCandidates = recommendMultipleCandidates;
+const viewRecommendedCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _e;
+    const candidates = yield candidateModel_1.Candidate.find({
+        status: "recommended",
+        currentMDA: (_e = req.admin) === null || _e === void 0 ? void 0 : _e.mda,
+    })
+        .populate("recommendedBy")
+        .lean();
+    const filteredCandidates = candidates.map((c, i) => {
+        return Object.assign(Object.assign({}, c), { id: i + 1, uploadedDocuments: c.uploadedDocuments.filter((c) => c.fileUrl)
+                .length, recommendedBy: `${c.recommendedBy.firstName} ${c.recommendedBy.lastName}`, dateRecommended: new Date(c.dateRecommended).toLocaleString() });
+    });
+    res.send(filteredCandidates);
+});
+exports.viewRecommendedCandidates = viewRecommendedCandidates;
