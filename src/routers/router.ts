@@ -25,23 +25,21 @@ appRouter
   .post("/logincandidate", loginCandidate)
   .get("/refresh", getRefreshToken)
 
-  .use(authenticateToken)
+  .get("/myprofile", authenticateToken, myProfile)
 
-  .get("/myprofile", myProfile)
+  .post("/uploadfile", authenticateToken, upload.single("file"), uploadDocument)
 
-  .post("/uploadfile", upload.single("file"), uploadDocument)
-
-  .get("/mydocuments", viewMyDocuments)
+  .get("/mydocuments", authenticateToken, viewMyDocuments)
 
   .get("/logout", logoutCandidate)
 
-  .get("/myfullprofile", fullCandidateProfile)
+  .get("/myfullprofile", authenticateToken, fullCandidateProfile)
 
-  .patch("/submitcorrection", submitCorrection)
+  .patch("/submitcorrection", authenticateToken, submitCorrection)
 
   //admin session
-  .get("/viewcandidates", viewCandidates)
+  .get("/viewcandidates", authenticateToken, viewCandidates)
 
-  .get("/mycorrections", myCorrections);
+  .get("/mycorrections", authenticateToken, myCorrections);
 
 export default appRouter;

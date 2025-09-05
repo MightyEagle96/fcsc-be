@@ -37,30 +37,29 @@ adminRouter
   .post("/signup", createAccount)
   .post("/login", loginAdmin)
 
-  .use(authenticateToken)
-  .get("/dashboardsummary", dashboardSummary)
-  .post("/uploadfile", upload.single("file"), uploadFile)
-  .post("/createaccount", createOfficerAccount)
-  .get("/officerdashboard", officerDashboard)
-  .get("/adminstaff/:slug", viewAdminStaff)
-  .get("/mdacandidates", mdaCandidates)
-  .get("/viewmdacandidates", viewMdaCandidates)
-  .get("/uploadeddocuments", viewUploadedDocuments)
-  .get("/recommendcandidate", recommendCandidate)
-  .get("/promotiondashboard", promotionDashboard)
+  .get("/dashboardsummary", authenticateToken, dashboardSummary)
+  .post("/uploadfile", authenticateToken, upload.single("file"), uploadFile)
+  .post("/createaccount", authenticateToken, createOfficerAccount)
+  .get("/officerdashboard", authenticateToken, officerDashboard)
+  .get("/adminstaff/:slug", authenticateToken, viewAdminStaff)
+  .get("/mdacandidates", authenticateToken, mdaCandidates)
+  .get("/viewmdacandidates", authenticateToken, viewMdaCandidates)
+  .get("/uploadeddocuments", authenticateToken, viewUploadedDocuments)
+  .get("/recommendcandidate", authenticateToken, recommendCandidate)
+  .get("/promotiondashboard", authenticateToken, promotionDashboard)
 
-  .get("/searchcandidate", searchCandidate)
+  .get("/searchcandidate", authenticateToken, searchCandidate)
 
-  .get("/deleteallcandidates", deleteCandidates)
+  .get("/deleteallcandidates", authenticateToken, deleteCandidates)
 
-  .get("/mdaoverview", mdaOverview)
+  .get("/mdaoverview", authenticateToken, mdaOverview)
 
   //
-  .get("/recommendedcandidates", recommendedCandidates)
-  .get("/approvedcandidates", approvedCandidates)
-  .get("/approvecandidate", approveCandidate)
-  .get("/reverseapproval", reverseApproval)
+  .get("/recommendedcandidates", authenticateToken, recommendedCandidates)
+  .get("/approvedcandidates", authenticateToken, approvedCandidates)
+  .get("/approvecandidate", authenticateToken, approveCandidate)
+  .get("/reverseapproval", authenticateToken, reverseApproval)
 
-  .get("/uploadanalysis", uploadAnalysis);
+  .get("/uploadanalysis", authenticateToken, uploadAnalysis);
 
 export default adminRouter;

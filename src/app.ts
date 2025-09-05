@@ -8,6 +8,7 @@ import cookieParser from "cookie-parser";
 import path = require("path");
 import { initB2 } from "./b2";
 import adminRouter from "./routers/adminRouter";
+import promotionRouter from "./routers/promotionRouter";
 
 // import crypto from "crypto";
 
@@ -59,6 +60,8 @@ app
   .use("/api", appRouter)
 
   .use("/api/admin", adminRouter)
+
+  .use("/api/promotion", promotionRouter)
 
   .get("*", (req, res) => {
     res.sendFile(path.join(__dirname, "build", "index.html"));
