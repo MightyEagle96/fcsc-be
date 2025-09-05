@@ -20,6 +20,8 @@ appRouter
     .get("/mydocuments", candidateController_1.viewMyDocuments)
     .get("/logout", candidateController_1.logoutCandidate)
     .get("/myfullprofile", candidateController_1.fullCandidateProfile)
+    .patch("/submitcorrection", candidateController_1.submitCorrection)
     //admin session
-    .get("/viewcandidates", adminController_1.viewCandidates);
+    .get("/viewcandidates", adminController_1.viewCandidates)
+    .get("/mycorrections", candidateController_1.myCorrections);
 exports.default = appRouter;

@@ -5,7 +5,9 @@ import {
   getRefreshToken,
   loginCandidate,
   logoutCandidate,
+  myCorrections,
   myProfile,
+  submitCorrection,
   uploadDocument,
   viewMyDocuments,
 } from "../controllers/candidateController";
@@ -35,7 +37,11 @@ appRouter
 
   .get("/myfullprofile", fullCandidateProfile)
 
+  .patch("/submitcorrection", submitCorrection)
+
   //admin session
-  .get("/viewcandidates", viewCandidates);
+  .get("/viewcandidates", viewCandidates)
+
+  .get("/mycorrections", myCorrections);
 
 export default appRouter;

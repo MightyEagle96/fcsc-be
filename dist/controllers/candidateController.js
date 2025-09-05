@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.uploadDocument = exports.viewMyDocuments = exports.getRefreshToken = exports.logoutCandidate = exports.fullCandidateProfile = exports.myProfile = exports.loginCandidate = exports.batchUploadCandidates = void 0;
+exports.myCorrections = exports.submitCorrection = exports.uploadDocument = exports.viewMyDocuments = exports.getRefreshToken = exports.logoutCandidate = exports.fullCandidateProfile = exports.myProfile = exports.loginCandidate = exports.batchUploadCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const generateRandomPassword_1 = __importDefault(require("../utils/generateRandomPassword"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
@@ -25,6 +25,8 @@ const path_1 = __importDefault(require("path"));
 const uploadToB2_1 = require("../utils/uploadToB2");
 const adminLogin_1 = require("../models/adminLogin");
 const console_1 = require("console");
+const correctionData_1 = require("../models/correctionData");
+const mongoose_1 = __importDefault(require("mongoose"));
 const batchUploadCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //res.send("Hello");
     try {
@@ -255,3 +257,37 @@ const uploadDocument = (req, res) => __awaiter(void 0, void 0, void 0, function*
     res.send("File uploaded successfully");
 });
 exports.uploadDocument = uploadDocument;
+const correctionQueue = new DataQueue_1.ConcurrentJobQueue({
+    concurrency: 10,
+    maxQueueSize: 100,
+    retries: 3,
+    retryDelay: 1000,
+    shutdownTimeout: 20000,
+});
+const submitCorrection = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _h;
+    const correction = req.body;
+    correction.candidate = new mongoose_1.default.Types.ObjectId((_h = req.candidate) === null || _h === void 0 ? void 0 : _h._id.toString());
+    const correctionData = yield correctionData_1.CorrectionModel.findOne({
+        candidate: correction.candidate,
+        correctionField: correction.correctionField,
+    });
+    if (correctionData) {
+        return res
+            .status(400)
+            .send("You have already submitted a correction for this field");
+    }
+    res.send("Correction submitted. Awaiting approval");
+    correctionQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
+        yield correctionData_1.CorrectionModel.create(correction);
+    }));
+});
+exports.submitCorrection = submitCorrection;
+const myCorrections = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _j;
+    const corrections = yield correctionData_1.CorrectionModel.find({
+        candidate: (_j = req.candidate) === null || _j === void 0 ? void 0 : _j._id,
+    });
+    res.send(corrections);
+});
+exports.myCorrections = myCorrections;

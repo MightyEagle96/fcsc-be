@@ -20,6 +20,8 @@ import path from "path";
 import { uploadFileToB2 } from "../utils/uploadToB2";
 import { AdminModel, IAdmin } from "../models/adminLogin";
 import { error } from "console";
+import { CorrectionModel, ICorrection } from "../models/correctionData";
+import mongoose from "mongoose";
 
 export const batchUploadCandidates = async (req: Request, res: Response) => {
   //res.send("Hello");
@@ -297,4 +299,47 @@ export const uploadDocument = async (
   });
 
   res.send("File uploaded successfully");
+};
+
+const correctionQueue = new ConcurrentJobQueue({
+  concurrency: 10,
+  maxQueueSize: 100,
+  retries: 3,
+  retryDelay: 1000,
+  shutdownTimeout: 20000,
+});
+export const submitCorrection = async (
+  req: AuthenticatedCandidate,
+  res: Response
+) => {
+  const correction: ICorrection = req.body;
+
+  correction.candidate = new mongoose.Types.ObjectId(
+    req.candidate?._id.toString()
+  );
+  const correctionData = await CorrectionModel.findOne({
+    candidate: correction.candidate,
+    correctionField: correction.correctionField,
+  });
+
+  if (correctionData) {
+    return res
+      .status(400)
+      .send("You have already submitted a correction for this field");
+  }
+
+  res.send("Correction submitted. Awaiting approval");
+  correctionQueue.enqueue(async () => {
+    await CorrectionModel.create(correction);
+  });
+};
+
+export const myCorrections = async (
+  req: AuthenticatedCandidate,
+  res: Response
+) => {
+  const corrections = await CorrectionModel.find({
+    candidate: req.candidate?._id,
+  });
+  res.send(corrections);
 };
