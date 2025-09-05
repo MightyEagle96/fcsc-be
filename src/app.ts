@@ -9,6 +9,7 @@ import path = require("path");
 import { initB2 } from "./b2";
 import adminRouter from "./routers/adminRouter";
 import promotionRouter from "./routers/promotionRouter";
+import hrRouter from "./routers/hrRouter";
 
 // import crypto from "crypto";
 
@@ -62,6 +63,8 @@ app
   .use("/api/admin", adminRouter)
 
   .use("/api/promotion", promotionRouter)
+
+  .use("/api/hr", hrRouter)
 
   .get("*", (req, res) => {
     res.sendFile(path.join(__dirname, "build", "index.html"));

@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.recommendCandidate = exports.viewMdaCandidates = exports.mdaCandidates = void 0;
+exports.recommendMultipleCandidates = exports.recommendCandidate = exports.viewMdaCandidates = exports.mdaCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const mongoose_1 = __importDefault(require("mongoose"));
 const DataQueue_1 = require("../utils/DataQueue");
@@ -116,3 +116,64 @@ const recommendCandidate = (req, res) => __awaiter(void 0, void 0, void 0, funct
     }
 });
 exports.recommendCandidate = recommendCandidate;
+const bulkRecommendationQueue = new DataQueue_1.ConcurrentJobQueue({
+    concurrency: 50,
+    retryDelay: 1000,
+    retries: 3,
+    shutdownTimeout: 20000,
+    maxQueueSize: 100,
+});
+const recommendMultipleCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _c;
+    try {
+        const result = yield candidateModel_1.Candidate.aggregate([
+            // Step 1: Match by MDA
+            {
+                $match: { currentMDA: (_c = req.admin) === null || _c === void 0 ? void 0 : _c.mda }, // replace with your MDA
+            },
+            // Step 2: Filter uploadedDocuments where fileUrl is not null or empty
+            {
+                $addFields: {
+                    validDocs: {
+                        $filter: {
+                            input: "$uploadedDocuments",
+                            as: "doc",
+                            cond: {
+                                $and: [
+                                    { $ifNull: ["$$doc.fileUrl", false] },
+                                    { $ne: ["$$doc.fileUrl", ""] },
+                                ],
+                            },
+                        },
+                    },
+                },
+            },
+            // Step 3: Only keep candidates with exactly 6 valid docs
+            {
+                $match: {
+                    $expr: { $eq: [{ $size: "$validDocs" }, 6] },
+                },
+            },
+        ]);
+        bulkRecommendationQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
+            var _d;
+            yield candidateModel_1.Candidate.updateMany({
+                _id: { $in: result.map((c) => c._id) },
+                status: { $ne: "recommended" }, // only those not already recommended
+            }, {
+                $set: {
+                    status: "recommended",
+                    recommendedBy: (_d = req.admin) === null || _d === void 0 ? void 0 : _d._id,
+                    dateRecommended: new Date(),
+                },
+            });
+        }));
+    }
+    catch (error) {
+        console.log(error);
+    }
+    finally {
+        res.send("Candidates recommended");
+    }
+});
+exports.recommendMultipleCandidates = recommendMultipleCandidates;

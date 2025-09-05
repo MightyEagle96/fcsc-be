@@ -114,3 +114,67 @@ export const recommendCandidate = async (
     res.send("Candidate recommended");
   }
 };
+
+const bulkRecommendationQueue = new ConcurrentJobQueue({
+  concurrency: 50,
+  retryDelay: 1000,
+  retries: 3,
+  shutdownTimeout: 20000,
+  maxQueueSize: 100,
+});
+export const recommendMultipleCandidates = async (
+  req: JointInterface,
+  res: Response
+) => {
+  try {
+    const result = await Candidate.aggregate([
+      // Step 1: Match by MDA
+      {
+        $match: { currentMDA: req.admin?.mda }, // replace with your MDA
+      },
+      // Step 2: Filter uploadedDocuments where fileUrl is not null or empty
+      {
+        $addFields: {
+          validDocs: {
+            $filter: {
+              input: "$uploadedDocuments",
+              as: "doc",
+              cond: {
+                $and: [
+                  { $ifNull: ["$$doc.fileUrl", false] },
+                  { $ne: ["$$doc.fileUrl", ""] },
+                ],
+              },
+            },
+          },
+        },
+      },
+      // Step 3: Only keep candidates with exactly 6 valid docs
+      {
+        $match: {
+          $expr: { $eq: [{ $size: "$validDocs" }, 6] },
+        },
+      },
+    ]);
+
+    bulkRecommendationQueue.enqueue(async () => {
+      await Candidate.updateMany(
+        {
+          _id: { $in: result.map((c) => c._id) },
+          status: { $ne: "recommended" }, // only those not already recommended
+        },
+        {
+          $set: {
+            status: "recommended",
+            recommendedBy: req.admin?._id,
+            dateRecommended: new Date(),
+          },
+        }
+      );
+    });
+  } catch (error) {
+    console.log(error);
+  } finally {
+    res.send("Candidates recommended");
+  }
+};
