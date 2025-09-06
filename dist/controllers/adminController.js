@@ -109,19 +109,22 @@ const jobQueue = new DataQueue_1.ConcurrentJobQueue({
 const createAccount = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { email, password } = req.body;
-        const admin = yield adminLogin_1.AdminModel.findOne({ email });
+        const admin = yield adminLogin_1.AdminModel.findOne({
+            $or: [{ phoneNumber: req.body.phoneNumber }, { email: req.body.email }],
+        });
         if (admin) {
-            return res.status(400).send("Admin already exists");
+            return res.status(400).send("Email or phone number already exists");
         }
-        res.send("Account created");
         jobQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
             const hashedPassowrd = yield bcrypt_1.default.hash(password, 10);
             const newAdmin = new adminLogin_1.AdminModel(Object.assign(Object.assign({}, req.body), { email, password: hashedPassowrd, role: "admin" }));
             yield newAdmin.save();
         }));
+        res.send("Account created");
     }
     catch (error) {
         console.log(error);
+        res.status(500).send(new Error(error).message);
     }
 });
 exports.createAccount = createAccount;

@@ -109,13 +109,14 @@ export const createAccount = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
-    const admin = await AdminModel.findOne({ email });
+    const admin = await AdminModel.findOne({
+      $or: [{ phoneNumber: req.body.phoneNumber }, { email: req.body.email }],
+    });
 
     if (admin) {
-      return res.status(400).send("Admin already exists");
+      return res.status(400).send("Email or phone number already exists");
     }
 
-    res.send("Account created");
     jobQueue.enqueue(async () => {
       const hashedPassowrd = await bcrypt.hash(password, 10);
       const newAdmin = new AdminModel({
@@ -126,8 +127,11 @@ export const createAccount = async (req: Request, res: Response) => {
       });
       await newAdmin.save();
     });
-  } catch (error) {
+    res.send("Account created");
+  } catch (error: any) {
     console.log(error);
+
+    res.status(500).send(new Error(error).message);
   }
 };
 
