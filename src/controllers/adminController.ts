@@ -15,6 +15,8 @@ import excelToJson from "convert-excel-to-json";
 import generateRandomPassword from "../utils/generateRandomPassword";
 import { documentsToUpload } from "../utils/documents";
 import calculateRemark from "../utils/calculateRemark";
+import { sendMailFunc } from "../utils/nodemailer";
+import { emailTemplate } from "./emailTemplate";
 
 //view candidates
 export const viewCandidates = async (req: Request, res: Response) => {
@@ -419,3 +421,28 @@ export const reverseApproval = async (req: Request, res: Response) => {
 
   res.send("Approval reversed");
 };
+
+export const notifyParticipant = async (req: Request, res: Response) => {
+  type Data = {
+    to: string;
+    subject: string;
+    name: string;
+    link: string;
+    password: string;
+  };
+
+  const data: Data = req.body;
+
+  emailTemplate;
+
+  await sendMailFunc(
+    data.to,
+    data.subject,
+    emailTemplate(data.name, data.password, data.link)
+  );
+
+  res.send("Mail sent");
+};
+
+//sms notification
+export const sendSms = async (req: Request, res: Response) => {};

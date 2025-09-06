@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.reverseApproval = exports.searchCandidate = exports.uploadAnalysis = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
+exports.sendSms = exports.notifyParticipant = exports.reverseApproval = exports.searchCandidate = exports.uploadAnalysis = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const adminLogin_1 = require("../models/adminLogin");
 const DataQueue_1 = require("../utils/DataQueue");
@@ -24,6 +24,8 @@ const convert_excel_to_json_1 = __importDefault(require("convert-excel-to-json")
 const generateRandomPassword_1 = __importDefault(require("../utils/generateRandomPassword"));
 const documents_1 = require("../utils/documents");
 const calculateRemark_1 = __importDefault(require("../utils/calculateRemark"));
+const nodemailer_1 = require("../utils/nodemailer");
+const emailTemplate_1 = require("./emailTemplate");
 //view candidates
 const viewCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -371,3 +373,13 @@ const reverseApproval = (req, res) => __awaiter(void 0, void 0, void 0, function
     res.send("Approval reversed");
 });
 exports.reverseApproval = reverseApproval;
+const notifyParticipant = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const data = req.body;
+    emailTemplate_1.emailTemplate;
+    yield (0, nodemailer_1.sendMailFunc)(data.to, data.subject, (0, emailTemplate_1.emailTemplate)(data.name, data.password, data.link));
+    res.send("Mail sent");
+});
+exports.notifyParticipant = notifyParticipant;
+//sms notification
+const sendSms = (req, res) => __awaiter(void 0, void 0, void 0, function* () { });
+exports.sendSms = sendSms;

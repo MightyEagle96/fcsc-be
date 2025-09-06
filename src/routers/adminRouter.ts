@@ -7,6 +7,7 @@ import {
   deleteCandidates,
   loginAdmin,
   mdaOverview,
+  notifyParticipant,
   officerDashboard,
   reverseApproval,
   searchCandidate,
@@ -60,6 +61,8 @@ adminRouter
   .get("/approvecandidate", authenticateToken, approveCandidate)
   .get("/reverseapproval", authenticateToken, reverseApproval)
 
-  .get("/uploadanalysis", authenticateToken, uploadAnalysis);
+  .get("/uploadanalysis", authenticateToken, uploadAnalysis)
+
+  .post("/notifyparticipant", notifyParticipant);
 
 export default adminRouter;

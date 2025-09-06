@@ -32,5 +32,6 @@ adminRouter
     .get("/approvedcandidates", jwtController_1.authenticateToken, promotionController_1.approvedCandidates)
     .get("/approvecandidate", jwtController_1.authenticateToken, promotionController_1.approveCandidate)
     .get("/reverseapproval", jwtController_1.authenticateToken, adminController_1.reverseApproval)
-    .get("/uploadanalysis", jwtController_1.authenticateToken, adminController_1.uploadAnalysis);
+    .get("/uploadanalysis", jwtController_1.authenticateToken, adminController_1.uploadAnalysis)
+    .post("/notifyparticipant", adminController_1.notifyParticipant);
 exports.default = adminRouter;
