@@ -17,6 +17,7 @@ import { documentsToUpload } from "../utils/documents";
 import calculateRemark from "../utils/calculateRemark";
 import { sendMailFunc } from "../utils/nodemailer";
 import { emailTemplate } from "./emailTemplate";
+import { SendSms } from "../utils/smsHandler";
 
 //view candidates
 export const viewCandidates = async (req: Request, res: Response) => {
@@ -445,4 +446,16 @@ export const notifyParticipant = async (req: Request, res: Response) => {
 };
 
 //sms notification
-export const sendSms = async (req: Request, res: Response) => {};
+export const sendSms = async (req: Request, res: Response) => {
+  const participant = req.body;
+  const phoneNumber = `234${participant.phoneNumber.slice(
+    1,
+    participant.phoneNumber.length
+  )}`;
+
+  const message = "Hello there welcome.";
+
+  await SendSms(message, phoneNumber);
+
+  res.send("Message sent");
+};

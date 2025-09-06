@@ -11,6 +11,7 @@ import {
   officerDashboard,
   reverseApproval,
   searchCandidate,
+  sendSms,
   uploadAnalysis,
   uploadFile,
   viewAdminStaff,
@@ -63,6 +64,7 @@ adminRouter
 
   .get("/uploadanalysis", authenticateToken, uploadAnalysis)
 
-  .post("/notifyparticipant", notifyParticipant);
+  .post("/notifyparticipant", notifyParticipant)
+  .post("/sendsms", sendSms);
 
 export default adminRouter;

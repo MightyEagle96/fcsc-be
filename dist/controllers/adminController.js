@@ -26,6 +26,7 @@ const documents_1 = require("../utils/documents");
 const calculateRemark_1 = __importDefault(require("../utils/calculateRemark"));
 const nodemailer_1 = require("../utils/nodemailer");
 const emailTemplate_1 = require("./emailTemplate");
+const smsHandler_1 = require("../utils/smsHandler");
 //view candidates
 const viewCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -381,5 +382,11 @@ const notifyParticipant = (req, res) => __awaiter(void 0, void 0, void 0, functi
 });
 exports.notifyParticipant = notifyParticipant;
 //sms notification
-const sendSms = (req, res) => __awaiter(void 0, void 0, void 0, function* () { });
+const sendSms = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const participant = req.body;
+    const phoneNumber = `234${participant.phoneNumber.slice(1, participant.phoneNumber.length)}`;
+    const message = "Hello there welcome.";
+    yield (0, smsHandler_1.SendSms)(message, phoneNumber);
+    res.send("Message sent");
+});
 exports.sendSms = sendSms;
