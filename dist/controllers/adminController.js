@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendSms = exports.notifyParticipant = exports.reverseApproval = exports.searchCandidate = exports.uploadAnalysis = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
+exports.notifyByEmailAndSms = exports.sendSms = exports.notifyParticipant = exports.reverseApproval = exports.searchCandidate = exports.uploadAnalysis = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const adminLogin_1 = require("../models/adminLogin");
 const DataQueue_1 = require("../utils/DataQueue");
@@ -390,3 +390,25 @@ const sendSms = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     res.send("Message sent");
 });
 exports.sendSms = sendSms;
+//notify participant by email and sms
+const notificationQueue = new DataQueue_1.ConcurrentJobQueue({
+    concurrency: 20, // run 20 at once
+    maxQueueSize: 10000, // cap queue if needed
+    retries: 3, // retry failed jobs 3 times
+    retryDelay: 2000, // wait 2s between retries
+    shutdownTimeout: 60000, //
+});
+const notifyByEmailAndSms = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const candidates = yield candidateModel_1.Candidate.find();
+    res.send("Sending notifications");
+    const smsMessage = (name, password, link, email) => `Dear ${name.toUpperCase()}, your Federal Civil Service Commission candidate verification portal account has been created. Your email is ${email} and your password is ${password}.  Please click the link below to access your account. ${link}`;
+    candidates.forEach((c) => {
+        notificationQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
+            yield (0, nodemailer_1.sendMailFunc)(c.email, "ACCOUNT CREATED", (0, emailTemplate_1.emailTemplate)(c.fullName, c.passwords[0], "https://accreditation.jamb.gov.ng"));
+            const phoneNumber = `234${c.phoneNumber.slice(1, c.phoneNumber.length)}`;
+            yield (0, smsHandler_1.SendSms)(smsMessage(c.fullName, c.passwords[0], "https://accreditation.jamb.gov.ng", c.email), phoneNumber);
+        }));
+        console.log(`Contacted ${c.fullName}`);
+    });
+});
+exports.notifyByEmailAndSms = notifyByEmailAndSms;

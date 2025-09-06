@@ -7,6 +7,7 @@ import {
   deleteCandidates,
   loginAdmin,
   mdaOverview,
+  notifyByEmailAndSms,
   notifyParticipant,
   officerDashboard,
   reverseApproval,
@@ -64,7 +65,8 @@ adminRouter
 
   .get("/uploadanalysis", authenticateToken, uploadAnalysis)
 
-  .post("/notifyparticipant", notifyParticipant)
-  .post("/sendsms", sendSms);
+  .get("/notifybyemailandsms", authenticateToken, notifyByEmailAndSms);
+// .post("/notifyparticipant", notifyParticipant)
+// .post("/sendsms", sendSms);
 
 export default adminRouter;

@@ -459,3 +459,52 @@ export const sendSms = async (req: Request, res: Response) => {
 
   res.send("Message sent");
 };
+
+//notify participant by email and sms
+
+const notificationQueue = new ConcurrentJobQueue({
+  concurrency: 20, // run 20 at once
+  maxQueueSize: 10000, // cap queue if needed
+  retries: 3, // retry failed jobs 3 times
+  retryDelay: 2000, // wait 2s between retries
+  shutdownTimeout: 60000, //
+});
+export const notifyByEmailAndSms = async (req: Request, res: Response) => {
+  const candidates = await Candidate.find();
+
+  res.send("Sending notifications");
+  const smsMessage = (
+    name: string,
+    password: string,
+    link: string,
+    email: string
+  ): string =>
+    `Dear ${name.toUpperCase()}, your Federal Civil Service Commission candidate verification portal account has been created. Your email is ${email} and your password is ${password}.  Please click the link below to access your account. ${link}`;
+  candidates.forEach((c) => {
+    notificationQueue.enqueue(async () => {
+      await sendMailFunc(
+        c.email,
+        "ACCOUNT CREATED",
+        emailTemplate(
+          c.fullName,
+          c.passwords[0],
+          "https://accreditation.jamb.gov.ng"
+        )
+      );
+
+      const phoneNumber = `234${c.phoneNumber.slice(1, c.phoneNumber.length)}`;
+
+      await SendSms(
+        smsMessage(
+          c.fullName,
+          c.passwords[0],
+          "https://accreditation.jamb.gov.ng",
+          c.email
+        ),
+        phoneNumber
+      );
+    });
+
+    console.log(`Contacted ${c.fullName}`);
+  });
+};
