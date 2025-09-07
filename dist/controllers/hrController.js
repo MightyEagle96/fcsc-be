@@ -12,10 +12,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.viewRecommendedCandidates = exports.recommendMultipleCandidates = exports.recommendCandidate = exports.viewMdaCandidates = exports.mdaCandidates = void 0;
+exports.rejectApplication = exports.viewRecommendedCandidates = exports.recommendMultipleCandidates = exports.recommendCandidate = exports.viewMdaCandidates = exports.mdaCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const mongoose_1 = __importDefault(require("mongoose"));
 const DataQueue_1 = require("../utils/DataQueue");
+const rejectionModel_1 = require("../models/rejectionModel");
 const mdaCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const [candidates, recommended, approved, totalUploadedDocuments] = yield Promise.all([
@@ -192,3 +193,11 @@ const viewRecommendedCandidates = (req, res) => __awaiter(void 0, void 0, void 0
     res.send(filteredCandidates);
 });
 exports.viewRecommendedCandidates = viewRecommendedCandidates;
+const rejectApplication = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const rejection = yield rejectionModel_1.RejectionModel.create({
+        candidate: req.body.candidate,
+        reason: req.body.reason,
+    });
+    res.send(rejection);
+});
+exports.rejectApplication = rejectApplication;

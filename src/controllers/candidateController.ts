@@ -245,60 +245,64 @@ export const uploadDocument = async (
   req: AuthenticatedCandidate,
   res: Response
 ) => {
-  if (!req.file) {
-    return res.status(400).send("No file uploaded");
-  }
+  try {
+    if (!req.file) {
+      return res.status(400).send("No file uploaded");
+    }
 
-  const extension = path.extname(req.file.originalname);
-  const fileData = {
-    oldName: `./uploads/${req.file.filename}`,
-    newName: `./uploads/${req.headers.documentid}${extension}`,
-    path: req.file.path,
-    candidate: req.candidate?._id,
-    documentId: req.headers.documentid,
-    mimetype: req.file.mimetype,
-  };
+    const extension = path.extname(req.file.originalname);
+    const fileData = {
+      oldName: `./uploads/${req.file.filename}`,
+      newName: `./uploads/${req.headers.documentid}${extension}`,
+      path: req.file.path,
+      candidate: req.candidate?._id,
+      documentId: req.headers.documentid,
+      mimetype: req.file.mimetype,
+    };
 
-  uploadQueue.enqueue(async () => {
-    rename(fileData.oldName, fileData.newName, (err) => {
-      if (err) {
-        console.error("Error renaming file:", err);
-      }
+    uploadQueue.enqueue(async () => {
+      rename(fileData.oldName, fileData.newName, (err) => {
+        if (err) {
+          console.error("Error renaming file:", err);
+        }
 
-      uploadFileToB2(fileData.newName, fileData.mimetype)
-        .then(async (result) => {
-          if (result) {
-            await Candidate.updateOne(
-              {
-                _id: fileData.candidate,
-                "uploadedDocuments._id": fileData.documentId,
-              },
-              {
-                $set: {
-                  "uploadedDocuments.$.fileUrl": result.fileUrl,
-                  "uploadedDocuments.$.fileName": result.fileName,
-                  "uploadedDocuments.$.fileId": result.fileId,
-                  "uploadedDocuments.$.updatedAt": new Date(),
+        uploadFileToB2(fileData.newName, fileData.mimetype)
+          .then(async (result) => {
+            if (result) {
+              await Candidate.updateOne(
+                {
+                  _id: fileData.candidate,
+                  "uploadedDocuments._id": fileData.documentId,
                 },
-              }
-            );
-            console.log(`File uploaded successfully ✅`);
-          }
-        })
-        .catch((error) => {
-          console.error("Error uploading file to B2:", error);
-        })
-        .finally(() => {
-          unlink(fileData.newName, (err) => {
-            if (err) {
-              console.error("Error deleting file:", err);
+                {
+                  $set: {
+                    "uploadedDocuments.$.fileUrl": result.fileUrl,
+                    "uploadedDocuments.$.fileName": result.fileName,
+                    "uploadedDocuments.$.fileId": result.fileId,
+                    "uploadedDocuments.$.updatedAt": new Date(),
+                  },
+                }
+              );
+              console.log(`File uploaded successfully ✅`);
             }
+          })
+          .catch((error) => {
+            console.error("Error uploading file to B2:", error);
+          })
+          .finally(() => {
+            unlink(fileData.newName, (err) => {
+              if (err) {
+                console.error("Error deleting file:", err);
+              }
+            });
           });
-        });
+      });
     });
-  });
 
-  res.send("File uploaded successfully");
+    res.send("File uploaded successfully");
+  } catch (error: any) {
+    res.status(500).send(new Error(error).message);
+  }
 };
 
 const correctionQueue = new ConcurrentJobQueue({

@@ -305,7 +305,7 @@ export const viewUploadedDocuments = async (req: Request, res: Response) => {
   });
   res.send({
     uploadedDocuments,
-    //recommended: data.recommended,
+    status: data.status,
     dateRecommended: data.dateRecommended,
     enableButton: uploadedDocuments.filter((c) => c.fileUrl).length === 0,
   });

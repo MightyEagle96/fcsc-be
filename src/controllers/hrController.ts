@@ -3,6 +3,7 @@ import { Candidate } from "../models/candidateModel";
 import { JointInterface } from "./jwtController";
 import mongoose from "mongoose";
 import { ConcurrentJobQueue } from "../utils/DataQueue";
+import { RejectionModel } from "../models/rejectionModel";
 
 export const mdaCandidates = async (req: Request, res: Response) => {
   const [candidates, recommended, approved, totalUploadedDocuments] =
@@ -201,4 +202,13 @@ export const viewRecommendedCandidates = async (
     };
   });
   res.send(filteredCandidates);
+};
+
+export const rejectApplication = async (req: Request, res: Response) => {
+  const rejection = await RejectionModel.create({
+    candidate: req.body.candidate,
+    reason: req.body.reason,
+  });
+
+  res.send(rejection);
 };

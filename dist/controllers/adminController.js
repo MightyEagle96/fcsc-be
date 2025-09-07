@@ -269,7 +269,7 @@ const viewUploadedDocuments = (req, res) => __awaiter(void 0, void 0, void 0, fu
     });
     res.send({
         uploadedDocuments,
-        //recommended: data.recommended,
+        status: data.status,
         dateRecommended: data.dateRecommended,
         enableButton: uploadedDocuments.filter((c) => c.fileUrl).length === 0,
     });
