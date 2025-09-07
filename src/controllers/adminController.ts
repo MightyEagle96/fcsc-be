@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { Candidate, ICandidate } from "../models/candidateModel";
-import { AdminModel } from "../models/adminLogin";
+import { AdminModel, AuthenticatedAdmin } from "../models/adminLogin";
 import { ConcurrentJobQueue } from "../utils/DataQueue";
 import bcrypt from "bcrypt";
 import {
@@ -18,6 +18,8 @@ import calculateRemark from "../utils/calculateRemark";
 import { sendMailFunc } from "../utils/nodemailer";
 import { emailTemplate } from "./emailTemplate";
 import { SendSms } from "../utils/smsHandler";
+import { CorrectionModel } from "../models/correctionData";
+import { Types } from "mongoose";
 
 //view candidates
 export const viewCandidates = async (req: Request, res: Response) => {
@@ -427,43 +429,6 @@ export const reverseApproval = async (req: Request, res: Response) => {
   res.send("Approval reversed");
 };
 
-export const notifyParticipant = async (req: Request, res: Response) => {
-  type Data = {
-    to: string;
-    subject: string;
-    name: string;
-    link: string;
-    password: string;
-  };
-
-  const data: Data = req.body;
-
-  emailTemplate;
-
-  await sendMailFunc(
-    data.to,
-    data.subject,
-    emailTemplate(data.name, data.password, data.link)
-  );
-
-  res.send("Mail sent");
-};
-
-//sms notification
-export const sendSms = async (req: Request, res: Response) => {
-  const participant = req.body;
-  const phoneNumber = `234${participant.phoneNumber.slice(
-    1,
-    participant.phoneNumber.length
-  )}`;
-
-  const message = "Hello there welcome.";
-
-  await SendSms(message, phoneNumber);
-
-  res.send("Message sent");
-};
-
 //notify participant by email and sms
 
 const notificationQueue = new ConcurrentJobQueue({
@@ -511,4 +476,106 @@ export const notifyByEmailAndSms = async (req: Request, res: Response) => {
 
     console.log(`Contacted ${c.fullName}`);
   });
+};
+
+export const viewCorrections = async (req: Request, res: Response) => {
+  try {
+    interface Candidate {
+      _id: Types.ObjectId;
+      fullName: string;
+      currentMDA: string;
+      // add other fields you care about
+    }
+
+    interface CorrectionLean {
+      _id: Types.ObjectId;
+      candidate: Candidate; // after populate, it's no longer just ObjectId
+      correctionName: string;
+      correctionField: string;
+      reason: string;
+      status: string;
+      data: any;
+      dateApplied: Date;
+      dateCorrected?: Date;
+      correctedBy?: Types.ObjectId;
+    }
+
+    const corrections = await CorrectionModel.find()
+      .lean<CorrectionLean[]>()
+      .populate("candidate");
+
+    const data = corrections.map((c, i) => {
+      return {
+        ...c,
+        name: c.candidate.fullName,
+        mda: c.candidate.currentMDA,
+        id: i + 1,
+      };
+    });
+
+    res.send(data);
+  } catch (error) {
+    res.status(500).send("Error occurred");
+  }
+};
+
+export const viewCorrection = async (req: Request, res: Response) => {
+  try {
+    const correction = await CorrectionModel.findById(req.query.id as string);
+
+    if (!correction) {
+      return res.status(404).send("Correction not found");
+    }
+
+    const candidate = await Candidate.findById(correction.candidate as any)
+      .select({ [correction.correctionField]: 1 })
+      .lean();
+
+    if (!candidate) {
+      return res.status(404).send("Candidate not found");
+    }
+
+    res.send({
+      _id: correction._id,
+      reason: correction.reason,
+      status: correction.status,
+      newData: correction.data,
+      oldData:
+        candidate[correction.correctionField as keyof typeof candidate] ?? "-",
+    });
+  } catch (error) {
+    console.error("viewCorrection error:", error);
+    res.status(500).send("Error occurred");
+  }
+};
+
+export const approveCorrection = async (
+  req: AuthenticatedAdmin,
+  res: Response
+) => {
+  try {
+    const correction = await CorrectionModel.findById(req.query.id as string);
+    if (!correction) {
+      return res.status(404).send("Correction not found");
+    }
+
+    await Candidate.updateOne(
+      { _id: correction.candidate },
+      {
+        $set: {
+          [correction.correctionField]: correction.data,
+        },
+      }
+    );
+
+    await CorrectionModel.findByIdAndUpdate(req.query.id as string, {
+      status: "approved",
+      dateCorrected: new Date(),
+      correctedBy: req.admin?._id,
+    });
+    res.send("Correction approved");
+  } catch (error) {
+    console.error("approveCorrection error:", error);
+    res.status(500).send("Error occurred");
+  }
 };

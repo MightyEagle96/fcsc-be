@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import {
+  approveCorrection,
   createAccount,
   createOfficerAccount,
   dashboardSummary,
@@ -8,14 +9,14 @@ import {
   loginAdmin,
   mdaOverview,
   notifyByEmailAndSms,
-  notifyParticipant,
   officerDashboard,
   reverseApproval,
   searchCandidate,
-  sendSms,
   uploadAnalysis,
   uploadFile,
   viewAdminStaff,
+  viewCorrection,
+  viewCorrections,
   viewUploadedDocuments,
 } from "../controllers/adminController";
 import { authenticateToken } from "../controllers/jwtController";
@@ -65,8 +66,11 @@ adminRouter
 
   .get("/uploadanalysis", authenticateToken, uploadAnalysis)
 
-  .get("/notifybyemailandsms", authenticateToken, notifyByEmailAndSms);
-// .post("/notifyparticipant", notifyParticipant)
-// .post("/sendsms", sendSms);
+  .get("/notifybyemailandsms", authenticateToken, notifyByEmailAndSms)
+
+  .get("/corrections", authenticateToken, viewCorrections)
+
+  .get("/correction", authenticateToken, viewCorrection)
+  .get("/approvecorrection", authenticateToken, approveCorrection);
 
 export default adminRouter;

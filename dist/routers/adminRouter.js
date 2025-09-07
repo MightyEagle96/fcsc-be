@@ -33,7 +33,8 @@ adminRouter
     .get("/approvecandidate", jwtController_1.authenticateToken, promotionController_1.approveCandidate)
     .get("/reverseapproval", jwtController_1.authenticateToken, adminController_1.reverseApproval)
     .get("/uploadanalysis", jwtController_1.authenticateToken, adminController_1.uploadAnalysis)
-    .get("/notifybyemailandsms", jwtController_1.authenticateToken, adminController_1.notifyByEmailAndSms);
-// .post("/notifyparticipant", notifyParticipant)
-// .post("/sendsms", sendSms);
+    .get("/notifybyemailandsms", jwtController_1.authenticateToken, adminController_1.notifyByEmailAndSms)
+    .get("/corrections", jwtController_1.authenticateToken, adminController_1.viewCorrections)
+    .get("/correction", jwtController_1.authenticateToken, adminController_1.viewCorrection)
+    .get("/approvecorrection", jwtController_1.authenticateToken, adminController_1.approveCorrection);
 exports.default = adminRouter;

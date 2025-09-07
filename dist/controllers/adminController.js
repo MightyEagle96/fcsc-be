@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.notifyByEmailAndSms = exports.sendSms = exports.notifyParticipant = exports.reverseApproval = exports.searchCandidate = exports.uploadAnalysis = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
+exports.approveCorrection = exports.viewCorrection = exports.viewCorrections = exports.notifyByEmailAndSms = exports.reverseApproval = exports.searchCandidate = exports.uploadAnalysis = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const adminLogin_1 = require("../models/adminLogin");
 const DataQueue_1 = require("../utils/DataQueue");
@@ -27,6 +27,7 @@ const calculateRemark_1 = __importDefault(require("../utils/calculateRemark"));
 const nodemailer_1 = require("../utils/nodemailer");
 const emailTemplate_1 = require("./emailTemplate");
 const smsHandler_1 = require("../utils/smsHandler");
+const correctionData_1 = require("../models/correctionData");
 //view candidates
 const viewCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -377,22 +378,6 @@ const reverseApproval = (req, res) => __awaiter(void 0, void 0, void 0, function
     res.send("Approval reversed");
 });
 exports.reverseApproval = reverseApproval;
-const notifyParticipant = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const data = req.body;
-    emailTemplate_1.emailTemplate;
-    yield (0, nodemailer_1.sendMailFunc)(data.to, data.subject, (0, emailTemplate_1.emailTemplate)(data.name, data.password, data.link));
-    res.send("Mail sent");
-});
-exports.notifyParticipant = notifyParticipant;
-//sms notification
-const sendSms = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const participant = req.body;
-    const phoneNumber = `234${participant.phoneNumber.slice(1, participant.phoneNumber.length)}`;
-    const message = "Hello there welcome.";
-    yield (0, smsHandler_1.SendSms)(message, phoneNumber);
-    res.send("Message sent");
-});
-exports.sendSms = sendSms;
 //notify participant by email and sms
 const notificationQueue = new DataQueue_1.ConcurrentJobQueue({
     concurrency: 20, // run 20 at once
@@ -415,3 +400,70 @@ const notifyByEmailAndSms = (req, res) => __awaiter(void 0, void 0, void 0, func
     });
 });
 exports.notifyByEmailAndSms = notifyByEmailAndSms;
+const viewCorrections = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const corrections = yield correctionData_1.CorrectionModel.find()
+            .lean()
+            .populate("candidate");
+        const data = corrections.map((c, i) => {
+            return Object.assign(Object.assign({}, c), { name: c.candidate.fullName, mda: c.candidate.currentMDA, id: i + 1 });
+        });
+        res.send(data);
+    }
+    catch (error) {
+        res.status(500).send("Error occurred");
+    }
+});
+exports.viewCorrections = viewCorrections;
+const viewCorrection = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    try {
+        const correction = yield correctionData_1.CorrectionModel.findById(req.query.id);
+        if (!correction) {
+            return res.status(404).send("Correction not found");
+        }
+        const candidate = yield candidateModel_1.Candidate.findById(correction.candidate)
+            .select({ [correction.correctionField]: 1 })
+            .lean();
+        if (!candidate) {
+            return res.status(404).send("Candidate not found");
+        }
+        res.send({
+            _id: correction._id,
+            reason: correction.reason,
+            status: correction.status,
+            newData: correction.data,
+            oldData: (_a = candidate[correction.correctionField]) !== null && _a !== void 0 ? _a : "-",
+        });
+    }
+    catch (error) {
+        console.error("viewCorrection error:", error);
+        res.status(500).send("Error occurred");
+    }
+});
+exports.viewCorrection = viewCorrection;
+const approveCorrection = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _b;
+    try {
+        const correction = yield correctionData_1.CorrectionModel.findById(req.query.id);
+        if (!correction) {
+            return res.status(404).send("Correction not found");
+        }
+        yield candidateModel_1.Candidate.updateOne({ _id: correction.candidate }, {
+            $set: {
+                [correction.correctionField]: correction.data,
+            },
+        });
+        yield correctionData_1.CorrectionModel.findByIdAndUpdate(req.query.id, {
+            status: "approved",
+            dateCorrected: new Date(),
+            correctedBy: (_b = req.admin) === null || _b === void 0 ? void 0 : _b._id,
+        });
+        res.send("Correction approved");
+    }
+    catch (error) {
+        console.error("approveCorrection error:", error);
+        res.status(500).send("Error occurred");
+    }
+});
+exports.approveCorrection = approveCorrection;
