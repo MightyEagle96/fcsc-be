@@ -26,8 +26,8 @@ export interface AuthenticatedAdmin extends Request {
 
 const adminSchema = new Schema<IAdmin>(
   {
-    firstName: String,
-    lastName: String,
+    firstName: { type: String, lowercase: true },
+    lastName: { type: String, lowercase: true },
     phoneNumber: { type: String, unique: true },
     email: { type: String, unique: true, lowercase: true },
     password: String,

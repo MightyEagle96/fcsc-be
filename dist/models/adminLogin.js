@@ -3,8 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AdminModel = void 0;
 const mongoose_1 = require("mongoose");
 const adminSchema = new mongoose_1.Schema({
-    firstName: String,
-    lastName: String,
+    firstName: { type: String, lowercase: true },
+    lastName: { type: String, lowercase: true },
     phoneNumber: { type: String, unique: true },
     email: { type: String, unique: true, lowercase: true },
     password: String,

@@ -83,7 +83,7 @@ const loginCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function*
             .send("Logged In");
     }
     else {
-        res.status(401).send("Invalid password");
+        res.status(400).send("Invalid password");
     }
 });
 exports.loginCandidate = loginCandidate;

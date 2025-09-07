@@ -95,7 +95,7 @@ export const loginCandidate = async (req: Request, res: Response) => {
       })
       .send("Logged In");
   } else {
-    res.status(401).send("Invalid password");
+    res.status(400).send("Invalid password");
   }
 };
 
