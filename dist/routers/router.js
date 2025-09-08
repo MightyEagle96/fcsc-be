@@ -16,6 +16,7 @@ appRouter
     .get("/refresh", candidateController_1.getRefreshToken)
     .get("/myprofile", jwtController_1.authenticateToken, candidateController_1.myProfile)
     .post("/uploadfile", jwtController_1.authenticateToken, upload.single("file"), candidateController_1.uploadDocument)
+    .get("/pushapplication", jwtController_1.authenticateToken, candidateController_1.pushApplication)
     .get("/mydocuments", jwtController_1.authenticateToken, candidateController_1.viewMyDocuments)
     .get("/logout", candidateController_1.logoutCandidate)
     .get("/myfullprofile", jwtController_1.authenticateToken, candidateController_1.fullCandidateProfile)

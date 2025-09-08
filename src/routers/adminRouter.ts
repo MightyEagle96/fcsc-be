@@ -32,6 +32,7 @@ import {
   promotionDashboard,
   recommendedCandidates,
 } from "../controllers/promotionController";
+import { pushApplication } from "../controllers/candidateController";
 
 const adminRouter = Router();
 

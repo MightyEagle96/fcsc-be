@@ -7,6 +7,7 @@ import {
   logoutCandidate,
   myCorrections,
   myProfile,
+  pushApplication,
   submitCorrection,
   uploadDocument,
   viewMyDocuments,
@@ -28,6 +29,8 @@ appRouter
   .get("/myprofile", authenticateToken, myProfile)
 
   .post("/uploadfile", authenticateToken, upload.single("file"), uploadDocument)
+
+  .get("/pushapplication", authenticateToken, pushApplication)
 
   .get("/mydocuments", authenticateToken, viewMyDocuments)
 

@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.myCorrections = exports.submitCorrection = exports.uploadDocument = exports.viewMyDocuments = exports.getRefreshToken = exports.logoutCandidate = exports.fullCandidateProfile = exports.myProfile = exports.loginCandidate = exports.batchUploadCandidates = void 0;
+exports.pushApplication = exports.myCorrections = exports.submitCorrection = exports.uploadDocument = exports.viewMyDocuments = exports.getRefreshToken = exports.logoutCandidate = exports.fullCandidateProfile = exports.myProfile = exports.loginCandidate = exports.batchUploadCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const generateRandomPassword_1 = __importDefault(require("../utils/generateRandomPassword"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
@@ -299,3 +299,11 @@ const myCorrections = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     res.send(correctionsOrdered);
 });
 exports.myCorrections = myCorrections;
+const pushApplication = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _k;
+    yield candidateModel_1.Candidate.findByIdAndUpdate((_k = req.candidate) === null || _k === void 0 ? void 0 : _k._id, {
+        status: "pending",
+    });
+    res.send("Application submitted");
+});
+exports.pushApplication = pushApplication;

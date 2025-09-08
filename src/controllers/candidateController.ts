@@ -351,3 +351,13 @@ export const myCorrections = async (
   });
   res.send(correctionsOrdered);
 };
+
+export const pushApplication = async (
+  req: AuthenticatedCandidate,
+  res: Response
+) => {
+  await Candidate.findByIdAndUpdate(req.candidate?._id, {
+    status: "pending",
+  });
+  res.send("Application submitted");
+};
