@@ -7,5 +7,7 @@ const rejectionSchema = new mongoose_1.Schema({
     reason: String,
     notifiedByEmail: { type: Boolean, default: false },
     notifiedBySms: { type: Boolean, default: false },
+    dateRejected: { type: Date, default: new Date() },
+    rejectedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: "Admin" },
 }, { timestamps: true });
 exports.RejectionModel = (0, mongoose_1.model)("Rejection", rejectionSchema);

@@ -4,6 +4,11 @@ import { JointInterface } from "./jwtController";
 import mongoose from "mongoose";
 import { ConcurrentJobQueue } from "../utils/DataQueue";
 import { RejectionModel } from "../models/rejectionModel";
+import { AuthenticatedAdmin } from "../models/adminLogin";
+import { sendMailFunc } from "../utils/nodemailer";
+import { rejectionTemplate } from "./rejectionTemplate";
+import { send } from "process";
+import { SendSms } from "../utils/smsHandler";
 
 export const mdaCandidates = async (req: Request, res: Response) => {
   const [candidates, recommended, approved, totalUploadedDocuments] =
@@ -204,11 +209,48 @@ export const viewRecommendedCandidates = async (
   res.send(filteredCandidates);
 };
 
-export const rejectApplication = async (req: Request, res: Response) => {
-  const rejection = await RejectionModel.create({
+const rejectionQueue = new ConcurrentJobQueue({
+  concurrency: 50,
+  retryDelay: 1000,
+  retries: 3,
+  shutdownTimeout: 20000,
+  maxQueueSize: 100,
+});
+export const rejectApplication = async (
+  req: AuthenticatedAdmin,
+  res: Response
+) => {
+  const rejection = {
     candidate: req.body.candidate,
     reason: req.body.reason,
+    rejectedBy: req.admin?._id,
+  };
+
+  rejectionQueue.enqueue(async () => {
+    await RejectionModel.create(rejection);
+
+    const candidate = await Candidate.findById(req.body.candidate);
+
+    if (candidate) {
+      candidate.status = "rejected";
+      await candidate.save();
+
+      const phoneNumber = `234${candidate.phoneNumber.slice(
+        1,
+        candidate.phoneNumber.length
+      )}`;
+      await sendMailFunc(
+        candidate.email,
+        "Application Rejected",
+        rejectionTemplate(candidate.fullName, req.body.reason)
+      );
+
+      const message = `Hello ${candidate.fullName.toUpperCase()}, your application has been rejected. Reason: ${
+        req.body.reason
+      }. Kindly login to your portal and effect the change `;
+      await SendSms(message, phoneNumber);
+    }
   });
 
-  res.send(rejection);
+  res.send("Application rejected");
 };

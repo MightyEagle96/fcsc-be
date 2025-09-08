@@ -12,5 +12,9 @@ hrRouter
     .get("/viewmdacandidates", jwtController_1.authenticateToken, hrController_1.viewMdaCandidates)
     .get("/recommendcandidate", jwtController_1.authenticateToken, hrController_1.recommendCandidate)
     .get("/recommendmultiplecandidates", jwtController_1.authenticateToken, hrController_1.recommendMultipleCandidates)
-    .get("/viewrecommendedcandidates", jwtController_1.authenticateToken, hrController_1.viewRecommendedCandidates);
+    .get("/viewrecommendedcandidates", jwtController_1.authenticateToken, hrController_1.viewRecommendedCandidates)
+    .post("/rejectapplication", jwtController_1.authenticateToken, hrController_1.rejectApplication)
+    .use("*", (req, res) => {
+    res.status(404).send("Not found");
+});
 exports.default = hrRouter;

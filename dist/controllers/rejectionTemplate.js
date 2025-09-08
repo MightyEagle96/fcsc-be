@@ -1,0 +1,122 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.rejectionTemplate = void 0;
+const rejectionTemplate = (fullName, reason) => `<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Application Rejected</title>
+  </head>
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f7;
+      font-family: Arial, sans-serif;
+    "
+  >
+    <!-- Outer wrapper -->
+    <table
+      role="presentation"
+      border="0"
+      cellpadding="0"
+      cellspacing="0"
+      width="100%"
+    >
+      <tr>
+        <td align="center" style="padding: 20px 0">
+          <!-- Container -->
+          <table
+            role="presentation"
+            border="0"
+            cellpadding="0"
+            cellspacing="0"
+            width="600"
+            style="
+              width: 600px;
+              max-width: 100%;
+              background: #ffffff;
+              border-radius: 6px;
+              overflow: hidden;
+              box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            "
+          >
+            <!-- Header -->
+            <tr>
+              <td align="center" bgcolor="#28a745" style="padding: 24px">
+                <img
+                  src="https://recruitment.fedcivilservice.gov.ng/build/assets/fcsc-logo-DC4X6AV5.png"
+                  alt="App Logo"
+                  width="100"
+                  style="margin-bottom: 8px; display: block"
+                />
+                <h1
+                  style="
+                    margin: 0;
+                    font-size: 22px;
+                    color: #ffffff;
+                    font-family: Arial, sans-serif;
+                  "
+                >
+                  Application Update
+                </h1>
+              </td>
+            </tr>
+
+            <!-- Body -->
+            <tr>
+              <td
+                style="
+                  padding: 30px 24px;
+                  color: #333333;
+                  font-size: 15px;
+                  line-height: 1.6;
+                  font-family: Arial, sans-serif;
+                "
+              >
+                <p style="margin: 0 0 12px">
+                  Dear <strong style="text-transform: capitalize">${fullName}</strong>,
+                </p>
+                <p style="margin: 0 0 12px">
+                  Your application has been rejected by the Federal Civil
+                  Service Commission.
+                </p>
+                <p style="margin: 0 0 12px">
+                  <strong>Reason:</strong> 
+                  <div>
+                    ${reason}
+                  </div>
+                </p>
+                <p style="margin: 0 0 20px">
+                  Kindly login to your profile and effect the necessary
+                  correction
+                </p>
+
+                <!-- Button -->
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td
+                align="center"
+                style="
+                  padding: 16px;
+                  font-size: 12px;
+                  color: #888888;
+                  font-family: Arial, sans-serif;
+                "
+              >
+                &copy; ${new Date().getFullYear()} Federal Civil Service Commission. All rights
+                reserved.
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+`;
+exports.rejectionTemplate = rejectionTemplate;

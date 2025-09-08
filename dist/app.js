@@ -53,6 +53,9 @@ app
     .use("/api/admin", adminRouter_1.default)
     .use("/api/promotion", promotionRouter_1.default)
     .use("/api/hr", hrRouter_1.default)
+    .use("/api/*", (req, res) => {
+    res.status(404).send("Route not found");
+})
     .get("*", (req, res) => {
     res.sendFile(path.join(__dirname, "build", "index.html"));
 })

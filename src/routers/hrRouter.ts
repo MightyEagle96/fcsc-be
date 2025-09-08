@@ -4,6 +4,7 @@ import {
   mdaCandidates,
   recommendCandidate,
   recommendMultipleCandidates,
+  rejectApplication,
   viewMdaCandidates,
   viewRecommendedCandidates,
 } from "../controllers/hrController";
@@ -24,6 +25,10 @@ hrRouter
     "/viewrecommendedcandidates",
     authenticateToken,
     viewRecommendedCandidates
-  );
+  )
+  .post("/rejectapplication", authenticateToken, rejectApplication)
+  .use("*", (req, res) => {
+    res.status(404).send("Not found");
+  });
 
 export default hrRouter;

@@ -5,6 +5,10 @@ export interface IRejection {
   reason: string;
   notifiedByEmail: boolean;
   notifiedBySms: boolean;
+  dateRejected: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  rejectedBy: Types.ObjectId;
 }
 
 const rejectionSchema = new Schema<IRejection>(
@@ -13,6 +17,8 @@ const rejectionSchema = new Schema<IRejection>(
     reason: String,
     notifiedByEmail: { type: Boolean, default: false },
     notifiedBySms: { type: Boolean, default: false },
+    dateRejected: { type: Date, default: new Date() },
+    rejectedBy: { type: Schema.Types.ObjectId, ref: "Admin" },
   },
   { timestamps: true }
 );

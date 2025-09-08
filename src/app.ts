@@ -66,6 +66,10 @@ app
 
   .use("/api/hr", hrRouter)
 
+  .use("/api/*", (req, res) => {
+    res.status(404).send("Route not found");
+  })
+
   .get("*", (req, res) => {
     res.sendFile(path.join(__dirname, "build", "index.html"));
   })

@@ -17,6 +17,9 @@ const candidateModel_1 = require("../models/candidateModel");
 const mongoose_1 = __importDefault(require("mongoose"));
 const DataQueue_1 = require("../utils/DataQueue");
 const rejectionModel_1 = require("../models/rejectionModel");
+const nodemailer_1 = require("../utils/nodemailer");
+const rejectionTemplate_1 = require("./rejectionTemplate");
+const smsHandler_1 = require("../utils/smsHandler");
 const mdaCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const [candidates, recommended, approved, totalUploadedDocuments] = yield Promise.all([
@@ -193,11 +196,32 @@ const viewRecommendedCandidates = (req, res) => __awaiter(void 0, void 0, void 0
     res.send(filteredCandidates);
 });
 exports.viewRecommendedCandidates = viewRecommendedCandidates;
+const rejectionQueue = new DataQueue_1.ConcurrentJobQueue({
+    concurrency: 50,
+    retryDelay: 1000,
+    retries: 3,
+    shutdownTimeout: 20000,
+    maxQueueSize: 100,
+});
 const rejectApplication = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const rejection = yield rejectionModel_1.RejectionModel.create({
+    var _f;
+    const rejection = {
         candidate: req.body.candidate,
         reason: req.body.reason,
-    });
-    res.send(rejection);
+        rejectedBy: (_f = req.admin) === null || _f === void 0 ? void 0 : _f._id,
+    };
+    rejectionQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
+        yield rejectionModel_1.RejectionModel.create(rejection);
+        const candidate = yield candidateModel_1.Candidate.findById(req.body.candidate);
+        if (candidate) {
+            candidate.status = "rejected";
+            yield candidate.save();
+            const phoneNumber = `234${candidate.phoneNumber.slice(1, candidate.phoneNumber.length)}`;
+            yield (0, nodemailer_1.sendMailFunc)(candidate.email, "Application Rejected", (0, rejectionTemplate_1.rejectionTemplate)(candidate.fullName, req.body.reason));
+            const message = `Hello ${candidate.fullName.toUpperCase()}, your application has been rejected. Reason: ${req.body.reason}. Kindly login to your portal and effect the change `;
+            yield (0, smsHandler_1.SendSms)(message, phoneNumber);
+        }
+    }));
+    res.send("Application rejected");
 });
 exports.rejectApplication = rejectApplication;
