@@ -58,7 +58,7 @@ export interface AuthenticatedCandidate extends Request {
 
 const candidateSchema = new Schema<ICandidate>(
   {
-    ippisNumber: { type: String, unique: true },
+    ippisNumber: { type: String, unique: true, lowercase: true },
     fullName: { type: String, lowercase: true },
     dateOfBirth: Date,
     gender: { type: String, lowercase: true },
@@ -126,12 +126,16 @@ candidateSchema.pre(
       if (candidate.uploadedDocuments?.length) {
         for (const doc of candidate.uploadedDocuments) {
           if (doc.fileId && doc.fileName) {
-            await safeB2Call(() =>
-              b2.deleteFileVersion({
-                fileId: doc.fileId,
-                fileName: doc.fileName,
-              })
-            );
+            try {
+              await safeB2Call(() =>
+                b2.deleteFileVersion({
+                  fileId: doc.fileId,
+                  fileName: doc.fileName,
+                })
+              );
+            } catch (error) {
+              console.error(error);
+            }
           }
         }
       }
@@ -153,12 +157,16 @@ candidateSchema.pre(
         if (candidate.uploadedDocuments?.length) {
           for (const doc of candidate.uploadedDocuments) {
             if (doc.fileId && doc.fileName) {
-              await safeB2Call(() =>
-                b2.deleteFileVersion({
-                  fileId: doc.fileId,
-                  fileName: doc.fileName,
-                })
-              );
+              try {
+                await safeB2Call(() =>
+                  b2.deleteFileVersion({
+                    fileId: doc.fileId,
+                    fileName: doc.fileName,
+                  })
+                );
+              } catch (error) {
+                console.error(error);
+              }
               // await deleteFileFromB2(doc.fileId, doc.fileName);
             }
           }

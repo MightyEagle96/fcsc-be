@@ -20,6 +20,7 @@ import { emailTemplate } from "./emailTemplate";
 import { SendSms } from "../utils/smsHandler";
 import { CorrectionModel } from "../models/correctionData";
 import { Types } from "mongoose";
+import { CADRES, MDAS } from "../utils/excelData";
 
 //view candidates
 export const viewCandidates = async (req: Request, res: Response) => {
@@ -156,6 +157,100 @@ export const dashboardSummary = async (req: Request, res: Response) => {
   });
 };
 
+// export const uploadFile = async (req: Request, res: Response) => {
+//   if (!req.file) {
+//     return res.status(400).send("No file uploaded");
+//   }
+
+//   let newPath = "";
+//   try {
+//     const uploadDir = path.join(__dirname, "../adminuploads");
+
+//     // Ensure folder exists
+//     if (!fs.existsSync(uploadDir)) {
+//       fs.mkdirSync(uploadDir, { recursive: true });
+//     }
+//     const extension = path.extname(req.file.originalname);
+//     const newFileName = `${Date.now()}${extension}`;
+//     newPath = path.join(uploadDir, newFileName);
+
+//     // Rename (move) the file
+//     fs.renameSync(req.file.path, newPath);
+
+//     const result = excelToJson({
+//       sourceFile: newPath,
+//       header: { rows: 1 },
+//       columnToKey: {
+//         A: "ippisNumber",
+//         B: "fullName",
+//         C: "dateOfBirth",
+//         D: "gender",
+//         E: "stateOfOrigin",
+//         F: "lga",
+//         G: "poolOffice",
+//         H: "currentMDA",
+//         I: "cadre",
+//         J: "gradeLevel",
+//         K: "dateOfFirstAppointment",
+//         L: "dateOfConfirmation",
+//         M: "dateOfLastPromotion",
+//         N: "phoneNumber",
+//         O: "email",
+//         P: "stateOfCurrentPosting",
+//         Q: "year2021",
+//         R: "year2022",
+//         S: "year2023",
+//         T: "year2024",
+//         U: "remark",
+//       },
+//     });
+
+//     const allRows = Object.values(result).flat();
+
+//     for (let i = 0; i < allRows.length; i += 500) {
+//       const batch = allRows.slice(i, i + 500);
+
+//       const plainPassword = generateRandomPassword(8);
+//       const hashedPassword = await bcrypt.hash(plainPassword, 10);
+
+//       const preparedBatch = batch.map((c: ICandidate) => ({
+//         ...c,
+//         password: hashedPassword,
+//         passwords: [plainPassword],
+//         uploadedDocuments: documentsToUpload,
+//         remark: calculateRemark(c),
+//       }));
+
+//       await Candidate.insertMany(preparedBatch);
+//     }
+//     res.send(`Created ${allRows.length.toLocaleString()} candidates`);
+//   } catch (err: any) {
+//     //console.error("Mongo error:", err);
+
+//     if (err.code === 11000) {
+//       return res
+//         .status(400)
+//         .send(
+//           "Duplicate records in IPPIS number, email or phone number. Please ensure this field is unique."
+//         );
+//     }
+
+//     res.status(500).send(err.message || "An unexpected error occurred");
+//   } finally {
+//     // Delete the uploaded file
+//     fs.unlinkSync(newPath);
+//   }
+// };
+
+function normalizeString(value?: string): string {
+  if (!value) return "";
+  return value
+    .toString()
+    .toLowerCase()
+    .replace(/\s+/g, " ") // collapse multiple spaces
+    .replace(/\u00A0/g, " ") // replace non-breaking space
+    .trim();
+}
 export const uploadFile = async (req: Request, res: Response) => {
   if (!req.file) {
     return res.status(400).send("No file uploaded");
@@ -169,13 +264,15 @@ export const uploadFile = async (req: Request, res: Response) => {
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
+
     const extension = path.extname(req.file.originalname);
     const newFileName = `${Date.now()}${extension}`;
     newPath = path.join(uploadDir, newFileName);
 
-    // Rename (move) the file
+    // Move the uploaded file
     fs.renameSync(req.file.path, newPath);
 
+    // Parse Excel
     const result = excelToJson({
       sourceFile: newPath,
       header: { rows: 1 },
@@ -206,38 +303,112 @@ export const uploadFile = async (req: Request, res: Response) => {
 
     const allRows = Object.values(result).flat();
 
+    // Normalize static arrays
+    const NORMALIZED_CADRES = CADRES.map(normalizeString);
+    const NORMALIZED_MDAS = MDAS.map(normalizeString);
+
+    // Track duplicates within this upload
+    const seenIppis = new Set<string>();
+    const seenEmails = new Set<string>();
+
+    // 🔎 Validate rows before insert
+    for (let rowIndex = 0; rowIndex < allRows.length; rowIndex++) {
+      const row = allRows[rowIndex];
+      const rowNumber = rowIndex + 2; // Excel row (header is row 1)
+
+      const ippisNumber = normalizeString(row.ippisNumber);
+      const email = normalizeString(row.email);
+      const phone = row.phoneNumber?.toString().replace(/\D/g, ""); // keep digits only
+      const cadre = normalizeString(row.cadre);
+      const mda = normalizeString(row.currentMDA);
+
+      // 🔹 Validate cadre
+      if (cadre && !NORMALIZED_CADRES.includes(cadre)) {
+        return res.status(400).json({
+          message: `Invalid cadre '${row.cadre}' at row ${rowNumber}`,
+        });
+      }
+
+      // 🔹 Validate MDA
+      if (mda && !NORMALIZED_MDAS.includes(mda)) {
+        return res.status(400).json({
+          message: `Invalid MDA '${row.currentMDA}' at row ${rowNumber}`,
+        });
+      }
+
+      // 🔹 Validate IPPIS uniqueness
+      if (ippisNumber) {
+        if (seenIppis.has(ippisNumber)) {
+          return res.status(400).json({
+            message: `Duplicate IPPIS Number '${row.ippisNumber}' at row ${rowNumber}`,
+          });
+        }
+        seenIppis.add(ippisNumber);
+      }
+
+      // 🔹 Validate email uniqueness
+      if (email) {
+        if (seenEmails.has(email)) {
+          return res.status(400).json({
+            message: `Duplicate email '${row.email}' at row ${rowNumber}`,
+          });
+        }
+        seenEmails.add(email);
+      }
+
+      // 🔹 Validate phone number (must exist & be 11–15 digits)
+      if (!phone || phone.length !== 11) {
+        return res.status(400).json({
+          message: `Invalid phone number '${row.phoneNumber}' at row ${rowNumber}. Must be at least 11 digits.`,
+        });
+      }
+    }
+
+    // If validation passed, insert in batches
     for (let i = 0; i < allRows.length; i += 500) {
       const batch = allRows.slice(i, i + 500);
 
       const plainPassword = generateRandomPassword(8);
       const hashedPassword = await bcrypt.hash(plainPassword, 10);
 
-      const preparedBatch = batch.map((c: ICandidate) => ({
-        ...c,
-        password: hashedPassword,
-        passwords: [plainPassword],
-        uploadedDocuments: documentsToUpload,
-        remark: calculateRemark(c),
-      }));
+      // 🔹 Generate plain + hashed passwords for each candidate in parallel
+      const preparedBatch = await Promise.all(
+        batch.map(async (c: any) => {
+          const plainPassword = generateRandomPassword(8);
+          const hashedPassword = await bcrypt.hash(plainPassword, 8); // use cost 8 for speed
+
+          return {
+            ...c,
+            ippisNumber: normalizeString(c.ippisNumber),
+            email: normalizeString(c.email),
+            cadre: normalizeString(c.cadre),
+            currentMDA: normalizeString(c.currentMDA),
+            phoneNumber: c.phoneNumber?.toString().replace(/\D/g, ""),
+            password: hashedPassword,
+            passwords: [plainPassword],
+            uploadedDocuments: documentsToUpload,
+            remark: calculateRemark(c),
+          };
+        })
+      );
 
       await Candidate.insertMany(preparedBatch);
     }
+
     res.send(`Created ${allRows.length.toLocaleString()} candidates`);
   } catch (err: any) {
-    //console.error("Mongo error:", err);
-
     if (err.code === 11000) {
       return res
         .status(400)
         .send(
-          "Duplicate records in IPPIS number, email or phone number. Please ensure this field is unique."
+          "Duplicate records in IPPIS number, email, or phone number found in the database. Please ensure these fields are unique."
         );
     }
-
     res.status(500).send(err.message || "An unexpected error occurred");
   } finally {
-    // Delete the uploaded file
-    fs.unlinkSync(newPath);
+    if (newPath && fs.existsSync(newPath)) {
+      fs.unlinkSync(newPath);
+    }
   }
 };
 

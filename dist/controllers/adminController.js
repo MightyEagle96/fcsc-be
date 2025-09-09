@@ -28,6 +28,7 @@ const nodemailer_1 = require("../utils/nodemailer");
 const emailTemplate_1 = require("./emailTemplate");
 const smsHandler_1 = require("../utils/smsHandler");
 const correctionData_1 = require("../models/correctionData");
+const excelData_1 = require("../utils/excelData");
 //view candidates
 const viewCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -146,7 +147,91 @@ const dashboardSummary = (req, res) => __awaiter(void 0, void 0, void 0, functio
     });
 });
 exports.dashboardSummary = dashboardSummary;
+// export const uploadFile = async (req: Request, res: Response) => {
+//   if (!req.file) {
+//     return res.status(400).send("No file uploaded");
+//   }
+//   let newPath = "";
+//   try {
+//     const uploadDir = path.join(__dirname, "../adminuploads");
+//     // Ensure folder exists
+//     if (!fs.existsSync(uploadDir)) {
+//       fs.mkdirSync(uploadDir, { recursive: true });
+//     }
+//     const extension = path.extname(req.file.originalname);
+//     const newFileName = `${Date.now()}${extension}`;
+//     newPath = path.join(uploadDir, newFileName);
+//     // Rename (move) the file
+//     fs.renameSync(req.file.path, newPath);
+//     const result = excelToJson({
+//       sourceFile: newPath,
+//       header: { rows: 1 },
+//       columnToKey: {
+//         A: "ippisNumber",
+//         B: "fullName",
+//         C: "dateOfBirth",
+//         D: "gender",
+//         E: "stateOfOrigin",
+//         F: "lga",
+//         G: "poolOffice",
+//         H: "currentMDA",
+//         I: "cadre",
+//         J: "gradeLevel",
+//         K: "dateOfFirstAppointment",
+//         L: "dateOfConfirmation",
+//         M: "dateOfLastPromotion",
+//         N: "phoneNumber",
+//         O: "email",
+//         P: "stateOfCurrentPosting",
+//         Q: "year2021",
+//         R: "year2022",
+//         S: "year2023",
+//         T: "year2024",
+//         U: "remark",
+//       },
+//     });
+//     const allRows = Object.values(result).flat();
+//     for (let i = 0; i < allRows.length; i += 500) {
+//       const batch = allRows.slice(i, i + 500);
+//       const plainPassword = generateRandomPassword(8);
+//       const hashedPassword = await bcrypt.hash(plainPassword, 10);
+//       const preparedBatch = batch.map((c: ICandidate) => ({
+//         ...c,
+//         password: hashedPassword,
+//         passwords: [plainPassword],
+//         uploadedDocuments: documentsToUpload,
+//         remark: calculateRemark(c),
+//       }));
+//       await Candidate.insertMany(preparedBatch);
+//     }
+//     res.send(`Created ${allRows.length.toLocaleString()} candidates`);
+//   } catch (err: any) {
+//     //console.error("Mongo error:", err);
+//     if (err.code === 11000) {
+//       return res
+//         .status(400)
+//         .send(
+//           "Duplicate records in IPPIS number, email or phone number. Please ensure this field is unique."
+//         );
+//     }
+//     res.status(500).send(err.message || "An unexpected error occurred");
+//   } finally {
+//     // Delete the uploaded file
+//     fs.unlinkSync(newPath);
+//   }
+// };
+function normalizeString(value) {
+    if (!value)
+        return "";
+    return value
+        .toString()
+        .toLowerCase()
+        .replace(/\s+/g, " ") // collapse multiple spaces
+        .replace(/\u00A0/g, " ") // replace non-breaking space
+        .trim();
+}
 const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     if (!req.file) {
         return res.status(400).send("No file uploaded");
     }
@@ -160,8 +245,9 @@ const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         const extension = path_1.default.extname(req.file.originalname);
         const newFileName = `${Date.now()}${extension}`;
         newPath = path_1.default.join(uploadDir, newFileName);
-        // Rename (move) the file
+        // Move the uploaded file
         fs_1.default.renameSync(req.file.path, newPath);
+        // Parse Excel
         const result = (0, convert_excel_to_json_1.default)({
             sourceFile: newPath,
             header: { rows: 1 },
@@ -190,27 +276,86 @@ const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             },
         });
         const allRows = Object.values(result).flat();
+        // Normalize static arrays
+        const NORMALIZED_CADRES = excelData_1.CADRES.map(normalizeString);
+        const NORMALIZED_MDAS = excelData_1.MDAS.map(normalizeString);
+        // Track duplicates within this upload
+        const seenIppis = new Set();
+        const seenEmails = new Set();
+        // 🔎 Validate rows before insert
+        for (let rowIndex = 0; rowIndex < allRows.length; rowIndex++) {
+            const row = allRows[rowIndex];
+            const rowNumber = rowIndex + 2; // Excel row (header is row 1)
+            const ippisNumber = normalizeString(row.ippisNumber);
+            const email = normalizeString(row.email);
+            const phone = (_a = row.phoneNumber) === null || _a === void 0 ? void 0 : _a.toString().replace(/\D/g, ""); // keep digits only
+            const cadre = normalizeString(row.cadre);
+            const mda = normalizeString(row.currentMDA);
+            // 🔹 Validate cadre
+            if (cadre && !NORMALIZED_CADRES.includes(cadre)) {
+                return res.status(400).json({
+                    message: `Invalid cadre '${row.cadre}' at row ${rowNumber}`,
+                });
+            }
+            // 🔹 Validate MDA
+            if (mda && !NORMALIZED_MDAS.includes(mda)) {
+                return res.status(400).json({
+                    message: `Invalid MDA '${row.currentMDA}' at row ${rowNumber}`,
+                });
+            }
+            // 🔹 Validate IPPIS uniqueness
+            if (ippisNumber) {
+                if (seenIppis.has(ippisNumber)) {
+                    return res.status(400).json({
+                        message: `Duplicate IPPIS Number '${row.ippisNumber}' at row ${rowNumber}`,
+                    });
+                }
+                seenIppis.add(ippisNumber);
+            }
+            // 🔹 Validate email uniqueness
+            if (email) {
+                if (seenEmails.has(email)) {
+                    return res.status(400).json({
+                        message: `Duplicate email '${row.email}' at row ${rowNumber}`,
+                    });
+                }
+                seenEmails.add(email);
+            }
+            // 🔹 Validate phone number (must exist & be 11–15 digits)
+            if (!phone || phone.length !== 11) {
+                return res.status(400).json({
+                    message: `Invalid phone number '${row.phoneNumber}' at row ${rowNumber}. Must be at least 11 digits.`,
+                });
+            }
+        }
+        // If validation passed, insert in batches
         for (let i = 0; i < allRows.length; i += 500) {
             const batch = allRows.slice(i, i + 500);
             const plainPassword = (0, generateRandomPassword_1.default)(8);
             const hashedPassword = yield bcrypt_1.default.hash(plainPassword, 10);
-            const preparedBatch = batch.map((c) => (Object.assign(Object.assign({}, c), { password: hashedPassword, passwords: [plainPassword], uploadedDocuments: documents_1.documentsToUpload, remark: (0, calculateRemark_1.default)(c) })));
+            // 🔹 Generate plain + hashed passwords for each candidate in parallel
+            const preparedBatch = yield Promise.all(batch.map((c) => __awaiter(void 0, void 0, void 0, function* () {
+                var _b;
+                const plainPassword = (0, generateRandomPassword_1.default)(8);
+                const hashedPassword = yield bcrypt_1.default.hash(plainPassword, 8); // use cost 8 for speed
+                return Object.assign(Object.assign({}, c), { ippisNumber: normalizeString(c.ippisNumber), email: normalizeString(c.email), cadre: normalizeString(c.cadre), currentMDA: normalizeString(c.currentMDA), phoneNumber: (_b = c.phoneNumber) === null || _b === void 0 ? void 0 : _b.toString().replace(/\D/g, ""), password: hashedPassword, passwords: [plainPassword], uploadedDocuments: documents_1.documentsToUpload, remark: (0, calculateRemark_1.default)(c) });
+            })));
             yield candidateModel_1.Candidate.insertMany(preparedBatch);
         }
         res.send(`Created ${allRows.length.toLocaleString()} candidates`);
     }
     catch (err) {
-        //console.error("Mongo error:", err);
         if (err.code === 11000) {
             return res
                 .status(400)
-                .send("Duplicate records in IPPIS number, email or phone number. Please ensure this field is unique.");
+                .send("Duplicate records in IPPIS number, email, or phone number found in the database. Please ensure these fields are unique.");
         }
         res.status(500).send(err.message || "An unexpected error occurred");
     }
     finally {
-        // Delete the uploaded file
-        fs_1.default.unlinkSync(newPath);
+        if (newPath && fs_1.default.existsSync(newPath)) {
+            fs_1.default.unlinkSync(newPath);
+        }
     }
 });
 exports.uploadFile = uploadFile;
@@ -416,7 +561,7 @@ const viewCorrections = (req, res) => __awaiter(void 0, void 0, void 0, function
 });
 exports.viewCorrections = viewCorrections;
 const viewCorrection = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+    var _c;
     try {
         const correction = yield correctionData_1.CorrectionModel.findById(req.query.id);
         if (!correction) {
@@ -433,7 +578,7 @@ const viewCorrection = (req, res) => __awaiter(void 0, void 0, void 0, function*
             reason: correction.reason,
             status: correction.status,
             newData: correction.data,
-            oldData: (_a = candidate[correction.correctionField]) !== null && _a !== void 0 ? _a : "-",
+            oldData: (_c = candidate[correction.correctionField]) !== null && _c !== void 0 ? _c : "-",
         });
     }
     catch (error) {
@@ -443,7 +588,7 @@ const viewCorrection = (req, res) => __awaiter(void 0, void 0, void 0, function*
 });
 exports.viewCorrection = viewCorrection;
 const approveCorrection = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _b;
+    var _d;
     try {
         const correction = yield correctionData_1.CorrectionModel.findById(req.query.id);
         if (!correction) {
@@ -457,7 +602,7 @@ const approveCorrection = (req, res) => __awaiter(void 0, void 0, void 0, functi
         yield correctionData_1.CorrectionModel.findByIdAndUpdate(req.query.id, {
             status: "approved",
             dateCorrected: new Date(),
-            correctedBy: (_b = req.admin) === null || _b === void 0 ? void 0 : _b._id,
+            correctedBy: (_d = req.admin) === null || _d === void 0 ? void 0 : _d._id,
         });
         res.send("Correction approved");
     }

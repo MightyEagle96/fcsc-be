@@ -14,7 +14,7 @@ const mongoose_1 = require("mongoose");
 const uploadToB2_1 = require("../utils/uploadToB2");
 const b2_1 = require("../b2");
 const candidateSchema = new mongoose_1.Schema({
-    ippisNumber: { type: String, unique: true },
+    ippisNumber: { type: String, unique: true, lowercase: true },
     fullName: { type: String, lowercase: true },
     dateOfBirth: Date,
     gender: { type: String, lowercase: true },
@@ -75,10 +75,15 @@ candidateSchema.pre("deleteOne", { document: true, query: false }, function (nex
             if ((_a = candidate.uploadedDocuments) === null || _a === void 0 ? void 0 : _a.length) {
                 for (const doc of candidate.uploadedDocuments) {
                     if (doc.fileId && doc.fileName) {
-                        yield (0, uploadToB2_1.safeB2Call)(() => b2_1.b2.deleteFileVersion({
-                            fileId: doc.fileId,
-                            fileName: doc.fileName,
-                        }));
+                        try {
+                            yield (0, uploadToB2_1.safeB2Call)(() => b2_1.b2.deleteFileVersion({
+                                fileId: doc.fileId,
+                                fileName: doc.fileName,
+                            }));
+                        }
+                        catch (error) {
+                            console.error(error);
+                        }
                     }
                 }
             }
@@ -98,10 +103,15 @@ candidateSchema.pre("deleteMany", { document: false, query: true }, function (ne
                 if ((_a = candidate.uploadedDocuments) === null || _a === void 0 ? void 0 : _a.length) {
                     for (const doc of candidate.uploadedDocuments) {
                         if (doc.fileId && doc.fileName) {
-                            yield (0, uploadToB2_1.safeB2Call)(() => b2_1.b2.deleteFileVersion({
-                                fileId: doc.fileId,
-                                fileName: doc.fileName,
-                            }));
+                            try {
+                                yield (0, uploadToB2_1.safeB2Call)(() => b2_1.b2.deleteFileVersion({
+                                    fileId: doc.fileId,
+                                    fileName: doc.fileName,
+                                }));
+                            }
+                            catch (error) {
+                                console.error(error);
+                            }
                             // await deleteFileFromB2(doc.fileId, doc.fileName);
                         }
                     }
