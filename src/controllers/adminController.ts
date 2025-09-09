@@ -457,7 +457,7 @@ export const notifyByEmailAndSms = async (req: Request, res: Response) => {
         emailTemplate(
           c.fullName,
           c.passwords[0],
-          "https://accreditation.jamb.gov.ng"
+          "https://promotion.fedcivilservice.gov.ng"
         )
       );
 
@@ -467,7 +467,7 @@ export const notifyByEmailAndSms = async (req: Request, res: Response) => {
         smsMessage(
           c.fullName,
           c.passwords[0],
-          "https://accreditation.jamb.gov.ng",
+          "https://promotion.fedcivilservice.gov.ng",
           c.email
         ),
         phoneNumber

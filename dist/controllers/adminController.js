@@ -392,9 +392,9 @@ const notifyByEmailAndSms = (req, res) => __awaiter(void 0, void 0, void 0, func
     const smsMessage = (name, password, link, email) => `Dear ${name.toUpperCase()}, your Federal Civil Service Commission candidate verification portal account has been created. Your email is ${email} and your password is ${password}.  Please click the link below to access your account. ${link}`;
     candidates.forEach((c) => {
         notificationQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
-            yield (0, nodemailer_1.sendMailFunc)(c.email, "ACCOUNT CREATED", (0, emailTemplate_1.emailTemplate)(c.fullName, c.passwords[0], "https://accreditation.jamb.gov.ng"));
+            yield (0, nodemailer_1.sendMailFunc)(c.email, "ACCOUNT CREATED", (0, emailTemplate_1.emailTemplate)(c.fullName, c.passwords[0], "https://promotion.fedcivilservice.gov.ng"));
             const phoneNumber = `234${c.phoneNumber.slice(1, c.phoneNumber.length)}`;
-            yield (0, smsHandler_1.SendSms)(smsMessage(c.fullName, c.passwords[0], "https://accreditation.jamb.gov.ng", c.email), phoneNumber);
+            yield (0, smsHandler_1.SendSms)(smsMessage(c.fullName, c.passwords[0], "https://promotion.fedcivilservice.gov.ng", c.email), phoneNumber);
         }));
         console.log(`Contacted ${c.fullName}`);
     });
