@@ -464,7 +464,11 @@ export const officerDashboard = async (req: Request, res: Response) => {
 export const viewAdminStaff = async (req: Request, res: Response) => {
   const data = await AdminModel.find({ role: req.params.slug });
 
-  res.send(data);
+  const formattedData = data.map((c, i) => {
+    return { ...c.toObject(), id: i + 1 };
+  });
+
+  res.send(formattedData);
 };
 
 export const viewUploadedDocuments = async (req: Request, res: Response) => {

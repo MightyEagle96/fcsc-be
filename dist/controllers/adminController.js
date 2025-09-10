@@ -403,7 +403,10 @@ const officerDashboard = (req, res) => __awaiter(void 0, void 0, void 0, functio
 exports.officerDashboard = officerDashboard;
 const viewAdminStaff = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const data = yield adminLogin_1.AdminModel.find({ role: req.params.slug });
-    res.send(data);
+    const formattedData = data.map((c, i) => {
+        return Object.assign(Object.assign({}, c.toObject()), { id: i + 1 });
+    });
+    res.send(formattedData);
 });
 exports.viewAdminStaff = viewAdminStaff;
 const viewUploadedDocuments = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
