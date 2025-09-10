@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.approveCorrection = exports.viewCorrection = exports.viewCorrections = exports.notifyByEmailAndSms = exports.reverseApproval = exports.searchCandidate = exports.uploadAnalysis = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
+exports.createNewPassword = exports.resetAdminPassword = exports.approveCorrection = exports.viewCorrection = exports.viewCorrections = exports.notifyByEmailAndSms = exports.reverseApproval = exports.searchCandidate = exports.uploadAnalysis = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const adminLogin_1 = require("../models/adminLogin");
 const DataQueue_1 = require("../utils/DataQueue");
@@ -29,6 +29,8 @@ const emailTemplate_1 = require("./emailTemplate");
 const smsHandler_1 = require("../utils/smsHandler");
 const correctionData_1 = require("../models/correctionData");
 const excelData_1 = require("../utils/excelData");
+const resetPasswordTemplate_1 = require("./resetPasswordTemplate");
+const crypto_1 = __importDefault(require("crypto"));
 //view candidates
 const viewCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -612,3 +614,72 @@ const approveCorrection = (req, res) => __awaiter(void 0, void 0, void 0, functi
     }
 });
 exports.approveCorrection = approveCorrection;
+const adminPasswordResetQueue = new DataQueue_1.ConcurrentJobQueue({
+    concurrency: 20, // run 20 at once
+    maxQueueSize: 10000, // cap queue if needed
+    retries: 3, // retry failed jobs 3 times
+    retryDelay: 2000, // wait 2s between retries
+    shutdownTimeout: 60000, //
+});
+const resetAdminPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const account = yield adminLogin_1.AdminModel.findOne({ email: req.body.email });
+        res.send("Password reset link has been sent to your email");
+        if (account) {
+            // Generate token
+            const resetToken = crypto_1.default.randomBytes(32).toString("hex");
+            const hashedToken = crypto_1.default
+                .createHash("sha256")
+                .update(resetToken)
+                .digest("hex");
+            account.resetPasswordToken = hashedToken;
+            account.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+            yield account.save();
+            const resetLink = (resetToken) => process.env.NODE_ENV
+                ? "https://promotion.fedcivilservice.gov.ng/admin/resetpassword/" +
+                    resetToken
+                : "http://localhost:3000/admin/resetpassword/" + resetToken;
+            adminPasswordResetQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
+                const link = resetLink(resetToken);
+                const phoneNumber = `234${account.phoneNumber.slice(1, account.phoneNumber.length)}`;
+                const message = `Dear ${account.firstName.toUpperCase()}, your password has been reset. Please click the link below to reset your password. ${link}`;
+                yield (0, nodemailer_1.sendMailFunc)(account.email, "PASSWORD RESET", (0, resetPasswordTemplate_1.resetPasswordTemplate)(account.firstName, link));
+                yield (0, smsHandler_1.SendSms)(message, phoneNumber);
+            }));
+        }
+        else {
+            console.log("Account not found");
+        }
+    }
+    catch (error) {
+        console.error("resetPassword error:", error);
+        res.status(500).send("Error occurred");
+    }
+});
+exports.resetAdminPassword = resetAdminPassword;
+const createNewPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        //const { token } = req.params;
+        const { password, token } = req.body;
+        console.log(token, password);
+        const hashedToken = crypto_1.default.createHash("sha256").update(token).digest("hex");
+        const admin = yield adminLogin_1.AdminModel.findOne({
+            resetPasswordToken: hashedToken,
+            resetPasswordExpires: { $gt: Date.now() },
+        });
+        if (!admin) {
+            return res.status(400).json("Invalid or expired token");
+        }
+        // Hash & save new password
+        admin.password = yield bcrypt_1.default.hash(password, 12);
+        admin.resetPasswordToken = undefined;
+        admin.resetPasswordExpires = undefined;
+        admin.yetToChangePassword = false; // 🔥 optional: mark as changed
+        yield admin.save();
+        res.send("Password reset successful");
+    }
+    catch (err) {
+        res.status(500).send(err.message);
+    }
+});
+exports.createNewPassword = createNewPassword;

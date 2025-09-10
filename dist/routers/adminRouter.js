@@ -36,5 +36,7 @@ adminRouter
     .get("/notifybyemailandsms", jwtController_1.authenticateToken, adminController_1.notifyByEmailAndSms)
     .get("/corrections", jwtController_1.authenticateToken, adminController_1.viewCorrections)
     .get("/correction", jwtController_1.authenticateToken, adminController_1.viewCorrection)
-    .get("/approvecorrection", jwtController_1.authenticateToken, adminController_1.approveCorrection);
+    .get("/approvecorrection", jwtController_1.authenticateToken, adminController_1.approveCorrection)
+    .post("/resetpassword", adminController_1.resetAdminPassword)
+    .post("/createnewpassword", adminController_1.createNewPassword);
 exports.default = adminRouter;

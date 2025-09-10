@@ -21,6 +21,8 @@ import { SendSms } from "../utils/smsHandler";
 import { CorrectionModel } from "../models/correctionData";
 import { Types } from "mongoose";
 import { CADRES, MDAS } from "../utils/excelData";
+import { resetPasswordTemplate } from "./resetPasswordTemplate";
+import crypto from "crypto";
 
 //view candidates
 export const viewCandidates = async (req: Request, res: Response) => {
@@ -748,5 +750,91 @@ export const approveCorrection = async (
   } catch (error) {
     console.error("approveCorrection error:", error);
     res.status(500).send("Error occurred");
+  }
+};
+
+const adminPasswordResetQueue = new ConcurrentJobQueue({
+  concurrency: 20, // run 20 at once
+  maxQueueSize: 10000, // cap queue if needed
+  retries: 3, // retry failed jobs 3 times
+  retryDelay: 2000, // wait 2s between retries
+  shutdownTimeout: 60000, //
+});
+export const resetAdminPassword = async (req: Request, res: Response) => {
+  try {
+    const account = await AdminModel.findOne({ email: req.body.email });
+
+    res.send("Password reset link has been sent to your email");
+    if (account) {
+      // Generate token
+      const resetToken = crypto.randomBytes(32).toString("hex");
+      const hashedToken = crypto
+        .createHash("sha256")
+        .update(resetToken)
+        .digest("hex");
+
+      account.resetPasswordToken = hashedToken;
+      account.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+      await account.save();
+
+      const resetLink = (resetToken: string) =>
+        process.env.NODE_ENV
+          ? "https://promotion.fedcivilservice.gov.ng/admin/resetpassword/" +
+            resetToken
+          : "http://localhost:3000/admin/resetpassword/" + resetToken;
+      adminPasswordResetQueue.enqueue(async () => {
+        const link = resetLink(resetToken);
+
+        const phoneNumber = `234${account.phoneNumber.slice(
+          1,
+          account.phoneNumber.length
+        )}`;
+
+        const message = `Dear ${account.firstName.toUpperCase()}, your password has been reset. Please click the link below to reset your password. ${link}`;
+        await sendMailFunc(
+          account.email,
+          "PASSWORD RESET",
+          resetPasswordTemplate(account.firstName, link)
+        );
+
+        await SendSms(message, phoneNumber);
+      });
+    } else {
+      console.log("Account not found");
+    }
+  } catch (error) {
+    console.error("resetPassword error:", error);
+    res.status(500).send("Error occurred");
+  }
+};
+
+export const createNewPassword = async (req: Request, res: Response) => {
+  try {
+    //const { token } = req.params;
+    const { password, token } = req.body;
+
+    console.log(token, password);
+
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const admin = await AdminModel.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+
+    if (!admin) {
+      return res.status(400).json("Invalid or expired token");
+    }
+
+    // Hash & save new password
+    admin.password = await bcrypt.hash(password, 12);
+    admin.resetPasswordToken = undefined;
+    admin.resetPasswordExpires = undefined;
+    admin.yetToChangePassword = false; // 🔥 optional: mark as changed
+    await admin.save();
+
+    res.send("Password reset successful");
+  } catch (err: any) {
+    res.status(500).send(err.message);
   }
 };

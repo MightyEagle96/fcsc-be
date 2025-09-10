@@ -3,6 +3,7 @@ import { Router } from "express";
 import {
   approveCorrection,
   createAccount,
+  createNewPassword,
   createOfficerAccount,
   dashboardSummary,
   deleteCandidates,
@@ -10,6 +11,7 @@ import {
   mdaOverview,
   notifyByEmailAndSms,
   officerDashboard,
+  resetAdminPassword,
   reverseApproval,
   searchCandidate,
   uploadAnalysis,
@@ -72,6 +74,9 @@ adminRouter
   .get("/corrections", authenticateToken, viewCorrections)
 
   .get("/correction", authenticateToken, viewCorrection)
-  .get("/approvecorrection", authenticateToken, approveCorrection);
+  .get("/approvecorrection", authenticateToken, approveCorrection)
+
+  .post("/resetpassword", resetAdminPassword)
+  .post("/createnewpassword", createNewPassword);
 
 export default adminRouter;
