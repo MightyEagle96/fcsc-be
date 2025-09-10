@@ -155,7 +155,7 @@ const recommendMultipleCandidates = (req, res) => __awaiter(void 0, void 0, void
             // Step 3: Only keep candidates with exactly 6 valid docs
             {
                 $match: {
-                    $expr: { $eq: [{ $size: "$validDocs" }, 6] },
+                    $expr: { $gte: [{ $size: "$validDocs" }, 6] },
                 },
             },
         ]);

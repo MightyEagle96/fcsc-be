@@ -158,7 +158,7 @@ export const recommendMultipleCandidates = async (
       // Step 3: Only keep candidates with exactly 6 valid docs
       {
         $match: {
-          $expr: { $eq: [{ $size: "$validDocs" }, 6] },
+          $expr: { $gte: [{ $size: "$validDocs" }, 6] },
         },
       },
     ]);
