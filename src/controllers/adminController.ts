@@ -677,17 +677,19 @@ export const viewCorrections = async (req: Request, res: Response) => {
       .lean<CorrectionLean[]>()
       .populate("candidate");
 
-    const data = corrections.map((c, i) => {
-      return {
+    const data = corrections
+      .filter((c) => c.candidate !== null) // remove orphans
+      .map((c, i) => ({
         ...c,
-        name: c.candidate.fullName,
-        mda: c.candidate.currentMDA,
+        name: c.candidate!.fullName,
+        mda: c.candidate!.currentMDA,
         id: i + 1,
-      };
-    });
+      }));
 
+    console.log(data);
     res.send(data);
   } catch (error) {
+    console.log(error);
     res.status(500).send("Error occurred");
   }
 };

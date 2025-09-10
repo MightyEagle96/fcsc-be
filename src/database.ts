@@ -8,8 +8,9 @@ const environment = process.env.NODE_ENV || "development";
 const databaseURI = (
   environment === "production"
     ? process.env.PROD_DB_URI
-    : process.env.DEV_DB_URI
-) as string;
+    : process.env.PROD_DB_URI
+) as //process.env.DEV_DB_URI
+string;
 
 //const databaseURI = process.env.MONGO_URI as string;
 let isConnected = false;

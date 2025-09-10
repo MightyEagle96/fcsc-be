@@ -2,6 +2,7 @@ import { Request } from "express";
 import { Schema, Types, model } from "mongoose";
 import { safeB2Call } from "../utils/uploadToB2";
 import { b2 } from "../b2";
+import { CorrectionModel } from "./correctionData";
 
 export interface ICandidate {
   _id: Schema.Types.ObjectId;
@@ -123,6 +124,8 @@ candidateSchema.pre(
     try {
       const candidate = this as unknown as ICandidate;
 
+      await CorrectionModel.deleteMany({ candidate: candidate._id });
+      next();
       if (candidate.uploadedDocuments?.length) {
         for (const doc of candidate.uploadedDocuments) {
           if (doc.fileId && doc.fileName) {
@@ -154,6 +157,7 @@ candidateSchema.pre(
       const candidates = await Candidate.find(this.getFilter());
 
       for (const candidate of candidates) {
+        await CorrectionModel.deleteMany({ candidate: candidate._id });
         if (candidate.uploadedDocuments?.length) {
           for (const doc of candidate.uploadedDocuments) {
             if (doc.fileId && doc.fileName) {

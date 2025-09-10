@@ -552,12 +552,14 @@ const viewCorrections = (req, res) => __awaiter(void 0, void 0, void 0, function
         const corrections = yield correctionData_1.CorrectionModel.find()
             .lean()
             .populate("candidate");
-        const data = corrections.map((c, i) => {
-            return Object.assign(Object.assign({}, c), { name: c.candidate.fullName, mda: c.candidate.currentMDA, id: i + 1 });
-        });
+        const data = corrections
+            .filter((c) => c.candidate !== null) // remove orphans
+            .map((c, i) => (Object.assign(Object.assign({}, c), { name: c.candidate.fullName, mda: c.candidate.currentMDA, id: i + 1 })));
+        console.log(data);
         res.send(data);
     }
     catch (error) {
+        console.log(error);
         res.status(500).send("Error occurred");
     }
 });

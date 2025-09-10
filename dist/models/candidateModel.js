@@ -13,6 +13,7 @@ exports.Candidate = void 0;
 const mongoose_1 = require("mongoose");
 const uploadToB2_1 = require("../utils/uploadToB2");
 const b2_1 = require("../b2");
+const correctionData_1 = require("./correctionData");
 const candidateSchema = new mongoose_1.Schema({
     ippisNumber: { type: String, unique: true, lowercase: true },
     fullName: { type: String, lowercase: true },
@@ -72,6 +73,8 @@ candidateSchema.pre("deleteOne", { document: true, query: false }, function (nex
         var _a;
         try {
             const candidate = this;
+            yield correctionData_1.CorrectionModel.deleteMany({ candidate: candidate._id });
+            next();
             if ((_a = candidate.uploadedDocuments) === null || _a === void 0 ? void 0 : _a.length) {
                 for (const doc of candidate.uploadedDocuments) {
                     if (doc.fileId && doc.fileName) {
@@ -100,6 +103,7 @@ candidateSchema.pre("deleteMany", { document: false, query: true }, function (ne
         try {
             const candidates = yield exports.Candidate.find(this.getFilter());
             for (const candidate of candidates) {
+                yield correctionData_1.CorrectionModel.deleteMany({ candidate: candidate._id });
                 if ((_a = candidate.uploadedDocuments) === null || _a === void 0 ? void 0 : _a.length) {
                     for (const doc of candidate.uploadedDocuments) {
                         if (doc.fileId && doc.fileName) {
