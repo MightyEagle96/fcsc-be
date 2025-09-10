@@ -844,3 +844,16 @@ export const createNewPassword = async (req: Request, res: Response) => {
     res.status(500).send(err.message);
   }
 };
+
+export const viewIndividualStaff = async (req: Request, res: Response) => {
+  try {
+    const staff = await AdminModel.findById(req.query.id);
+
+    if (!staff) {
+      return res.status(404).send("Staff not found");
+    }
+    res.send(staff);
+  } catch (error) {
+    res.status(500).send("Error occurred");
+  }
+};

@@ -19,6 +19,7 @@ import {
   viewAdminStaff,
   viewCorrection,
   viewCorrections,
+  viewIndividualStaff,
   viewUploadedDocuments,
 } from "../controllers/adminController";
 import { authenticateToken } from "../controllers/jwtController";
@@ -77,6 +78,8 @@ adminRouter
   .get("/approvecorrection", authenticateToken, approveCorrection)
 
   .post("/resetpassword", resetAdminPassword)
-  .post("/createnewpassword", createNewPassword);
+  .post("/createnewpassword", createNewPassword)
+
+  .get("/viewindividualstaff", authenticateToken, viewIndividualStaff);
 
 export default adminRouter;

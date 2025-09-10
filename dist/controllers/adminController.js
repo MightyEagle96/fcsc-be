@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createNewPassword = exports.resetAdminPassword = exports.approveCorrection = exports.viewCorrection = exports.viewCorrections = exports.notifyByEmailAndSms = exports.reverseApproval = exports.searchCandidate = exports.uploadAnalysis = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
+exports.viewIndividualStaff = exports.createNewPassword = exports.resetAdminPassword = exports.approveCorrection = exports.viewCorrection = exports.viewCorrections = exports.notifyByEmailAndSms = exports.reverseApproval = exports.searchCandidate = exports.uploadAnalysis = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const adminLogin_1 = require("../models/adminLogin");
 const DataQueue_1 = require("../utils/DataQueue");
@@ -688,3 +688,16 @@ const createNewPassword = (req, res) => __awaiter(void 0, void 0, void 0, functi
     }
 });
 exports.createNewPassword = createNewPassword;
+const viewIndividualStaff = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const staff = yield adminLogin_1.AdminModel.findById(req.query.id);
+        if (!staff) {
+            return res.status(404).send("Staff not found");
+        }
+        res.send(staff);
+    }
+    catch (error) {
+        res.status(500).send("Error occurred");
+    }
+});
+exports.viewIndividualStaff = viewIndividualStaff;
