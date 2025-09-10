@@ -371,7 +371,6 @@ export const uploadFile = async (req: Request, res: Response) => {
       const batch = allRows.slice(i, i + 500);
 
       const plainPassword = generateRandomPassword(8);
-      const hashedPassword = await bcrypt.hash(plainPassword, 10);
 
       // 🔹 Generate plain + hashed passwords for each candidate in parallel
       const preparedBatch = await Promise.all(
@@ -626,32 +625,74 @@ export const notifyByEmailAndSms = async (req: Request, res: Response) => {
     email: string
   ): string =>
     `Dear ${name.toUpperCase()}, your Federal Civil Service Commission candidate verification portal account has been created. Your email is ${email} and your password is ${password}.  Please click the link below to access your account. ${link}`;
+
   candidates.forEach((c) => {
     notificationQueue.enqueue(async () => {
-      await sendMailFunc(
-        c.email,
-        "ACCOUNT CREATED",
-        emailTemplate(
-          c.fullName,
-          c.passwords[0],
-          "https://promotion.fedcivilservice.gov.ng"
-        )
-      );
+      try {
+        // --- EMAIL ---
+        if (!c.emailSent) {
+          const mailSent = await sendMailFunc(
+            c.email,
+            "ACCOUNT CREATED",
+            emailTemplate(
+              c.fullName,
+              c.passwords[0],
+              "https://promotion.fedcivilservice.gov.ng"
+            )
+          );
 
-      const phoneNumber = `234${c.phoneNumber.slice(1, c.phoneNumber.length)}`;
+          if (mailSent) {
+            await Candidate.findByIdAndUpdate(c._id, {
+              $set: {
+                timeEmailwasSent: new Date(),
+                emailSent: true,
+              },
+            });
+            console.log(`✅ Email sent to ${c.fullName}`);
+          } else {
+            console.log(`❌ Failed to send email to ${c.fullName}`);
+          }
+        } else {
+          console.log(`ℹ️ Already emailed ${c.fullName}`);
+        }
 
-      await SendSms(
-        smsMessage(
-          c.fullName,
-          c.passwords[0],
-          "https://promotion.fedcivilservice.gov.ng",
-          c.email
-        ),
-        phoneNumber
-      );
+        // --- SMS ---
+        if (!c.smsSent) {
+          const phoneNumber = `234${c.phoneNumber.slice(1)}`;
+
+          const status = await SendSms(
+            smsMessage(
+              c.fullName,
+              c.passwords[0],
+              "https://promotion.fedcivilservice.gov.ng",
+              c.email
+            ),
+            phoneNumber
+          );
+
+          if (status === "delivered") {
+            await Candidate.findByIdAndUpdate(c._id, {
+              $set: {
+                timeSmswasSent: new Date(),
+                smsSent: true,
+              },
+            });
+            console.log(`✅ SMS sent to ${c.fullName}`);
+          } else {
+            console.log(`❌ Failed to send SMS to ${c.fullName}`);
+          }
+        } else {
+          console.log(`ℹ️ Already SMSed ${c.fullName}`);
+        }
+
+        console.log(`📨 Contacted ${c.fullName}`);
+      } catch (err) {
+        console.error(
+          `🔥 Error processing notifications for ${c.fullName}:`,
+          err
+        );
+      }
     });
-
-    console.log(`Contacted ${c.fullName}`);
   });
 };
 

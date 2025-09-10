@@ -10,7 +10,11 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export async function sendMailFunc(to: string, subject: string, html?: string) {
+export async function sendMailFunc(
+  to: string,
+  subject: string,
+  html?: string
+): Promise<boolean> {
   try {
     const info = await transporter.sendMail({
       from: "<no-reply@accreditation.jamb.gov.ng>",
@@ -20,8 +24,8 @@ export async function sendMailFunc(to: string, subject: string, html?: string) {
       html,
     });
 
-    console.log("Message sent: %s", info.messageId);
+    return true;
   } catch (err) {
-    console.error("Error sending mail:", err);
+    return false;
   }
 }

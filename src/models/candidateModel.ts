@@ -51,8 +51,10 @@ export interface ICandidate {
   dateApproved: Date;
   approvedBy: Types.ObjectId;
   role: string;
-  contactedByEmail: boolean;
-  contactedBySms: boolean;
+  emailSent: boolean;
+  timeEmailwasSent: Date;
+  smsSent: boolean;
+  timeSmswasSent: Date;
 }
 
 export interface AuthenticatedCandidate extends Request {
@@ -115,8 +117,10 @@ const candidateSchema = new Schema<ICandidate>(
     dateApproved: Date,
     approvedBy: { type: Schema.Types.ObjectId, ref: "Admin" },
     role: { type: String, lowercase: true, default: "candidate" },
-    contactedByEmail: { type: Boolean, default: false },
-    contactedBySms: { type: Boolean, default: false },
+    emailSent: { type: Boolean, default: false },
+    timeEmailwasSent: Date,
+    smsSent: { type: Boolean, default: false },
+    timeSmswasSent: Date,
   },
   { timestamps: true }
 );

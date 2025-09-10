@@ -11,13 +11,16 @@ const SmsService = axios.create({
   },
 });
 
-export const SendSms = async (message: string, receiver: string) => {
+export const SendSms = async (
+  message: string,
+  receiver: string
+): Promise<"delivered" | "not delivered"> => {
   const data = {
     sender: "55019",
     message,
-
     receiver,
   };
+
   const options = {
     method: "POST",
     url: digitalpulseapi,
@@ -28,18 +31,18 @@ export const SendSms = async (message: string, receiver: string) => {
     body: JSON.stringify(data),
   };
 
-  //send message
-  request(options, async function (error, response) {
-    if (error) {
-      console.log(new Error(error).message);
-      return "not delivered";
-    } else {
-      console.log("Message sent");
-      return "delivered";
-    }
+  return new Promise((resolve) => {
+    request(options, (error, response) => {
+      if (error) {
+        console.error("SMS error:", error);
+        resolve("not delivered");
+      } else {
+        console.log("Message sent");
+        resolve("delivered");
+      }
+    });
   });
 };
-
 SmsService.interceptors.response.use(
   (response) => {
     return response;

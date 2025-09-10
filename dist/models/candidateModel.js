@@ -67,8 +67,10 @@ const candidateSchema = new mongoose_1.Schema({
     dateApproved: Date,
     approvedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: "Admin" },
     role: { type: String, lowercase: true, default: "candidate" },
-    contactedByEmail: { type: Boolean, default: false },
-    contactedBySms: { type: Boolean, default: false },
+    emailSent: { type: Boolean, default: false },
+    timeEmailwasSent: Date,
+    smsSent: { type: Boolean, default: false },
+    timeSmswasSent: Date,
 }, { timestamps: true });
 candidateSchema.pre("deleteOne", { document: true, query: false }, function (next) {
     return __awaiter(this, void 0, void 0, function* () {

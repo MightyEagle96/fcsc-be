@@ -1,10 +1,11 @@
 const documents = [
-  "Appointment Letter",
-  "Birth Certificate/Court Affidavit",
-  "First School Leaving Certificate",
+  "Letter of First Appointment",
+  "Gazette of Confirmation of Appointment",
+  "Letter of Last Promotion",
   "Last promotion letter",
-  "Professional Certificate",
-  "Conversion",
+  "Birth Certificate",
+  "Professional Certificate (where applicable)",
+  "Conversion/Transfer of Service/Regularization of Appointment (where applicable)",
   "Passport Photograph",
   "Signature",
 ];

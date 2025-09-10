@@ -38,16 +38,15 @@ const SendSms = (message, receiver) => __awaiter(void 0, void 0, void 0, functio
         },
         body: JSON.stringify(data),
     };
-    //send message
-    (0, request_1.default)(options, function (error, response) {
-        return __awaiter(this, void 0, void 0, function* () {
+    return new Promise((resolve) => {
+        (0, request_1.default)(options, (error, response) => {
             if (error) {
-                console.log(new Error(error).message);
-                return "not delivered";
+                console.error("SMS error:", error);
+                resolve("not delivered");
             }
             else {
                 console.log("Message sent");
-                return "delivered";
+                resolve("delivered");
             }
         });
     });

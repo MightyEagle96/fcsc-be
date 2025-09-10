@@ -32,10 +32,10 @@ function sendMailFunc(to, subject, html) {
                 subject,
                 html,
             });
-            console.log("Message sent: %s", info.messageId);
+            return true;
         }
         catch (err) {
-            console.error("Error sending mail:", err);
+            return false;
         }
     });
 }
