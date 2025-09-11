@@ -356,8 +356,13 @@ export const pushApplication = async (
   req: AuthenticatedCandidate,
   res: Response
 ) => {
-  await Candidate.findByIdAndUpdate(req.candidate?._id, {
-    status: "pending",
-  });
+  // await Candidate.findByIdAndUpdate(req.candidate?._id, {
+  //   status: "pending",
+  // });
+  await Candidate.findOneAndUpdate(
+    { _id: req.candidate?._id, status: "rejected" }, // condition
+    { $set: { status: "pending" } }, // update
+    { new: true } // return updated doc
+  );
   res.send("Application submitted");
 };

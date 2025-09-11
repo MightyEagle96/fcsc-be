@@ -8,6 +8,7 @@ function calculateRemark(doc) {
     if (values.length === 0)
         return null; // no data at all
     const sum = values.reduce((acc, val) => acc + val, 0);
-    return Math.ceil(sum / values.length);
+    //return Math.ceil(sum / values.length);
+    return (sum / values.length).toFixed(2);
 }
 exports.default = calculateRemark;

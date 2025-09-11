@@ -536,7 +536,7 @@ const notificationQueue = new DataQueue_1.ConcurrentJobQueue({
     shutdownTimeout: 60000, //
 });
 const notifyByEmailAndSms = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const candidates = yield candidateModel_1.Candidate.find();
+    const candidates = yield candidateModel_1.Candidate.find().select({ uploadedDocuments: 0 });
     res.send("Sending notifications");
     const smsMessage = (name, password, link, email) => `Dear ${name.toUpperCase()}, your Federal Civil Service Commission candidate verification portal account has been created. Your email is ${email} and your password is ${password}.  Please click the link below to access your account. ${link}`;
     candidates.forEach((c) => {

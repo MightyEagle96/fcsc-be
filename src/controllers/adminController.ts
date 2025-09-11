@@ -615,7 +615,7 @@ const notificationQueue = new ConcurrentJobQueue({
   shutdownTimeout: 60000, //
 });
 export const notifyByEmailAndSms = async (req: Request, res: Response) => {
-  const candidates = await Candidate.find();
+  const candidates = await Candidate.find().select({ uploadedDocuments: 0 });
 
   res.send("Sending notifications");
   const smsMessage = (
