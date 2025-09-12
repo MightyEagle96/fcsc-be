@@ -20,7 +20,7 @@ import { emailTemplate } from "./emailTemplate";
 import { SendSms } from "../utils/smsHandler";
 import { CorrectionModel } from "../models/correctionData";
 import { Types } from "mongoose";
-import { CADRES, MDAS } from "../utils/excelData";
+import { CADRES, MDAS, stateAndLgas } from "../utils/excelData";
 import { resetPasswordTemplate } from "./resetPasswordTemplate";
 import crypto from "crypto";
 
@@ -253,6 +253,14 @@ function normalizeString(value?: string): string {
     .replace(/\u00A0/g, " ") // replace non-breaking space
     .trim();
 }
+
+// Build quick lookup for states and LGAs
+const NORMALIZED_STATE_AND_LGAS: Record<string, Set<string>> = {};
+for (const s of stateAndLgas) {
+  NORMALIZED_STATE_AND_LGAS[normalizeString(s.state)] = new Set(
+    s.lgas.map(normalizeString)
+  );
+}
 export const uploadFile = async (req: Request, res: Response) => {
   if (!req.file) {
     return res.status(400).send("No file uploaded");
@@ -324,6 +332,11 @@ export const uploadFile = async (req: Request, res: Response) => {
       const cadre = normalizeString(row.cadre);
       const mda = normalizeString(row.currentMDA);
 
+      const stateOfOrigin = normalizeString(row.stateOfOrigin);
+      const lga = normalizeString(row.lga);
+      const poolOffice = normalizeString(row.poolOffice);
+
+      const stateOfCurrentPosting = normalizeString(row.stateOfCurrentPosting);
       // 🔹 Validate cadre
       if (cadre && !NORMALIZED_CADRES.includes(cadre)) {
         return res.status(400).json({
@@ -336,6 +349,32 @@ export const uploadFile = async (req: Request, res: Response) => {
         return res.status(400).json({
           message: `Invalid MDA '${row.currentMDA}' at row ${rowNumber}`,
         });
+      }
+
+      // 🔹 Validate State
+      if (stateOfOrigin && !NORMALIZED_STATE_AND_LGAS[stateOfOrigin]) {
+        return res.status(400).json({
+          message: `Invalid state '${row.stateOfOrigin}' at row ${rowNumber}`,
+        });
+      }
+
+      if (
+        stateOfCurrentPosting &&
+        !NORMALIZED_STATE_AND_LGAS[stateOfCurrentPosting]
+      ) {
+        return res.status(400).json({
+          message: `Invalid state of current posting '${row.stateOfCurrentPosting}' at row ${rowNumber}`,
+        });
+      }
+
+      // 🔹 Validate LGA against State
+      if (lga && stateOfOrigin) {
+        const validLgas = NORMALIZED_STATE_AND_LGAS[stateOfOrigin];
+        if (!validLgas?.has(lga)) {
+          return res.status(400).json({
+            message: `Invalid LGA '${row.lga}' for state '${row.stateOfOrigin}' at row ${rowNumber}`,
+          });
+        }
       }
 
       // 🔹 Validate IPPIS uniqueness
@@ -370,7 +409,7 @@ export const uploadFile = async (req: Request, res: Response) => {
     for (let i = 0; i < allRows.length; i += 500) {
       const batch = allRows.slice(i, i + 500);
 
-      const plainPassword = generateRandomPassword(8);
+      // const plainPassword = generateRandomPassword(8);
 
       // 🔹 Generate plain + hashed passwords for each candidate in parallel
       const preparedBatch = await Promise.all(

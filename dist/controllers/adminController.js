@@ -232,6 +232,11 @@ function normalizeString(value) {
         .replace(/\u00A0/g, " ") // replace non-breaking space
         .trim();
 }
+// Build quick lookup for states and LGAs
+const NORMALIZED_STATE_AND_LGAS = {};
+for (const s of excelData_1.stateAndLgas) {
+    NORMALIZED_STATE_AND_LGAS[normalizeString(s.state)] = new Set(s.lgas.map(normalizeString));
+}
 const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     if (!req.file) {
@@ -293,6 +298,10 @@ const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             const phone = (_a = row.phoneNumber) === null || _a === void 0 ? void 0 : _a.toString().replace(/\D/g, ""); // keep digits only
             const cadre = normalizeString(row.cadre);
             const mda = normalizeString(row.currentMDA);
+            const stateOfOrigin = normalizeString(row.stateOfOrigin);
+            const lga = normalizeString(row.lga);
+            const poolOffice = normalizeString(row.poolOffice);
+            const stateOfCurrentPosting = normalizeString(row.stateOfCurrentPosting);
             // 🔹 Validate cadre
             if (cadre && !NORMALIZED_CADRES.includes(cadre)) {
                 return res.status(400).json({
@@ -304,6 +313,27 @@ const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
                 return res.status(400).json({
                     message: `Invalid MDA '${row.currentMDA}' at row ${rowNumber}`,
                 });
+            }
+            // 🔹 Validate State
+            if (stateOfOrigin && !NORMALIZED_STATE_AND_LGAS[stateOfOrigin]) {
+                return res.status(400).json({
+                    message: `Invalid state '${row.stateOfOrigin}' at row ${rowNumber}`,
+                });
+            }
+            if (stateOfCurrentPosting &&
+                !NORMALIZED_STATE_AND_LGAS[stateOfCurrentPosting]) {
+                return res.status(400).json({
+                    message: `Invalid state of current posting '${row.stateOfCurrentPosting}' at row ${rowNumber}`,
+                });
+            }
+            // 🔹 Validate LGA against State
+            if (lga && stateOfOrigin) {
+                const validLgas = NORMALIZED_STATE_AND_LGAS[stateOfOrigin];
+                if (!(validLgas === null || validLgas === void 0 ? void 0 : validLgas.has(lga))) {
+                    return res.status(400).json({
+                        message: `Invalid LGA '${row.lga}' for state '${row.stateOfOrigin}' at row ${rowNumber}`,
+                    });
+                }
             }
             // 🔹 Validate IPPIS uniqueness
             if (ippisNumber) {
@@ -333,7 +363,7 @@ const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         // If validation passed, insert in batches
         for (let i = 0; i < allRows.length; i += 500) {
             const batch = allRows.slice(i, i + 500);
-            const plainPassword = (0, generateRandomPassword_1.default)(8);
+            // const plainPassword = generateRandomPassword(8);
             // 🔹 Generate plain + hashed passwords for each candidate in parallel
             const preparedBatch = yield Promise.all(batch.map((c) => __awaiter(void 0, void 0, void 0, function* () {
                 var _b;
