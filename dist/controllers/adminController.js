@@ -706,7 +706,6 @@ const createNewPassword = (req, res) => __awaiter(void 0, void 0, void 0, functi
     try {
         //const { token } = req.params;
         const { password, token } = req.body;
-        console.log(token, password);
         const hashedToken = crypto_1.default.createHash("sha256").update(token).digest("hex");
         const admin = yield adminLogin_1.AdminModel.findOne({
             resetPasswordToken: hashedToken,

@@ -860,8 +860,6 @@ export const createNewPassword = async (req: Request, res: Response) => {
     //const { token } = req.params;
     const { password, token } = req.body;
 
-    console.log(token, password);
-
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
     const admin = await AdminModel.findOne({
