@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateDeskOfficer = exports.deleteDeskOfficer = exports.viewIndividualStaff = exports.createNewPassword = exports.resetAdminPassword = exports.approveCorrection = exports.viewCorrection = exports.viewCorrections = exports.notifyByEmailAndSms = exports.reverseApproval = exports.searchCandidate = exports.uploadAnalysis = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
+exports.notificationAnalysis = exports.updateDeskOfficer = exports.deleteDeskOfficer = exports.viewIndividualStaff = exports.createNewPassword = exports.resetAdminPassword = exports.approveCorrection = exports.viewCorrection = exports.viewCorrections = exports.notifyByEmailAndSms = exports.reverseApproval = exports.searchCandidate = exports.uploadAnalysis = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const adminLogin_1 = require("../models/adminLogin");
 const DataQueue_1 = require("../utils/DataQueue");
@@ -799,3 +799,14 @@ const updateDeskOfficer = (req, res) => __awaiter(void 0, void 0, void 0, functi
     res.send("Desk Officer updated successfully");
 });
 exports.updateDeskOfficer = updateDeskOfficer;
+const notificationAnalysis = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const [emails, sms] = yield Promise.all([
+        candidateModel_1.Candidate.countDocuments({ emailSent: true }),
+        candidateModel_1.Candidate.countDocuments({ smsSent: true }),
+    ]);
+    res.send({
+        emails,
+        sms,
+    });
+});
+exports.notificationAnalysis = notificationAnalysis;

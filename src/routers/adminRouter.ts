@@ -10,6 +10,7 @@ import {
   deleteDeskOfficer,
   loginAdmin,
   mdaOverview,
+  notificationAnalysis,
   notifyByEmailAndSms,
   officerDashboard,
   resetAdminPassword,
@@ -86,6 +87,8 @@ adminRouter
 
   .get("/deleteaccount", authenticateToken, deleteDeskOfficer)
 
-  .patch("/updateofficer", authenticateToken, updateDeskOfficer);
+  .patch("/updateofficer", authenticateToken, updateDeskOfficer)
+
+  .get("/notificationanalysis", authenticateToken, notificationAnalysis);
 
 export default adminRouter;

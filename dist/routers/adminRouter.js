@@ -41,5 +41,6 @@ adminRouter
     .post("/createnewpassword", adminController_1.createNewPassword)
     .get("/viewindividualstaff", jwtController_1.authenticateToken, adminController_1.viewIndividualStaff)
     .get("/deleteaccount", jwtController_1.authenticateToken, adminController_1.deleteDeskOfficer)
-    .patch("/updateofficer", jwtController_1.authenticateToken, adminController_1.updateDeskOfficer);
+    .patch("/updateofficer", jwtController_1.authenticateToken, adminController_1.updateDeskOfficer)
+    .get("/notificationanalysis", jwtController_1.authenticateToken, adminController_1.notificationAnalysis);
 exports.default = adminRouter;

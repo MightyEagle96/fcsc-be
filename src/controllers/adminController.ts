@@ -968,3 +968,15 @@ export const updateDeskOfficer = async (req: Request, res: Response) => {
 
   res.send("Desk Officer updated successfully");
 };
+
+export const notificationAnalysis = async (req: Request, res: Response) => {
+  const [emails, sms] = await Promise.all([
+    Candidate.countDocuments({ emailSent: true }),
+    Candidate.countDocuments({ smsSent: true }),
+  ]);
+
+  res.send({
+    emails,
+    sms,
+  });
+};
