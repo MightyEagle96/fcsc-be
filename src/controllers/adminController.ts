@@ -437,7 +437,9 @@ export const uploadFile = async (req: Request, res: Response) => {
         })
       );
 
-      await Candidate.insertMany(preparedBatch);
+      //await Candidate.insertMany(preparedBatch);
+      // ✅ atomic insert: fail the whole batch if any error occurs
+      await Candidate.insertMany(preparedBatch, { ordered: true });
     }
 
     res.send(`Created ${allRows.length.toLocaleString()} candidates`);

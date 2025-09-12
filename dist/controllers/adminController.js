@@ -375,7 +375,9 @@ const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
                 const hashedPassword = yield bcrypt_1.default.hash(plainPassword, 8); // use cost 8 for speed
                 return Object.assign(Object.assign({}, c), { ippisNumber: normalizeString(c.ippisNumber), email: normalizeString(c.email), cadre: normalizeString(c.cadre), currentMDA: normalizeString(c.currentMDA), phoneNumber: (_b = c.phoneNumber) === null || _b === void 0 ? void 0 : _b.toString().replace(/\D/g, ""), password: hashedPassword, passwords: [plainPassword], uploadedDocuments: documents_1.documentsToUpload, remark: (0, calculateRemark_1.default)(c) });
             })));
-            yield candidateModel_1.Candidate.insertMany(preparedBatch);
+            //await Candidate.insertMany(preparedBatch);
+            // ✅ atomic insert: fail the whole batch if any error occurs
+            yield candidateModel_1.Candidate.insertMany(preparedBatch, { ordered: true });
         }
         res.send(`Created ${allRows.length.toLocaleString()} candidates`);
     }
