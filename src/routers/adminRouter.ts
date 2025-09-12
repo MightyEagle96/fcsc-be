@@ -56,7 +56,7 @@ adminRouter
   .get("/mdacandidates", authenticateToken, mdaCandidates)
   .get("/viewmdacandidates", authenticateToken, viewMdaCandidates)
   .get("/uploadeddocuments", authenticateToken, viewUploadedDocuments)
-  .get("/recommendcandidate", authenticateToken, recommendCandidate)
+
   .get("/promotiondashboard", authenticateToken, promotionDashboard)
 
   .get("/searchcandidate", authenticateToken, searchCandidate)
@@ -68,6 +68,8 @@ adminRouter
   //
   .get("/recommendedcandidates", authenticateToken, recommendedCandidates)
   .get("/approvedcandidates", authenticateToken, approvedCandidates)
+
+  .get("/recommendcandidate", authenticateToken, recommendCandidate)
   .get("/approvecandidate", authenticateToken, approveCandidate)
   .get("/reverseapproval", authenticateToken, reverseApproval)
 

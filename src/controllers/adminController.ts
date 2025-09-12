@@ -112,6 +112,11 @@ const jobQueue = new ConcurrentJobQueue({
 });
 export const createAccount = async (req: Request, res: Response) => {
   try {
+    const adminAccount = await AdminModel.countDocuments({ role: "admin" });
+    if (adminAccount > 1) {
+      return res.status(400).send("Admin already exists");
+    }
+
     const { email, password } = req.body;
 
     const admin = await AdminModel.findOne({

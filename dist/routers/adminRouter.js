@@ -22,7 +22,6 @@ adminRouter
     .get("/mdacandidates", jwtController_1.authenticateToken, hrController_1.mdaCandidates)
     .get("/viewmdacandidates", jwtController_1.authenticateToken, hrController_1.viewMdaCandidates)
     .get("/uploadeddocuments", jwtController_1.authenticateToken, adminController_1.viewUploadedDocuments)
-    .get("/recommendcandidate", jwtController_1.authenticateToken, hrController_1.recommendCandidate)
     .get("/promotiondashboard", jwtController_1.authenticateToken, promotionController_1.promotionDashboard)
     .get("/searchcandidate", jwtController_1.authenticateToken, adminController_1.searchCandidate)
     .get("/deleteallcandidates", jwtController_1.authenticateToken, adminController_1.deleteCandidates)
@@ -30,6 +29,7 @@ adminRouter
     //
     .get("/recommendedcandidates", jwtController_1.authenticateToken, promotionController_1.recommendedCandidates)
     .get("/approvedcandidates", jwtController_1.authenticateToken, promotionController_1.approvedCandidates)
+    .get("/recommendcandidate", jwtController_1.authenticateToken, hrController_1.recommendCandidate)
     .get("/approvecandidate", jwtController_1.authenticateToken, promotionController_1.approveCandidate)
     .get("/reverseapproval", jwtController_1.authenticateToken, adminController_1.reverseApproval)
     .get("/uploadanalysis", jwtController_1.authenticateToken, adminController_1.uploadAnalysis)
