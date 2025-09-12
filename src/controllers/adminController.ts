@@ -898,3 +898,75 @@ export const viewIndividualStaff = async (req: Request, res: Response) => {
     res.status(500).send("Error occurred");
   }
 };
+
+export const deleteDeskOfficer = async (req: Request, res: Response) => {
+  try {
+    const adminId = req.query.id;
+
+    // Check if admin is tied to any candidate
+    const hasReferences = await Candidate.exists({
+      $or: [
+        { recommendedBy: adminId },
+        { approvedBy: adminId },
+        { rejectedBy: adminId },
+      ],
+    });
+
+    if (hasReferences) {
+      return res
+        .status(400)
+        .send(
+          "Account cannot be deleted because they are linked to candidate records"
+        );
+    }
+
+    await AdminModel.findByIdAndDelete(adminId);
+    res.send("Staff deleted successfully");
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Error occurred");
+  }
+};
+
+export const updateDeskOfficer = async (req: Request, res: Response) => {
+  const officer = await AdminModel.findById(req.body._id);
+  if (!officer) {
+    return res.status(400).send("Officer not found");
+  }
+
+  //check if the phone number being updated to belongs to another
+  const phoneNumberExists = await AdminModel.findOne({
+    _id: { $ne: req.body._id },
+    phoneNumber: req.body.phoneNumber,
+  });
+
+  if (phoneNumberExists) {
+    return res.status(400).send("Phone number already exists");
+  }
+
+  //check if the email being updated to belongs to another
+  const emailExists = await AdminModel.findOne({
+    _id: { $ne: req.body._id },
+    email: req.body.email,
+  });
+
+  if (emailExists) {
+    return res.status(400).send("Email already exists");
+  }
+
+  await AdminModel.updateOne(
+    { _id: req.body._id },
+    {
+      $set: {
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
+        email: req.body.email,
+        phoneNumber: req.body.phoneNumber,
+        role: req.body.role,
+        mda: req.body.mda,
+      },
+    }
+  );
+
+  res.send("Desk Officer updated successfully");
+};

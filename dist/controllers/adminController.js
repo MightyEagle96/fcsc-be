@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.viewIndividualStaff = exports.createNewPassword = exports.resetAdminPassword = exports.approveCorrection = exports.viewCorrection = exports.viewCorrections = exports.notifyByEmailAndSms = exports.reverseApproval = exports.searchCandidate = exports.uploadAnalysis = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
+exports.updateDeskOfficer = exports.deleteDeskOfficer = exports.viewIndividualStaff = exports.createNewPassword = exports.resetAdminPassword = exports.approveCorrection = exports.viewCorrection = exports.viewCorrections = exports.notifyByEmailAndSms = exports.reverseApproval = exports.searchCandidate = exports.uploadAnalysis = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const adminLogin_1 = require("../models/adminLogin");
 const DataQueue_1 = require("../utils/DataQueue");
@@ -741,3 +741,62 @@ const viewIndividualStaff = (req, res) => __awaiter(void 0, void 0, void 0, func
     }
 });
 exports.viewIndividualStaff = viewIndividualStaff;
+const deleteDeskOfficer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const adminId = req.query.id;
+        // Check if admin is tied to any candidate
+        const hasReferences = yield candidateModel_1.Candidate.exists({
+            $or: [
+                { recommendedBy: adminId },
+                { approvedBy: adminId },
+                { rejectedBy: adminId },
+            ],
+        });
+        if (hasReferences) {
+            return res
+                .status(400)
+                .send("Account cannot be deleted because they are linked to candidate records");
+        }
+        yield adminLogin_1.AdminModel.findByIdAndDelete(adminId);
+        res.send("Staff deleted successfully");
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).send("Error occurred");
+    }
+});
+exports.deleteDeskOfficer = deleteDeskOfficer;
+const updateDeskOfficer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const officer = yield adminLogin_1.AdminModel.findById(req.body._id);
+    if (!officer) {
+        return res.status(400).send("Officer not found");
+    }
+    //check if the phone number being updated to belongs to another
+    const phoneNumberExists = yield adminLogin_1.AdminModel.findOne({
+        _id: { $ne: req.body._id },
+        phoneNumber: req.body.phoneNumber,
+    });
+    if (phoneNumberExists) {
+        return res.status(400).send("Phone number already exists");
+    }
+    //check if the email being updated to belongs to another
+    const emailExists = yield adminLogin_1.AdminModel.findOne({
+        _id: { $ne: req.body._id },
+        email: req.body.email,
+    });
+    if (emailExists) {
+        return res.status(400).send("Email already exists");
+    }
+    yield adminLogin_1.AdminModel.updateOne({ _id: req.body._id }, {
+        $set: {
+            firstName: req.body.firstName,
+            lastName: req.body.lastName,
+            email: req.body.email,
+            phoneNumber: req.body.phoneNumber,
+            role: req.body.role,
+            mda: req.body.mda,
+        },
+    });
+    res.send("Desk Officer updated successfully");
+});
+exports.updateDeskOfficer = updateDeskOfficer;

@@ -7,6 +7,7 @@ import {
   createOfficerAccount,
   dashboardSummary,
   deleteCandidates,
+  deleteDeskOfficer,
   loginAdmin,
   mdaOverview,
   notifyByEmailAndSms,
@@ -14,6 +15,7 @@ import {
   resetAdminPassword,
   reverseApproval,
   searchCandidate,
+  updateDeskOfficer,
   uploadAnalysis,
   uploadFile,
   viewAdminStaff,
@@ -80,6 +82,10 @@ adminRouter
   .post("/resetpassword", resetAdminPassword)
   .post("/createnewpassword", createNewPassword)
 
-  .get("/viewindividualstaff", authenticateToken, viewIndividualStaff);
+  .get("/viewindividualstaff", authenticateToken, viewIndividualStaff)
+
+  .get("/deleteaccount", authenticateToken, deleteDeskOfficer)
+
+  .patch("/updateofficer", authenticateToken, updateDeskOfficer);
 
 export default adminRouter;
