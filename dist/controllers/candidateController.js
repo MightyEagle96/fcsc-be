@@ -59,7 +59,7 @@ const batchUploadCandidates = (req, res) => __awaiter(void 0, void 0, void 0, fu
 });
 exports.batchUploadCandidates = batchUploadCandidates;
 const loginCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const candidate = yield candidateModel_1.Candidate.findOne({ email: req.body.email });
+    const candidate = yield candidateModel_1.Candidate.findOne({ email: req.body.email }).lean();
     if (!candidate) {
         return res.status(404).send("Candidate not found");
     }
