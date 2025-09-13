@@ -73,9 +73,9 @@ const candidateSchema = new mongoose_1.Schema({
     timeSmswasSent: Date,
 }, { timestamps: true });
 // ✅ Explicit unique indexes
-candidateSchema.index({ email: 1 }, { unique: true });
-candidateSchema.index({ phoneNumber: 1 }, { unique: true });
-candidateSchema.index({ ippisNumber: 1 }, { unique: true });
+// candidateSchema.index({ email: 1 }, { unique: true });
+// candidateSchema.index({ phoneNumber: 1 }, { unique: true });
+// candidateSchema.index({ ippisNumber: 1 }, { unique: true });
 // ✅ Status is often filtered in workflows
 candidateSchema.index({ status: 1 });
 candidateSchema.pre("deleteOne", { document: true, query: false }, function (next) {
