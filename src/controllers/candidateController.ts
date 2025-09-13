@@ -250,16 +250,10 @@ export const uploadDocument = async (
       return res.status(400).send("No file uploaded");
     }
 
-    // const extension = path.extname(req.file.originalname);
-
     const extension = path.extname(req.file.originalname);
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    const newName = `./uploads/${req.headers.documentid}-${uniqueSuffix}${extension}`;
-
     const fileData = {
       oldName: `./uploads/${req.file.filename}`,
-      //newName: `./uploads/${req.headers.documentid}${extension}`,
-      newName,
+      newName: `./uploads/${req.headers.documentid}${extension}`,
       path: req.file.path,
       candidate: req.candidate?._id,
       documentId: req.headers.documentid,
