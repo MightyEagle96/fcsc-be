@@ -1,0 +1,27 @@
+config:
+  target: "https://fcsc.onrender.com/api"
+  phases:
+    - duration: 60 # run test for 60s
+      arrivalRate: 100 # 100 new users per second
+  payload:
+    path: "./logins.csv"
+    fields:
+      - "email"
+      - "password"
+
+scenarios:
+  - name: "Login & fetch candidate data"
+    flow:
+      - post:
+          url: "/logincandidate"
+          json:
+            email: "{{ email }}"
+            password: "{{ password }}"
+          capture:
+            - header: "set-cookie"
+              as: "rawCookies"
+
+      - get:
+          url: "/myprofile"
+          headers:
+            Cookie: "{{ rawCookies }}"

@@ -64,7 +64,7 @@ export const batchUploadCandidates = async (req: Request, res: Response) => {
 };
 
 export const loginCandidate = async (req: Request, res: Response) => {
-  const candidate = await Candidate.findOne({ email: req.body.email });
+  const candidate = await Candidate.findOne({ email: req.body.email }).lean();
 
   if (!candidate) {
     return res.status(404).send("Candidate not found");
