@@ -212,10 +212,14 @@ const uploadDocument = (req, res) => __awaiter(void 0, void 0, void 0, function*
         if (!req.file) {
             return res.status(400).send("No file uploaded");
         }
+        // const extension = path.extname(req.file.originalname);
         const extension = path_1.default.extname(req.file.originalname);
+        const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+        const newName = `./uploads/${req.headers.documentid}-${uniqueSuffix}${extension}`;
         const fileData = {
             oldName: `./uploads/${req.file.filename}`,
-            newName: `./uploads/${req.headers.documentid}${extension}`,
+            //newName: `./uploads/${req.headers.documentid}${extension}`,
+            newName,
             path: req.file.path,
             candidate: (_g = req.candidate) === null || _g === void 0 ? void 0 : _g._id,
             documentId: req.headers.documentid,
