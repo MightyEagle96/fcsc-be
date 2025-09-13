@@ -11,6 +11,9 @@ const adminController_1 = require("../controllers/adminController");
 const upload = (0, multer_1.default)({ dest: "uploads/" });
 const appRouter = (0, express_1.Router)();
 appRouter
+    .get("/test", (req, res) => {
+    res.send({ message: "hi", time: new Date().toDateString() });
+})
     .post("/uploadcandidates", candidateController_1.batchUploadCandidates)
     .post("/logincandidate", candidateController_1.loginCandidate)
     .get("/refresh", candidateController_1.getRefreshToken)

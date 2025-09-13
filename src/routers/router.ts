@@ -22,6 +22,9 @@ const upload = multer({ dest: "uploads/" });
 const appRouter = Router();
 
 appRouter
+  .get("/test", (req, res) => {
+    res.send({ message: "hi", time: new Date().toDateString() });
+  })
   .post("/uploadcandidates", batchUploadCandidates)
   .post("/logincandidate", loginCandidate)
   .get("/refresh", getRefreshToken)
