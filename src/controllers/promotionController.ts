@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { Candidate } from "../models/candidateModel";
 import { JointInterface } from "./jwtController";
 import { stat } from "fs";
+import AdminLogModel from "../models/adminLogs";
 
 export const promotionDashboard = async (req: Request, res: Response) => {
   const [recommended, approved] = await Promise.all([
@@ -70,6 +71,11 @@ export const approveCandidate = async (req: JointInterface, res: Response) => {
     dateApproved: new Date(),
     approvedBy: req.admin?._id,
   });
+
+  await AdminLogModel.create({
+    account: req.admin?._id,
+    action: `Approved ${req.query.candidate}'s application`,
+  });
   res.send("Candidate approved");
 };
 
@@ -119,91 +125,6 @@ export const approvedCandidates = async (req: Request, res: Response) => {
 };
 
 export const viewCandidatesAcrossMDA = async (req: Request, res: Response) => {
-  // const result = await Candidate.aggregate([
-  //   // Ensure uploadedDocuments with valid fileUrl only
-  //   {
-  //     $addFields: {
-  //       validDocs: {
-  //         $filter: {
-  //           input: "$uploadedDocuments",
-  //           as: "doc",
-  //           cond: {
-  //             $and: [
-  //               { $ifNull: ["$$doc.fileUrl", false] }, // not null
-  //               { $ne: ["$$doc.fileUrl", ""] }, // not empty
-  //             ],
-  //           },
-  //         },
-  //       },
-  //     },
-  //   },
-  //   // Only keep candidates with at least 6 valid docs
-  //   {
-  //     $match: {
-  //       $expr: { $gte: [{ $size: "$validDocs" }, 6] },
-  //     },
-  //   },
-  //   // Group by currentMDA and count
-  //   {
-  //     $group: {
-  //       _id: "$currentMDA",
-  //       count: { $sum: 1 },
-  //     },
-  //   },
-  //   // Optional: sort by count descending
-  //   {
-  //     $sort: { count: -1 },
-  //   },
-  // ]);
-
-  // const result = await Candidate.aggregate([
-  //   // Step 1: Filter docs (same as before)
-  //   {
-  //     $addFields: {
-  //       validDocs: {
-  //         $filter: {
-  //           input: "$uploadedDocuments",
-  //           as: "doc",
-  //           cond: {
-  //             $and: [
-  //               { $ifNull: ["$$doc.fileUrl", false] },
-  //               { $ne: ["$$doc.fileUrl", ""] },
-  //             ],
-  //           },
-  //         },
-  //       },
-  //     },
-  //   },
-  //   // Step 2: Mark those with >= 6 valid docs
-  //   {
-  //     $addFields: {
-  //       hasSixDocs: { $gte: [{ $size: "$validDocs" }, 6] },
-  //     },
-  //   },
-  //   // Step 3: Group by MDA and count only those with hasSixDocs = true
-  //   {
-  //     $group: {
-  //       _id: "$currentMDA",
-  //       count: {
-  //         $sum: {
-  //           $cond: [{ $eq: ["$hasSixDocs", true] }, 1, 0],
-  //         },
-  //       },
-  //     },
-  //   },
-  //   // Step 4: Ensure all MDAs show up, even with 0
-  //   {
-  //     $project: {
-  //       _id: 0,
-  //       currentMDA: "$_id",
-  //       candidateCount: "$count",
-  //     },
-  //   },
-  //   {
-  //     $sort: { candidateCount: -1 },
-  //   },
-  // ]);
-
   const result = await Candidate.aggregate([
     // Step 1: Group by currentMDA, counting only "recommended" candidates
     {

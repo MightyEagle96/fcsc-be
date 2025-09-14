@@ -9,6 +9,7 @@ import { sendMailFunc } from "../utils/nodemailer";
 import { rejectionTemplate } from "./rejectionTemplate";
 import { send } from "process";
 import { SendSms } from "../utils/smsHandler";
+import AdminLogModel from "../models/adminLogs";
 
 export const mdaCandidates = async (req: Request, res: Response) => {
   const [candidates, recommended, approved, totalUploadedDocuments] =
@@ -112,6 +113,11 @@ export const recommendCandidate = async (
         candidate.dateRecommended = new Date();
         candidate.status = "recommended";
         await candidate.save();
+
+        await AdminLogModel.create({
+          account: req.admin?._id,
+          action: `Recommended ${candidate.fullName}`,
+        });
       }
     });
   } catch (error) {
@@ -177,6 +183,10 @@ export const recommendMultipleCandidates = async (
           },
         }
       );
+      await AdminLogModel.create({
+        account: req.admin?._id,
+        action: `Did bulk recommendation`,
+      });
     });
   } catch (error) {
     console.log(error);
@@ -249,6 +259,11 @@ export const rejectApplication = async (
         req.body.reason
       }. Kindly login to your portal and effect the change `;
       await SendSms(message, phoneNumber);
+
+      await AdminLogModel.create({
+        account: req.admin?._id,
+        action: `Rejected ${candidate.fullName}'s application`,
+      });
     }
   });
 

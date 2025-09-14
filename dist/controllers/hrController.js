@@ -20,6 +20,7 @@ const rejectionModel_1 = require("../models/rejectionModel");
 const nodemailer_1 = require("../utils/nodemailer");
 const rejectionTemplate_1 = require("./rejectionTemplate");
 const smsHandler_1 = require("../utils/smsHandler");
+const adminLogs_1 = __importDefault(require("../models/adminLogs"));
 const mdaCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const [candidates, recommended, approved, totalUploadedDocuments] = yield Promise.all([
@@ -102,13 +103,17 @@ const recommendationQueue = new DataQueue_1.ConcurrentJobQueue({
 const recommendCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         recommendationQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
-            var _b;
+            var _b, _c;
             const candidate = yield candidateModel_1.Candidate.findById(req.query.candidate);
             if (candidate && candidate.status !== "recommended") {
                 candidate.recommendedBy = new mongoose_1.default.Types.ObjectId((_b = req.admin) === null || _b === void 0 ? void 0 : _b._id.toString());
                 candidate.dateRecommended = new Date();
                 candidate.status = "recommended";
                 yield candidate.save();
+                yield adminLogs_1.default.create({
+                    account: (_c = req.admin) === null || _c === void 0 ? void 0 : _c._id,
+                    action: `Recommended ${candidate.fullName}`,
+                });
             }
         }));
     }
@@ -128,12 +133,12 @@ const bulkRecommendationQueue = new DataQueue_1.ConcurrentJobQueue({
     maxQueueSize: 100,
 });
 const recommendMultipleCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _c;
+    var _d;
     try {
         const result = yield candidateModel_1.Candidate.aggregate([
             // Step 1: Match by MDA
             {
-                $match: { currentMDA: (_c = req.admin) === null || _c === void 0 ? void 0 : _c.mda }, // replace with your MDA
+                $match: { currentMDA: (_d = req.admin) === null || _d === void 0 ? void 0 : _d.mda }, // replace with your MDA
             },
             // Step 2: Filter uploadedDocuments where fileUrl is not null or empty
             {
@@ -160,16 +165,20 @@ const recommendMultipleCandidates = (req, res) => __awaiter(void 0, void 0, void
             },
         ]);
         bulkRecommendationQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
-            var _d;
+            var _e, _f;
             yield candidateModel_1.Candidate.updateMany({
                 _id: { $in: result.map((c) => c._id) },
                 status: { $ne: "recommended" }, // only those not already recommended
             }, {
                 $set: {
                     status: "recommended",
-                    recommendedBy: (_d = req.admin) === null || _d === void 0 ? void 0 : _d._id,
+                    recommendedBy: (_e = req.admin) === null || _e === void 0 ? void 0 : _e._id,
                     dateRecommended: new Date(),
                 },
+            });
+            yield adminLogs_1.default.create({
+                account: (_f = req.admin) === null || _f === void 0 ? void 0 : _f._id,
+                action: `Did bulk recommendation`,
             });
         }));
     }
@@ -182,10 +191,10 @@ const recommendMultipleCandidates = (req, res) => __awaiter(void 0, void 0, void
 });
 exports.recommendMultipleCandidates = recommendMultipleCandidates;
 const viewRecommendedCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _e;
+    var _g;
     const candidates = yield candidateModel_1.Candidate.find({
         status: "recommended",
-        currentMDA: (_e = req.admin) === null || _e === void 0 ? void 0 : _e.mda,
+        currentMDA: (_g = req.admin) === null || _g === void 0 ? void 0 : _g.mda,
     })
         .populate("recommendedBy")
         .lean();
@@ -204,13 +213,14 @@ const rejectionQueue = new DataQueue_1.ConcurrentJobQueue({
     maxQueueSize: 100,
 });
 const rejectApplication = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _f;
+    var _h;
     const rejection = {
         candidate: req.body.candidate,
         reason: req.body.reason,
-        rejectedBy: (_f = req.admin) === null || _f === void 0 ? void 0 : _f._id,
+        rejectedBy: (_h = req.admin) === null || _h === void 0 ? void 0 : _h._id,
     };
     rejectionQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
+        var _j;
         yield rejectionModel_1.RejectionModel.create(rejection);
         const candidate = yield candidateModel_1.Candidate.findById(req.body.candidate);
         if (candidate) {
@@ -220,6 +230,10 @@ const rejectApplication = (req, res) => __awaiter(void 0, void 0, void 0, functi
             yield (0, nodemailer_1.sendMailFunc)(candidate.email, "Application Rejected", (0, rejectionTemplate_1.rejectionTemplate)(candidate.fullName, req.body.reason));
             const message = `Hello ${candidate.fullName.toUpperCase()}, your application has been rejected. Reason: ${req.body.reason}. Kindly login to your portal and effect the change `;
             yield (0, smsHandler_1.SendSms)(message, phoneNumber);
+            yield adminLogs_1.default.create({
+                account: (_j = req.admin) === null || _j === void 0 ? void 0 : _j._id,
+                action: `Rejected ${candidate.fullName}'s application`,
+            });
         }
     }));
     res.send("Application rejected");

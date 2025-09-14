@@ -8,9 +8,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.viewCandidatesAcrossMDA = exports.approvedCandidates = exports.approveCandidate = exports.recommendedCandidates = exports.promotionDashboard = void 0;
 const candidateModel_1 = require("../models/candidateModel");
+const adminLogs_1 = __importDefault(require("../models/adminLogs"));
 const promotionDashboard = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const [recommended, approved] = yield Promise.all([
         candidateModel_1.Candidate.countDocuments({ status: "recommended" }),
@@ -67,11 +71,15 @@ const recommendedCandidates = (req, res) => __awaiter(void 0, void 0, void 0, fu
 });
 exports.recommendedCandidates = recommendedCandidates;
 const approveCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+    var _a, _b;
     yield candidateModel_1.Candidate.findByIdAndUpdate(req.query.candidate, {
         status: "approved",
         dateApproved: new Date(),
         approvedBy: (_a = req.admin) === null || _a === void 0 ? void 0 : _a._id,
+    });
+    yield adminLogs_1.default.create({
+        account: (_b = req.admin) === null || _b === void 0 ? void 0 : _b._id,
+        action: `Approved ${req.query.candidate}'s application`,
     });
     res.send("Candidate approved");
 });
@@ -115,89 +123,6 @@ const approvedCandidates = (req, res) => __awaiter(void 0, void 0, void 0, funct
 });
 exports.approvedCandidates = approvedCandidates;
 const viewCandidatesAcrossMDA = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    // const result = await Candidate.aggregate([
-    //   // Ensure uploadedDocuments with valid fileUrl only
-    //   {
-    //     $addFields: {
-    //       validDocs: {
-    //         $filter: {
-    //           input: "$uploadedDocuments",
-    //           as: "doc",
-    //           cond: {
-    //             $and: [
-    //               { $ifNull: ["$$doc.fileUrl", false] }, // not null
-    //               { $ne: ["$$doc.fileUrl", ""] }, // not empty
-    //             ],
-    //           },
-    //         },
-    //       },
-    //     },
-    //   },
-    //   // Only keep candidates with at least 6 valid docs
-    //   {
-    //     $match: {
-    //       $expr: { $gte: [{ $size: "$validDocs" }, 6] },
-    //     },
-    //   },
-    //   // Group by currentMDA and count
-    //   {
-    //     $group: {
-    //       _id: "$currentMDA",
-    //       count: { $sum: 1 },
-    //     },
-    //   },
-    //   // Optional: sort by count descending
-    //   {
-    //     $sort: { count: -1 },
-    //   },
-    // ]);
-    // const result = await Candidate.aggregate([
-    //   // Step 1: Filter docs (same as before)
-    //   {
-    //     $addFields: {
-    //       validDocs: {
-    //         $filter: {
-    //           input: "$uploadedDocuments",
-    //           as: "doc",
-    //           cond: {
-    //             $and: [
-    //               { $ifNull: ["$$doc.fileUrl", false] },
-    //               { $ne: ["$$doc.fileUrl", ""] },
-    //             ],
-    //           },
-    //         },
-    //       },
-    //     },
-    //   },
-    //   // Step 2: Mark those with >= 6 valid docs
-    //   {
-    //     $addFields: {
-    //       hasSixDocs: { $gte: [{ $size: "$validDocs" }, 6] },
-    //     },
-    //   },
-    //   // Step 3: Group by MDA and count only those with hasSixDocs = true
-    //   {
-    //     $group: {
-    //       _id: "$currentMDA",
-    //       count: {
-    //         $sum: {
-    //           $cond: [{ $eq: ["$hasSixDocs", true] }, 1, 0],
-    //         },
-    //       },
-    //     },
-    //   },
-    //   // Step 4: Ensure all MDAs show up, even with 0
-    //   {
-    //     $project: {
-    //       _id: 0,
-    //       currentMDA: "$_id",
-    //       candidateCount: "$count",
-    //     },
-    //   },
-    //   {
-    //     $sort: { candidateCount: -1 },
-    //   },
-    // ]);
     const result = yield candidateModel_1.Candidate.aggregate([
         // Step 1: Group by currentMDA, counting only "recommended" candidates
         {

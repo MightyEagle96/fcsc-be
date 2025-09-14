@@ -31,6 +31,7 @@ const correctionData_1 = require("../models/correctionData");
 const excelData_1 = require("../utils/excelData");
 const resetPasswordTemplate_1 = require("./resetPasswordTemplate");
 const crypto_1 = __importDefault(require("crypto"));
+const adminLogs_1 = __importDefault(require("../models/adminLogs"));
 //view candidates
 const viewCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -242,7 +243,7 @@ for (const s of excelData_1.stateAndLgas) {
     NORMALIZED_STATE_AND_LGAS[normalizeString(s.state)] = new Set(s.lgas.map(normalizeString));
 }
 const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+    var _a, _b;
     if (!req.file) {
         return res.status(400).send("No file uploaded");
     }
@@ -370,15 +371,19 @@ const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             // const plainPassword = generateRandomPassword(8);
             // 🔹 Generate plain + hashed passwords for each candidate in parallel
             const preparedBatch = yield Promise.all(batch.map((c) => __awaiter(void 0, void 0, void 0, function* () {
-                var _b;
+                var _c;
                 const plainPassword = (0, generateRandomPassword_1.default)(8);
                 const hashedPassword = yield bcrypt_1.default.hash(plainPassword, 8); // use cost 8 for speed
-                return Object.assign(Object.assign({}, c), { ippisNumber: normalizeString(c.ippisNumber), email: normalizeString(c.email), cadre: normalizeString(c.cadre), currentMDA: normalizeString(c.currentMDA), phoneNumber: (_b = c.phoneNumber) === null || _b === void 0 ? void 0 : _b.toString().replace(/\D/g, ""), password: hashedPassword, passwords: [plainPassword], uploadedDocuments: documents_1.documentsToUpload, remark: (0, calculateRemark_1.default)(c) });
+                return Object.assign(Object.assign({}, c), { ippisNumber: normalizeString(c.ippisNumber), email: normalizeString(c.email), cadre: normalizeString(c.cadre), currentMDA: normalizeString(c.currentMDA), phoneNumber: (_c = c.phoneNumber) === null || _c === void 0 ? void 0 : _c.toString().replace(/\D/g, ""), password: hashedPassword, passwords: [plainPassword], uploadedDocuments: documents_1.documentsToUpload, remark: (0, calculateRemark_1.default)(c) });
             })));
             //await Candidate.insertMany(preparedBatch);
             // ✅ atomic insert: fail the whole batch if any error occurs
             yield candidateModel_1.Candidate.insertMany(preparedBatch, { ordered: true });
         }
+        yield adminLogs_1.default.create({
+            account: (_b = req.admin) === null || _b === void 0 ? void 0 : _b._id,
+            action: `Created ${allRows.length.toLocaleString()} candidates`,
+        });
         res.send(`Created ${allRows.length.toLocaleString()} candidates`);
     }
     catch (err) {
@@ -402,6 +407,7 @@ const deleteCandidates = (req, res) => __awaiter(void 0, void 0, void 0, functio
 });
 exports.deleteCandidates = deleteCandidates;
 const createOfficerAccount = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _d;
     try {
         // return res.status(400).send("Admin already exists oooo");
         /**Check for existing email */
@@ -414,6 +420,10 @@ const createOfficerAccount = (req, res) => __awaiter(void 0, void 0, void 0, fun
         const hashedPassowrd = yield bcrypt_1.default.hash(req.body.password, 10);
         const newAdmin = new adminLogin_1.AdminModel(Object.assign(Object.assign({}, req.body), { email: req.body.email, password: hashedPassowrd, yetToChangePassword: true }));
         yield newAdmin.save();
+        yield adminLogs_1.default.create({
+            account: (_d = req.admin) === null || _d === void 0 ? void 0 : _d._id,
+            action: `Created ${req.body.firstName} ${req.body.lastName} as admin staff`,
+        });
         res.send("Account created");
     }
     catch (error) {
@@ -547,20 +557,30 @@ const searchCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function
 });
 exports.searchCandidate = searchCandidate;
 const reverseApproval = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const candidate = yield candidateModel_1.Candidate.findById(req.query._id);
-    if (!candidate) {
-        return res.status(404).send("Candidate not found");
+    var _e;
+    try {
+        const candidate = yield candidateModel_1.Candidate.findById(req.query._id);
+        if (!candidate) {
+            return res.status(404).send("Candidate not found");
+        }
+        yield candidateModel_1.Candidate.findByIdAndUpdate(req.query._id, {
+            status: "pending",
+            $unset: {
+                recommendedBy: null,
+                dateRecommended: null,
+                approvedBy: null,
+                dateApproved: null,
+            },
+        });
+        yield adminLogs_1.default.create({
+            account: (_e = req.admin) === null || _e === void 0 ? void 0 : _e._id,
+            action: `Reversed approval for ${candidate.fullName}`,
+        });
+        res.send("Approval reversed");
     }
-    yield candidateModel_1.Candidate.findByIdAndUpdate(req.query._id, {
-        status: "pending",
-        $unset: {
-            recommendedBy: null,
-            dateRecommended: null,
-            approvedBy: null,
-            dateApproved: null,
-        },
-    });
-    res.send("Approval reversed");
+    catch (error) {
+        res.status(500).send(new Error(error).message);
+    }
 });
 exports.reverseApproval = reverseApproval;
 //notify participant by email and sms
@@ -572,58 +592,63 @@ const notificationQueue = new DataQueue_1.ConcurrentJobQueue({
     shutdownTimeout: 60000, //
 });
 const notifyByEmailAndSms = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const candidates = yield candidateModel_1.Candidate.find().select({ uploadedDocuments: 0 });
-    res.send("Sending notifications");
-    const smsMessage = (name, password, link, email) => `Dear ${name.toUpperCase()}, your Federal Civil Service Commission candidate verification portal account has been created. Your email is ${email} and your password is ${password}.  Please click the link below to access your account. ${link}`;
-    candidates.forEach((c) => {
-        notificationQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
-            try {
-                // --- EMAIL ---
-                if (!c.emailSent) {
-                    const mailSent = yield (0, nodemailer_1.sendMailFunc)(c.email, "ACCOUNT CREATED", (0, emailTemplate_1.emailTemplate)(c.fullName, c.passwords[0], "https://promotion.fedcivilservice.gov.ng"));
-                    if (mailSent) {
-                        yield candidateModel_1.Candidate.findByIdAndUpdate(c._id, {
-                            $set: {
-                                timeEmailwasSent: new Date(),
-                                emailSent: true,
-                            },
-                        });
-                        console.log(`✅ Email sent to ${c.fullName}`);
+    try {
+        const candidates = yield candidateModel_1.Candidate.find().select({ uploadedDocuments: 0 });
+        res.send("Sending notifications");
+        const smsMessage = (name, password, link, email) => `Dear ${name.toUpperCase()}, your Federal Civil Service Commission candidate verification portal account has been created. Your email is ${email} and your password is ${password}.  Please click the link below to access your account. ${link}`;
+        candidates.forEach((c) => {
+            notificationQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
+                try {
+                    // --- EMAIL ---
+                    if (!c.emailSent) {
+                        const mailSent = yield (0, nodemailer_1.sendMailFunc)(c.email, "ACCOUNT CREATED", (0, emailTemplate_1.emailTemplate)(c.fullName, c.passwords[0], "https://promotion.fedcivilservice.gov.ng"));
+                        if (mailSent) {
+                            yield candidateModel_1.Candidate.findByIdAndUpdate(c._id, {
+                                $set: {
+                                    timeEmailwasSent: new Date(),
+                                    emailSent: true,
+                                },
+                            });
+                            console.log(`✅ Email sent to ${c.fullName}`);
+                        }
+                        else {
+                            console.log(`❌ Failed to send email to ${c.fullName}`);
+                        }
                     }
                     else {
-                        console.log(`❌ Failed to send email to ${c.fullName}`);
+                        console.log(`ℹ️ Already emailed ${c.fullName}`);
                     }
-                }
-                else {
-                    console.log(`ℹ️ Already emailed ${c.fullName}`);
-                }
-                // --- SMS ---
-                if (!c.smsSent) {
-                    const phoneNumber = `234${c.phoneNumber.slice(1)}`;
-                    const status = yield (0, smsHandler_1.SendSms)(smsMessage(c.fullName, c.passwords[0], "https://promotion.fedcivilservice.gov.ng", c.email), phoneNumber);
-                    if (status === "delivered") {
-                        yield candidateModel_1.Candidate.findByIdAndUpdate(c._id, {
-                            $set: {
-                                timeSmswasSent: new Date(),
-                                smsSent: true,
-                            },
-                        });
-                        console.log(`✅ SMS sent to ${c.fullName}`);
+                    // --- SMS ---
+                    if (!c.smsSent) {
+                        const phoneNumber = `234${c.phoneNumber.slice(1)}`;
+                        const status = yield (0, smsHandler_1.SendSms)(smsMessage(c.fullName, c.passwords[0], "https://promotion.fedcivilservice.gov.ng", c.email), phoneNumber);
+                        if (status === "delivered") {
+                            yield candidateModel_1.Candidate.findByIdAndUpdate(c._id, {
+                                $set: {
+                                    timeSmswasSent: new Date(),
+                                    smsSent: true,
+                                },
+                            });
+                            console.log(`✅ SMS sent to ${c.fullName}`);
+                        }
+                        else {
+                            console.log(`❌ Failed to send SMS to ${c.fullName}`);
+                        }
                     }
                     else {
-                        console.log(`❌ Failed to send SMS to ${c.fullName}`);
+                        console.log(`ℹ️ Already SMSed ${c.fullName}`);
                     }
+                    console.log(`📨 Contacted ${c.fullName}`);
                 }
-                else {
-                    console.log(`ℹ️ Already SMSed ${c.fullName}`);
+                catch (err) {
+                    console.error(`🔥 Error processing notifications for ${c.fullName}:`, err);
                 }
-                console.log(`📨 Contacted ${c.fullName}`);
-            }
-            catch (err) {
-                console.error(`🔥 Error processing notifications for ${c.fullName}:`, err);
-            }
-        }));
-    });
+            }));
+        });
+    }
+    catch (error) {
+        console.log(new Error(error));
+    }
 });
 exports.notifyByEmailAndSms = notifyByEmailAndSms;
 const viewCorrections = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -644,7 +669,7 @@ const viewCorrections = (req, res) => __awaiter(void 0, void 0, void 0, function
 });
 exports.viewCorrections = viewCorrections;
 const viewCorrection = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _c;
+    var _f;
     try {
         const correction = yield correctionData_1.CorrectionModel.findById(req.query.id);
         if (!correction) {
@@ -661,7 +686,7 @@ const viewCorrection = (req, res) => __awaiter(void 0, void 0, void 0, function*
             reason: correction.reason,
             status: correction.status,
             newData: correction.data,
-            oldData: (_c = candidate[correction.correctionField]) !== null && _c !== void 0 ? _c : "-",
+            oldData: (_f = candidate[correction.correctionField]) !== null && _f !== void 0 ? _f : "-",
         });
     }
     catch (error) {
@@ -671,7 +696,7 @@ const viewCorrection = (req, res) => __awaiter(void 0, void 0, void 0, function*
 });
 exports.viewCorrection = viewCorrection;
 const approveCorrection = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _d;
+    var _g;
     try {
         const correction = yield correctionData_1.CorrectionModel.findById(req.query.id);
         if (!correction) {
@@ -685,7 +710,7 @@ const approveCorrection = (req, res) => __awaiter(void 0, void 0, void 0, functi
         yield correctionData_1.CorrectionModel.findByIdAndUpdate(req.query.id, {
             status: "approved",
             dateCorrected: new Date(),
-            correctedBy: (_d = req.admin) === null || _d === void 0 ? void 0 : _d._id,
+            correctedBy: (_g = req.admin) === null || _g === void 0 ? void 0 : _g._id,
         });
         res.send("Correction approved");
     }
@@ -721,10 +746,15 @@ const resetAdminPassword = (req, res) => __awaiter(void 0, void 0, void 0, funct
                     resetToken
                 : "http://localhost:3000/admin/resetpassword/" + resetToken;
             adminPasswordResetQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
+                var _h;
                 const link = resetLink(resetToken);
                 const phoneNumber = `234${account.phoneNumber.slice(1, account.phoneNumber.length)}`;
                 const message = `Dear ${account.firstName.toUpperCase()}, your password has been reset. Please click the link below to reset your password. ${link}`;
                 yield (0, nodemailer_1.sendMailFunc)(account.email, "PASSWORD RESET", (0, resetPasswordTemplate_1.resetPasswordTemplate)(account.firstName, link));
+                yield adminLogs_1.default.create({
+                    account: (_h = req.admin) === null || _h === void 0 ? void 0 : _h._id,
+                    action: `${account.firstName.toUpperCase()} applied to reset password`,
+                });
                 yield (0, smsHandler_1.SendSms)(message, phoneNumber);
             }));
         }
@@ -739,6 +769,7 @@ const resetAdminPassword = (req, res) => __awaiter(void 0, void 0, void 0, funct
 });
 exports.resetAdminPassword = resetAdminPassword;
 const createNewPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _j;
     try {
         //const { token } = req.params;
         const { password, token } = req.body;
@@ -757,6 +788,10 @@ const createNewPassword = (req, res) => __awaiter(void 0, void 0, void 0, functi
         admin.yetToChangePassword = false; // 🔥 optional: mark as changed
         yield admin.save();
         res.send("Password reset successful");
+        yield adminLogs_1.default.create({
+            account: (_j = req.admin) === null || _j === void 0 ? void 0 : _j._id,
+            action: `${admin.firstName.toUpperCase()} reset password successfully`,
+        });
     }
     catch (err) {
         res.status(500).send(err.message);
@@ -777,6 +812,7 @@ const viewIndividualStaff = (req, res) => __awaiter(void 0, void 0, void 0, func
 });
 exports.viewIndividualStaff = viewIndividualStaff;
 const deleteDeskOfficer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _k, _l;
     try {
         const adminId = req.query.id;
         // Check if admin is tied to any candidate
@@ -792,8 +828,12 @@ const deleteDeskOfficer = (req, res) => __awaiter(void 0, void 0, void 0, functi
                 .status(400)
                 .send("Account cannot be deleted because they are linked to candidate records");
         }
-        yield adminLogin_1.AdminModel.findByIdAndDelete(adminId);
+        const account = yield adminLogin_1.AdminModel.findByIdAndDelete(adminId);
         res.send("Staff deleted successfully");
+        yield adminLogs_1.default.create({
+            account: (_k = req.admin) === null || _k === void 0 ? void 0 : _k._id,
+            action: `${(_l = req.admin) === null || _l === void 0 ? void 0 : _l.firstName.toUpperCase()} deleted ${account === null || account === void 0 ? void 0 : account.firstName} successfully`,
+        });
     }
     catch (error) {
         console.error(error);
@@ -802,6 +842,7 @@ const deleteDeskOfficer = (req, res) => __awaiter(void 0, void 0, void 0, functi
 });
 exports.deleteDeskOfficer = deleteDeskOfficer;
 const updateDeskOfficer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _m, _o;
     const officer = yield adminLogin_1.AdminModel.findById(req.body._id);
     if (!officer) {
         return res.status(400).send("Officer not found");
@@ -822,7 +863,7 @@ const updateDeskOfficer = (req, res) => __awaiter(void 0, void 0, void 0, functi
     if (emailExists) {
         return res.status(400).send("Email already exists");
     }
-    yield adminLogin_1.AdminModel.updateOne({ _id: req.body._id }, {
+    const account = yield adminLogin_1.AdminModel.findOneAndUpdate({ _id: req.body._id }, {
         $set: {
             firstName: req.body.firstName,
             lastName: req.body.lastName,
@@ -831,6 +872,10 @@ const updateDeskOfficer = (req, res) => __awaiter(void 0, void 0, void 0, functi
             role: req.body.role,
             mda: req.body.mda,
         },
+    });
+    yield adminLogs_1.default.create({
+        account: (_m = req.admin) === null || _m === void 0 ? void 0 : _m._id,
+        action: `${(_o = req.admin) === null || _o === void 0 ? void 0 : _o.firstName.toUpperCase()} updated ${account === null || account === void 0 ? void 0 : account.firstName} successfully`,
     });
     res.send("Desk Officer updated successfully");
 });

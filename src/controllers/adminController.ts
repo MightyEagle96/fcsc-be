@@ -23,6 +23,7 @@ import { Types } from "mongoose";
 import { CADRES, MDAS, stateAndLgas } from "../utils/excelData";
 import { resetPasswordTemplate } from "./resetPasswordTemplate";
 import crypto from "crypto";
+import AdminLogModel from "../models/adminLogs";
 
 //view candidates
 export const viewCandidates = async (req: Request, res: Response) => {
@@ -266,7 +267,7 @@ for (const s of stateAndLgas) {
     s.lgas.map(normalizeString)
   );
 }
-export const uploadFile = async (req: Request, res: Response) => {
+export const uploadFile = async (req: AuthenticatedAdmin, res: Response) => {
   if (!req.file) {
     return res.status(400).send("No file uploaded");
   }
@@ -442,6 +443,10 @@ export const uploadFile = async (req: Request, res: Response) => {
       await Candidate.insertMany(preparedBatch, { ordered: true });
     }
 
+    await AdminLogModel.create({
+      account: req.admin?._id,
+      action: `Created ${allRows.length.toLocaleString()} candidates`,
+    });
     res.send(`Created ${allRows.length.toLocaleString()} candidates`);
   } catch (err: any) {
     if (err.code === 11000) {
@@ -464,7 +469,10 @@ export const deleteCandidates = async (req: Request, res: Response) => {
   res.send("All candidates deleted");
 };
 
-export const createOfficerAccount = async (req: Request, res: Response) => {
+export const createOfficerAccount = async (
+  req: AuthenticatedAdmin,
+  res: Response
+) => {
   try {
     // return res.status(400).send("Admin already exists oooo");
     /**Check for existing email */
@@ -485,6 +493,10 @@ export const createOfficerAccount = async (req: Request, res: Response) => {
       yetToChangePassword: true,
     });
     await newAdmin.save();
+    await AdminLogModel.create({
+      account: req.admin?._id,
+      action: `Created ${req.body.firstName} ${req.body.lastName} as admin staff`,
+    });
     res.send("Account created");
   } catch (error) {
     console.log(error);
@@ -632,23 +644,33 @@ export const searchCandidate = async (req: Request, res: Response) => {
   res.send(mapCandidates);
 };
 
-export const reverseApproval = async (req: Request, res: Response) => {
-  const candidate = await Candidate.findById(req.query._id);
-  if (!candidate) {
-    return res.status(404).send("Candidate not found");
+export const reverseApproval = async (
+  req: AuthenticatedAdmin,
+  res: Response
+) => {
+  try {
+    const candidate = await Candidate.findById(req.query._id);
+    if (!candidate) {
+      return res.status(404).send("Candidate not found");
+    }
+
+    await Candidate.findByIdAndUpdate(req.query._id, {
+      status: "pending",
+      $unset: {
+        recommendedBy: null,
+        dateRecommended: null,
+        approvedBy: null,
+        dateApproved: null,
+      },
+    });
+    await AdminLogModel.create({
+      account: req.admin?._id,
+      action: `Reversed approval for ${candidate.fullName}`,
+    });
+    res.send("Approval reversed");
+  } catch (error: any) {
+    res.status(500).send(new Error(error).message);
   }
-
-  await Candidate.findByIdAndUpdate(req.query._id, {
-    status: "pending",
-    $unset: {
-      recommendedBy: null,
-      dateRecommended: null,
-      approvedBy: null,
-      dateApproved: null,
-    },
-  });
-
-  res.send("Approval reversed");
 };
 
 //notify participant by email and sms
@@ -661,85 +683,89 @@ const notificationQueue = new ConcurrentJobQueue({
   shutdownTimeout: 60000, //
 });
 export const notifyByEmailAndSms = async (req: Request, res: Response) => {
-  const candidates = await Candidate.find().select({ uploadedDocuments: 0 });
+  try {
+    const candidates = await Candidate.find().select({ uploadedDocuments: 0 });
 
-  res.send("Sending notifications");
-  const smsMessage = (
-    name: string,
-    password: string,
-    link: string,
-    email: string
-  ): string =>
-    `Dear ${name.toUpperCase()}, your Federal Civil Service Commission candidate verification portal account has been created. Your email is ${email} and your password is ${password}.  Please click the link below to access your account. ${link}`;
+    res.send("Sending notifications");
+    const smsMessage = (
+      name: string,
+      password: string,
+      link: string,
+      email: string
+    ): string =>
+      `Dear ${name.toUpperCase()}, your Federal Civil Service Commission candidate verification portal account has been created. Your email is ${email} and your password is ${password}.  Please click the link below to access your account. ${link}`;
 
-  candidates.forEach((c) => {
-    notificationQueue.enqueue(async () => {
-      try {
-        // --- EMAIL ---
-        if (!c.emailSent) {
-          const mailSent = await sendMailFunc(
-            c.email,
-            "ACCOUNT CREATED",
-            emailTemplate(
-              c.fullName,
-              c.passwords[0],
-              "https://promotion.fedcivilservice.gov.ng"
-            )
-          );
+    candidates.forEach((c) => {
+      notificationQueue.enqueue(async () => {
+        try {
+          // --- EMAIL ---
+          if (!c.emailSent) {
+            const mailSent = await sendMailFunc(
+              c.email,
+              "ACCOUNT CREATED",
+              emailTemplate(
+                c.fullName,
+                c.passwords[0],
+                "https://promotion.fedcivilservice.gov.ng"
+              )
+            );
 
-          if (mailSent) {
-            await Candidate.findByIdAndUpdate(c._id, {
-              $set: {
-                timeEmailwasSent: new Date(),
-                emailSent: true,
-              },
-            });
-            console.log(`✅ Email sent to ${c.fullName}`);
+            if (mailSent) {
+              await Candidate.findByIdAndUpdate(c._id, {
+                $set: {
+                  timeEmailwasSent: new Date(),
+                  emailSent: true,
+                },
+              });
+              console.log(`✅ Email sent to ${c.fullName}`);
+            } else {
+              console.log(`❌ Failed to send email to ${c.fullName}`);
+            }
           } else {
-            console.log(`❌ Failed to send email to ${c.fullName}`);
+            console.log(`ℹ️ Already emailed ${c.fullName}`);
           }
-        } else {
-          console.log(`ℹ️ Already emailed ${c.fullName}`);
-        }
 
-        // --- SMS ---
-        if (!c.smsSent) {
-          const phoneNumber = `234${c.phoneNumber.slice(1)}`;
+          // --- SMS ---
+          if (!c.smsSent) {
+            const phoneNumber = `234${c.phoneNumber.slice(1)}`;
 
-          const status = await SendSms(
-            smsMessage(
-              c.fullName,
-              c.passwords[0],
-              "https://promotion.fedcivilservice.gov.ng",
-              c.email
-            ),
-            phoneNumber
-          );
+            const status = await SendSms(
+              smsMessage(
+                c.fullName,
+                c.passwords[0],
+                "https://promotion.fedcivilservice.gov.ng",
+                c.email
+              ),
+              phoneNumber
+            );
 
-          if (status === "delivered") {
-            await Candidate.findByIdAndUpdate(c._id, {
-              $set: {
-                timeSmswasSent: new Date(),
-                smsSent: true,
-              },
-            });
-            console.log(`✅ SMS sent to ${c.fullName}`);
+            if (status === "delivered") {
+              await Candidate.findByIdAndUpdate(c._id, {
+                $set: {
+                  timeSmswasSent: new Date(),
+                  smsSent: true,
+                },
+              });
+              console.log(`✅ SMS sent to ${c.fullName}`);
+            } else {
+              console.log(`❌ Failed to send SMS to ${c.fullName}`);
+            }
           } else {
-            console.log(`❌ Failed to send SMS to ${c.fullName}`);
+            console.log(`ℹ️ Already SMSed ${c.fullName}`);
           }
-        } else {
-          console.log(`ℹ️ Already SMSed ${c.fullName}`);
-        }
 
-        console.log(`📨 Contacted ${c.fullName}`);
-      } catch (err) {
-        console.error(
-          `🔥 Error processing notifications for ${c.fullName}:`,
-          err
-        );
-      }
+          console.log(`📨 Contacted ${c.fullName}`);
+        } catch (err) {
+          console.error(
+            `🔥 Error processing notifications for ${c.fullName}:`,
+            err
+          );
+        }
+      });
     });
-  });
+  } catch (error: any) {
+    console.log(new Error(error));
+  }
 };
 
 export const viewCorrections = async (req: Request, res: Response) => {
@@ -853,7 +879,10 @@ const adminPasswordResetQueue = new ConcurrentJobQueue({
   retryDelay: 2000, // wait 2s between retries
   shutdownTimeout: 60000, //
 });
-export const resetAdminPassword = async (req: Request, res: Response) => {
+export const resetAdminPassword = async (
+  req: AuthenticatedAdmin,
+  res: Response
+) => {
   try {
     const account = await AdminModel.findOne({ email: req.body.email });
 
@@ -890,6 +919,11 @@ export const resetAdminPassword = async (req: Request, res: Response) => {
           resetPasswordTemplate(account.firstName, link)
         );
 
+        await AdminLogModel.create({
+          account: req.admin?._id,
+          action: `${account.firstName.toUpperCase()} applied to reset password`,
+        });
+
         await SendSms(message, phoneNumber);
       });
     } else {
@@ -901,7 +935,10 @@ export const resetAdminPassword = async (req: Request, res: Response) => {
   }
 };
 
-export const createNewPassword = async (req: Request, res: Response) => {
+export const createNewPassword = async (
+  req: AuthenticatedAdmin,
+  res: Response
+) => {
   try {
     //const { token } = req.params;
     const { password, token } = req.body;
@@ -925,6 +962,11 @@ export const createNewPassword = async (req: Request, res: Response) => {
     await admin.save();
 
     res.send("Password reset successful");
+
+    await AdminLogModel.create({
+      account: req.admin?._id,
+      action: `${admin.firstName.toUpperCase()} reset password successfully`,
+    });
   } catch (err: any) {
     res.status(500).send(err.message);
   }
@@ -943,7 +985,10 @@ export const viewIndividualStaff = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteDeskOfficer = async (req: Request, res: Response) => {
+export const deleteDeskOfficer = async (
+  req: AuthenticatedAdmin,
+  res: Response
+) => {
   try {
     const adminId = req.query.id;
 
@@ -964,15 +1009,25 @@ export const deleteDeskOfficer = async (req: Request, res: Response) => {
         );
     }
 
-    await AdminModel.findByIdAndDelete(adminId);
+    const account = await AdminModel.findByIdAndDelete(adminId);
     res.send("Staff deleted successfully");
+
+    await AdminLogModel.create({
+      account: req.admin?._id,
+      action: `${req.admin?.firstName.toUpperCase()} deleted ${
+        account?.firstName
+      } successfully`,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).send("Error occurred");
   }
 };
 
-export const updateDeskOfficer = async (req: Request, res: Response) => {
+export const updateDeskOfficer = async (
+  req: AuthenticatedAdmin,
+  res: Response
+) => {
   const officer = await AdminModel.findById(req.body._id);
   if (!officer) {
     return res.status(400).send("Officer not found");
@@ -998,7 +1053,7 @@ export const updateDeskOfficer = async (req: Request, res: Response) => {
     return res.status(400).send("Email already exists");
   }
 
-  await AdminModel.updateOne(
+  const account = await AdminModel.findOneAndUpdate(
     { _id: req.body._id },
     {
       $set: {
@@ -1012,6 +1067,12 @@ export const updateDeskOfficer = async (req: Request, res: Response) => {
     }
   );
 
+  await AdminLogModel.create({
+    account: req.admin?._id,
+    action: `${req.admin?.firstName.toUpperCase()} updated ${
+      account?.firstName
+    } successfully`,
+  });
   res.send("Desk Officer updated successfully");
 };
 
