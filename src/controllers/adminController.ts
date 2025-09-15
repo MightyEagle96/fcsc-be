@@ -345,6 +345,7 @@ export const uploadFile = async (req: AuthenticatedAdmin, res: Response) => {
       const stateOfCurrentPosting = normalizeString(row.stateOfCurrentPosting);
       // 🔹 Validate cadre
       if (cadre && !NORMALIZED_CADRES.includes(cadre)) {
+        console.log(`Invalid cadre '${row.cadre}' at row ${rowNumber}`);
         return res.status(400).json({
           message: `Invalid cadre '${row.cadre}' at row ${rowNumber}`,
         });
@@ -352,6 +353,7 @@ export const uploadFile = async (req: AuthenticatedAdmin, res: Response) => {
 
       // 🔹 Validate MDA
       if (mda && !NORMALIZED_MDAS.includes(mda)) {
+        console.log(`Invalid MDA '${row.currentMDA}' at row ${rowNumber}`);
         return res.status(400).json({
           message: `Invalid MDA '${row.currentMDA}' at row ${rowNumber}`,
         });
@@ -359,6 +361,7 @@ export const uploadFile = async (req: AuthenticatedAdmin, res: Response) => {
 
       // 🔹 Validate State
       if (stateOfOrigin && !NORMALIZED_STATE_AND_LGAS[stateOfOrigin]) {
+        console.log(`Invalid state '${row.stateOfOrigin}' at row ${rowNumber}`);
         return res.status(400).json({
           message: `Invalid state '${row.stateOfOrigin}' at row ${rowNumber}`,
         });
@@ -368,6 +371,9 @@ export const uploadFile = async (req: AuthenticatedAdmin, res: Response) => {
         stateOfCurrentPosting &&
         !NORMALIZED_STATE_AND_LGAS[stateOfCurrentPosting]
       ) {
+        console.log(
+          `Invalid state of current posting '${row.stateOfCurrentPosting}' at row ${rowNumber}`
+        );
         return res.status(400).json({
           message: `Invalid state of current posting '${row.stateOfCurrentPosting}' at row ${rowNumber}`,
         });
@@ -377,6 +383,9 @@ export const uploadFile = async (req: AuthenticatedAdmin, res: Response) => {
       if (lga && stateOfOrigin) {
         const validLgas = NORMALIZED_STATE_AND_LGAS[stateOfOrigin];
         if (!validLgas?.has(lga)) {
+          console.log(
+            `Invalid LGA '${row.lga}' for state '${row.stateOfOrigin}' at row ${rowNumber}`
+          );
           return res.status(400).json({
             message: `Invalid LGA '${row.lga}' for state '${row.stateOfOrigin}' at row ${rowNumber}`,
           });
@@ -386,6 +395,9 @@ export const uploadFile = async (req: AuthenticatedAdmin, res: Response) => {
       // 🔹 Validate IPPIS uniqueness
       if (ippisNumber) {
         if (seenIppis.has(ippisNumber)) {
+          console.log(
+            `Duplicate IPPIS Number '${row.ippisNumber}' at row ${rowNumber}`
+          );
           return res.status(400).json({
             message: `Duplicate IPPIS Number '${row.ippisNumber}' at row ${rowNumber}`,
           });
@@ -396,6 +408,7 @@ export const uploadFile = async (req: AuthenticatedAdmin, res: Response) => {
       // 🔹 Validate email uniqueness
       if (email) {
         if (seenEmails.has(email)) {
+          console.log(`Duplicate email '${row.email}' at row ${rowNumber}`);
           return res.status(400).json({
             message: `Duplicate email '${row.email}' at row ${rowNumber}`,
           });
@@ -405,6 +418,9 @@ export const uploadFile = async (req: AuthenticatedAdmin, res: Response) => {
 
       // 🔹 Validate phone number (must exist & be 11–15 digits)
       if (!phone || phone.length !== 11) {
+        console.log(
+          `Invalid phone number '${row.phoneNumber}' at row ${rowNumber}. Must be at least 11 digits.`
+        );
         return res.status(400).json({
           message: `Invalid phone number '${row.phoneNumber}' at row ${rowNumber}. Must be at least 11 digits.`,
         });
