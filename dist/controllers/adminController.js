@@ -34,6 +34,7 @@ const crypto_1 = __importDefault(require("crypto"));
 const adminLogs_1 = __importDefault(require("../models/adminLogs"));
 const dayjs_1 = __importDefault(require("dayjs"));
 const utc_1 = __importDefault(require("dayjs/plugin/utc"));
+const promotionController_1 = require("./promotionController");
 dayjs_1.default.extend(utc_1.default);
 //view candidates
 const viewCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -117,7 +118,7 @@ const jobQueue = new DataQueue_1.ConcurrentJobQueue({
 const createAccount = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const adminAccount = yield adminLogin_1.AdminModel.countDocuments({ role: "admin" });
-        if (adminAccount > 1) {
+        if (adminAccount >= 3) {
             return res.status(400).send("Admin already exists");
         }
         const { email, password } = req.body;
@@ -141,12 +142,13 @@ const createAccount = (req, res) => __awaiter(void 0, void 0, void 0, function* 
 });
 exports.createAccount = createAccount;
 const dashboardSummary = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const [candidates, pending, recommended, approved, rejected] = yield Promise.all([
+    const [candidates, pending, recommended, approved, rejected, disqualified] = yield Promise.all([
         candidateModel_1.Candidate.countDocuments(),
-        candidateModel_1.Candidate.countDocuments({ status: "pending" }),
-        candidateModel_1.Candidate.countDocuments({ status: "recommended" }),
-        candidateModel_1.Candidate.countDocuments({ status: "approved" }),
-        candidateModel_1.Candidate.countDocuments({ status: "rejected" }),
+        candidateModel_1.Candidate.countDocuments({ status: promotionController_1.applicationStatus.pending }),
+        candidateModel_1.Candidate.countDocuments({ status: promotionController_1.applicationStatus.recommended }),
+        candidateModel_1.Candidate.countDocuments({ status: promotionController_1.applicationStatus.approved }),
+        candidateModel_1.Candidate.countDocuments({ status: promotionController_1.applicationStatus.rejected }),
+        candidateModel_1.Candidate.countDocuments({ status: promotionController_1.applicationStatus.disqualified }),
     ]);
     res.send({
         candidates: candidates.toLocaleString(),
@@ -154,6 +156,7 @@ const dashboardSummary = (req, res) => __awaiter(void 0, void 0, void 0, functio
         recommended: recommended.toLocaleString(),
         approved: approved.toLocaleString(),
         rejected: rejected.toLocaleString(),
+        disqualified: disqualified.toLocaleString(),
     });
 });
 exports.dashboardSummary = dashboardSummary;

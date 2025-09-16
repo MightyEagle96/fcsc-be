@@ -26,6 +26,7 @@ import crypto from "crypto";
 import AdminLogModel from "../models/adminLogs";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import { applicationStatus } from "./promotionController";
 
 dayjs.extend(utc);
 
@@ -118,7 +119,7 @@ const jobQueue = new ConcurrentJobQueue({
 export const createAccount = async (req: Request, res: Response) => {
   try {
     const adminAccount = await AdminModel.countDocuments({ role: "admin" });
-    if (adminAccount > 1) {
+    if (adminAccount >= 3) {
       return res.status(400).send("Admin already exists");
     }
 
@@ -151,13 +152,14 @@ export const createAccount = async (req: Request, res: Response) => {
 };
 
 export const dashboardSummary = async (req: Request, res: Response) => {
-  const [candidates, pending, recommended, approved, rejected] =
+  const [candidates, pending, recommended, approved, rejected, disqualified] =
     await Promise.all([
       Candidate.countDocuments(),
-      Candidate.countDocuments({ status: "pending" }),
-      Candidate.countDocuments({ status: "recommended" }),
-      Candidate.countDocuments({ status: "approved" }),
-      Candidate.countDocuments({ status: "rejected" }),
+      Candidate.countDocuments({ status: applicationStatus.pending }),
+      Candidate.countDocuments({ status: applicationStatus.recommended }),
+      Candidate.countDocuments({ status: applicationStatus.approved }),
+      Candidate.countDocuments({ status: applicationStatus.rejected }),
+      Candidate.countDocuments({ status: applicationStatus.disqualified }),
     ]);
 
   res.send({
@@ -166,6 +168,7 @@ export const dashboardSummary = async (req: Request, res: Response) => {
     recommended: recommended.toLocaleString(),
     approved: approved.toLocaleString(),
     rejected: rejected.toLocaleString(),
+    disqualified: disqualified.toLocaleString(),
   });
 };
 
