@@ -24,6 +24,7 @@ import { CADRES, MDAS, stateAndLgas } from "../utils/excelData";
 import { resetPasswordTemplate } from "./resetPasswordTemplate";
 import crypto from "crypto";
 import AdminLogModel from "../models/adminLogs";
+import dayjs from "dayjs";
 
 //view candidates
 export const viewCandidates = async (req: Request, res: Response) => {
@@ -443,6 +444,19 @@ export const uploadFile = async (req: AuthenticatedAdmin, res: Response) => {
             ...c,
             ippisNumber: normalizeString(c.ippisNumber),
             email: normalizeString(c.email),
+            dateOfBirth: dayjs(c.dateOfBirth, "DD/MM/YYYY").toDate(),
+            dateOfFirstAppointment: dayjs(
+              c.dateOfFirstAppointment,
+              "DD/MM/YYYY"
+            ).toDate(),
+            dateOfConfirmation: dayjs(
+              c.dateOfConfirmation,
+              "DD/MM/YYYY"
+            ).toDate(),
+            dateOfLastPromotion: dayjs(
+              c.dateOfLastPromotion,
+              "DD/MM/YYYY"
+            ).toDate(),
             cadre: normalizeString(c.cadre),
             currentMDA: normalizeString(c.currentMDA),
             phoneNumber: c.phoneNumber?.toString().replace(/\D/g, ""),

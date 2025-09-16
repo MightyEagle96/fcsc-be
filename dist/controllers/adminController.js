@@ -32,6 +32,7 @@ const excelData_1 = require("../utils/excelData");
 const resetPasswordTemplate_1 = require("./resetPasswordTemplate");
 const crypto_1 = __importDefault(require("crypto"));
 const adminLogs_1 = __importDefault(require("../models/adminLogs"));
+const dayjs_1 = __importDefault(require("dayjs"));
 //view candidates
 const viewCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -382,7 +383,7 @@ const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
                 var _c;
                 const plainPassword = (0, generateRandomPassword_1.default)(8);
                 const hashedPassword = yield bcrypt_1.default.hash(plainPassword, 8); // use cost 8 for speed
-                return Object.assign(Object.assign({}, c), { ippisNumber: normalizeString(c.ippisNumber), email: normalizeString(c.email), cadre: normalizeString(c.cadre), currentMDA: normalizeString(c.currentMDA), phoneNumber: (_c = c.phoneNumber) === null || _c === void 0 ? void 0 : _c.toString().replace(/\D/g, ""), password: hashedPassword, passwords: [plainPassword], uploadedDocuments: documents_1.documentsToUpload, remark: (0, calculateRemark_1.default)(c) });
+                return Object.assign(Object.assign({}, c), { ippisNumber: normalizeString(c.ippisNumber), email: normalizeString(c.email), dateOfBirth: (0, dayjs_1.default)(c.dateOfBirth, "DD/MM/YYYY").toDate(), dateOfFirstAppointment: (0, dayjs_1.default)(c.dateOfFirstAppointment, "DD/MM/YYYY").toDate(), dateOfConfirmation: (0, dayjs_1.default)(c.dateOfConfirmation, "DD/MM/YYYY").toDate(), dateOfLastPromotion: (0, dayjs_1.default)(c.dateOfLastPromotion, "DD/MM/YYYY").toDate(), cadre: normalizeString(c.cadre), currentMDA: normalizeString(c.currentMDA), phoneNumber: (_c = c.phoneNumber) === null || _c === void 0 ? void 0 : _c.toString().replace(/\D/g, ""), password: hashedPassword, passwords: [plainPassword], uploadedDocuments: documents_1.documentsToUpload, remark: (0, calculateRemark_1.default)(c) });
             })));
             //await Candidate.insertMany(preparedBatch);
             // ✅ atomic insert: fail the whole batch if any error occurs
