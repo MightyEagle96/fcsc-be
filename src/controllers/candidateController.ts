@@ -384,6 +384,6 @@ export const deleteCandidate = async (
   req: AuthenticatedAdmin,
   res: Response
 ) => {
-  await Candidate.deleteOne({ ippisNumber: req.query.ippisnumber });
+  //await Candidate.deleteOne({ ippisNumber: req.query.ippisnumber });
   res.send("Candidate deleted");
 };

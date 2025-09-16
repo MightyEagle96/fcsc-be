@@ -325,7 +325,7 @@ const viewCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* 
 });
 exports.viewCandidate = viewCandidate;
 const deleteCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    yield candidateModel_1.Candidate.deleteOne({ ippisNumber: req.query.ippisnumber });
+    //await Candidate.deleteOne({ ippisNumber: req.query.ippisnumber });
     res.send("Candidate deleted");
 });
 exports.deleteCandidate = deleteCandidate;
