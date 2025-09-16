@@ -560,7 +560,7 @@ export const uploadFile = async (req: AuthenticatedAdmin, res: Response) => {
 
       //await Candidate.insertMany(preparedBatch);
       // ✅ atomic insert: fail the whole batch if any error occurs
-      await Candidate.insertMany(preparedBatch, { ordered: true });
+      await Candidate.insertMany(preparedBatch, { ordered: false });
     }
 
     await AdminLogModel.create({

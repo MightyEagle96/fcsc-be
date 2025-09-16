@@ -475,7 +475,7 @@ const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             })));
             //await Candidate.insertMany(preparedBatch);
             // ✅ atomic insert: fail the whole batch if any error occurs
-            yield candidateModel_1.Candidate.insertMany(preparedBatch, { ordered: true });
+            yield candidateModel_1.Candidate.insertMany(preparedBatch, { ordered: false });
         }
         yield adminLogs_1.default.create({
             account: (_b = req.admin) === null || _b === void 0 ? void 0 : _b._id,
