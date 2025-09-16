@@ -3,6 +3,7 @@ import { Candidate } from "../models/candidateModel";
 import { JointInterface } from "./jwtController";
 import { stat } from "fs";
 import AdminLogModel from "../models/adminLogs";
+import { ConcurrentJobQueue } from "../utils/DataQueue";
 
 export const promotionDashboard = async (req: Request, res: Response) => {
   const [recommended, approved] = await Promise.all([
@@ -15,11 +16,20 @@ export const promotionDashboard = async (req: Request, res: Response) => {
   });
 };
 
+export const applicationStatus = {
+  pending: "pending",
+  recommended: "recommended",
+  approved: "approved",
+  rejected: "rejected",
+  disqualified: "disqualified",
+};
 export const recommendedCandidates = async (req: Request, res: Response) => {
   try {
     const page = (req.query.page || 1) as number;
     const limit = (req.query.limit || 50) as number;
-    const candidates = await Candidate.find({ status: "recommended" })
+    const candidates = await Candidate.find({
+      status: applicationStatus.recommended,
+    })
       .populate("recommendedBy")
       .select({
         fullName: 1,
@@ -39,7 +49,9 @@ export const recommendedCandidates = async (req: Request, res: Response) => {
       .limit(limit)
       .lean();
 
-    const total = await Candidate.countDocuments({ status: "recommended" });
+    const total = await Candidate.countDocuments({
+      status: applicationStatus.recommended,
+    });
 
     const totalCandidates = candidates.map((c: any, i) => {
       return {
@@ -155,4 +167,37 @@ export const viewCandidatesAcrossMDA = async (req: Request, res: Response) => {
     return { ...c, id: i + 1 };
   });
   res.send(arrangedResults);
+};
+
+const disqualificationQueue = new ConcurrentJobQueue({
+  concurrency: 1,
+  maxQueueSize: 100,
+  retries: 3,
+  retryDelay: 5000,
+  shutdownTimeout: 20000,
+});
+
+export const disqualifyCandidate = async (
+  req: JointInterface,
+  res: Response
+) => {
+  try {
+    const data = { candidate: req.query.candidate, admin: req.admin?._id };
+
+    disqualificationQueue.enqueue(async () => {
+      await Candidate.updateOne(
+        { _id: data.candidate },
+        {
+          $set: {
+            status: applicationStatus.disqualified,
+            disqualifiedBy: data.admin,
+            dateDisqualified: new Date(),
+          },
+        }
+      );
+    });
+    res.send("Candidate disqualified");
+  } catch (error) {
+    res.status(500).send("Error occurred");
+  }
 };

@@ -9,6 +9,7 @@ const jwtController_1 = require("../controllers/jwtController");
 const multer_1 = __importDefault(require("multer"));
 const hrController_1 = require("../controllers/hrController");
 const promotionController_1 = require("../controllers/promotionController");
+const candidateController_1 = require("../controllers/candidateController");
 const adminRouter = (0, express_1.Router)();
 const upload = (0, multer_1.default)({ dest: "adminuploads/" });
 adminRouter
@@ -43,5 +44,7 @@ adminRouter
     .get("/viewindividualstaff", jwtController_1.authenticateToken, adminController_1.viewIndividualStaff)
     .get("/deleteaccount", jwtController_1.authenticateToken, adminController_1.deleteDeskOfficer)
     .patch("/updateofficer", jwtController_1.authenticateToken, adminController_1.updateDeskOfficer)
-    .get("/notificationanalysis", jwtController_1.authenticateToken, adminController_1.notificationAnalysis);
+    .get("/notificationanalysis", jwtController_1.authenticateToken, adminController_1.notificationAnalysis)
+    .get("/viewcandidate", jwtController_1.authenticateToken, candidateController_1.viewCandidate)
+    .get("/deletecandidate", jwtController_1.authenticateToken, candidateController_1.deleteCandidate);
 exports.default = adminRouter;

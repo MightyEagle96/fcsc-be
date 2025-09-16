@@ -39,7 +39,11 @@ import {
   promotionDashboard,
   recommendedCandidates,
 } from "../controllers/promotionController";
-import { pushApplication } from "../controllers/candidateController";
+import {
+  deleteCandidate,
+  pushApplication,
+  viewCandidate,
+} from "../controllers/candidateController";
 
 const adminRouter = Router();
 
@@ -93,6 +97,9 @@ adminRouter
 
   .patch("/updateofficer", authenticateToken, updateDeskOfficer)
 
-  .get("/notificationanalysis", authenticateToken, notificationAnalysis);
+  .get("/notificationanalysis", authenticateToken, notificationAnalysis)
+
+  .get("/viewcandidate", authenticateToken, viewCandidate)
+  .get("/deletecandidate", authenticateToken, deleteCandidate);
 
 export default adminRouter;

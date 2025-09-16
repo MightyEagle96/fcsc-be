@@ -18,7 +18,7 @@ import { rename, unlink } from "fs";
 import { AsyncQueue, ConcurrentJobQueue } from "../utils/DataQueue";
 import path from "path";
 import { uploadFileToB2 } from "../utils/uploadToB2";
-import { AdminModel, IAdmin } from "../models/adminLogin";
+import { AdminModel, AuthenticatedAdmin, IAdmin } from "../models/adminLogin";
 import { error } from "console";
 import { CorrectionModel, ICorrection } from "../models/correctionData";
 import mongoose from "mongoose";
@@ -365,4 +365,25 @@ export const pushApplication = async (
     { new: true } // return updated doc
   );
   res.send("Application submitted");
+};
+
+export const viewCandidate = async (req: AuthenticatedAdmin, res: Response) => {
+  const candidate = await Candidate.findOne({
+    ippisNumber: req.query.ippisnumber,
+  }).select({
+    ippisNumber: 1,
+    fullName: 1,
+  });
+  if (!candidate) {
+    return res.status(404).send("Candidate not found");
+  }
+  res.send(candidate);
+};
+
+export const deleteCandidate = async (
+  req: AuthenticatedAdmin,
+  res: Response
+) => {
+  await Candidate.deleteOne({ ippisNumber: req.query.ippisnumber });
+  res.send("Candidate deleted");
 };

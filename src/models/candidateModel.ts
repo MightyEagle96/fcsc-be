@@ -44,12 +44,15 @@ export interface ICandidate {
   updatedAt: Date;
   status: "pending" | "recommended" | "approved" | "rejected";
 
-  dateRecommended: Date;
   recommendedBy: Types.ObjectId;
   rejectedBy: Types.ObjectId;
+  approvedBy: Types.ObjectId;
+  disqualifiedBy: Types.ObjectId;
   dateRejected: Date;
   dateApproved: Date;
-  approvedBy: Types.ObjectId;
+  dateRecommended: Date;
+  dateDisqualified: Date;
+
   role: string;
   emailSent: boolean;
   timeEmailwasSent: Date;
@@ -107,15 +110,19 @@ const candidateSchema = new Schema<ICandidate>(
 
     status: {
       type: String,
-      enum: ["pending", "recommended", "approved", "rejected"],
+      enum: ["pending", "recommended", "approved", "rejected", "disqualified"],
       default: "pending",
     },
-    dateRecommended: Date,
+
     recommendedBy: { type: Schema.Types.ObjectId, ref: "Admin" },
     rejectedBy: { type: Schema.Types.ObjectId, ref: "Admin" },
+    approvedBy: { type: Schema.Types.ObjectId, ref: "Admin" },
+    disqualifiedBy: { type: Schema.Types.ObjectId, ref: "Admin" },
     dateRejected: Date,
     dateApproved: Date,
-    approvedBy: { type: Schema.Types.ObjectId, ref: "Admin" },
+    dateRecommended: Date,
+    dateDisqualified: Date,
+
     role: { type: String, lowercase: true, default: "candidate" },
     emailSent: { type: Boolean, default: false },
     timeEmailwasSent: Date,

@@ -21,6 +21,7 @@ const nodemailer_1 = require("../utils/nodemailer");
 const rejectionTemplate_1 = require("./rejectionTemplate");
 const smsHandler_1 = require("../utils/smsHandler");
 const adminLogs_1 = __importDefault(require("../models/adminLogs"));
+const promotionController_1 = require("./promotionController");
 const mdaCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const [candidates, recommended, approved, totalUploadedDocuments] = yield Promise.all([
@@ -220,18 +221,23 @@ const rejectApplication = (req, res) => __awaiter(void 0, void 0, void 0, functi
         rejectedBy: (_h = req.admin) === null || _h === void 0 ? void 0 : _h._id,
     };
     rejectionQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
-        var _j;
+        var _j, _k;
         yield rejectionModel_1.RejectionModel.create(rejection);
         const candidate = yield candidateModel_1.Candidate.findById(req.body.candidate);
         if (candidate) {
-            candidate.status = "rejected";
-            yield candidate.save();
+            yield candidateModel_1.Candidate.updateOne({ _id: req.body.candidate }, {
+                $set: {
+                    status: promotionController_1.applicationStatus.rejected,
+                    rejectedBy: (_j = req.admin) === null || _j === void 0 ? void 0 : _j._id,
+                    dateRejected: new Date(),
+                },
+            });
             const phoneNumber = `234${candidate.phoneNumber.slice(1, candidate.phoneNumber.length)}`;
             yield (0, nodemailer_1.sendMailFunc)(candidate.email, "Application Rejected", (0, rejectionTemplate_1.rejectionTemplate)(candidate.fullName, req.body.reason));
             const message = `Hello ${candidate.fullName.toUpperCase()}, your application has been rejected. Reason: ${req.body.reason}. Kindly login to your portal and effect the change `;
             yield (0, smsHandler_1.SendSms)(message, phoneNumber);
             yield adminLogs_1.default.create({
-                account: (_j = req.admin) === null || _j === void 0 ? void 0 : _j._id,
+                account: (_k = req.admin) === null || _k === void 0 ? void 0 : _k._id,
                 action: `Rejected ${candidate.fullName}'s application`,
             });
         }

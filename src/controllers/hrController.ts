@@ -10,6 +10,7 @@ import { rejectionTemplate } from "./rejectionTemplate";
 import { send } from "process";
 import { SendSms } from "../utils/smsHandler";
 import AdminLogModel from "../models/adminLogs";
+import { applicationStatus } from "./promotionController";
 
 export const mdaCandidates = async (req: Request, res: Response) => {
   const [candidates, recommended, approved, totalUploadedDocuments] =
@@ -242,8 +243,16 @@ export const rejectApplication = async (
     const candidate = await Candidate.findById(req.body.candidate);
 
     if (candidate) {
-      candidate.status = "rejected";
-      await candidate.save();
+      await Candidate.updateOne(
+        { _id: req.body.candidate },
+        {
+          $set: {
+            status: applicationStatus.rejected,
+            rejectedBy: req.admin?._id,
+            dateRejected: new Date(),
+          },
+        }
+      );
 
       const phoneNumber = `234${candidate.phoneNumber.slice(
         1,

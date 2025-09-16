@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.pushApplication = exports.myCorrections = exports.submitCorrection = exports.uploadDocument = exports.viewMyDocuments = exports.getRefreshToken = exports.logoutCandidate = exports.fullCandidateProfile = exports.myProfile = exports.loginCandidate = exports.batchUploadCandidates = void 0;
+exports.deleteCandidate = exports.viewCandidate = exports.pushApplication = exports.myCorrections = exports.submitCorrection = exports.uploadDocument = exports.viewMyDocuments = exports.getRefreshToken = exports.logoutCandidate = exports.fullCandidateProfile = exports.myProfile = exports.loginCandidate = exports.batchUploadCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const generateRandomPassword_1 = __importDefault(require("../utils/generateRandomPassword"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
@@ -311,3 +311,21 @@ const pushApplication = (req, res) => __awaiter(void 0, void 0, void 0, function
     res.send("Application submitted");
 });
 exports.pushApplication = pushApplication;
+const viewCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const candidate = yield candidateModel_1.Candidate.findOne({
+        ippisNumber: req.query.ippisnumber,
+    }).select({
+        ippisNumber: 1,
+        fullName: 1,
+    });
+    if (!candidate) {
+        return res.status(404).send("Candidate not found");
+    }
+    res.send(candidate);
+});
+exports.viewCandidate = viewCandidate;
+const deleteCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    yield candidateModel_1.Candidate.deleteOne({ ippisNumber: req.query.ippisnumber });
+    res.send("Candidate deleted");
+});
+exports.deleteCandidate = deleteCandidate;

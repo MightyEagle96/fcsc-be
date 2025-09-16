@@ -1,13 +1,14 @@
 import { Router } from "express";
 import { authenticateToken } from "../controllers/jwtController";
-import { viewCandidatesAcrossMDA } from "../controllers/promotionController";
+import {
+  disqualifyCandidate,
+  viewCandidatesAcrossMDA,
+} from "../controllers/promotionController";
 
 const promotionRouter = Router();
 
-promotionRouter.get(
-  "/candidatesacrossmda",
-  authenticateToken,
-  viewCandidatesAcrossMDA
-);
+promotionRouter
+  .get("/candidatesacrossmda", authenticateToken, viewCandidatesAcrossMDA)
+  .get("/disqualifycandidate", authenticateToken, disqualifyCandidate);
 
 export default promotionRouter;
