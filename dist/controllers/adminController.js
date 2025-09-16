@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.notificationAnalysis = exports.updateDeskOfficer = exports.deleteDeskOfficer = exports.viewIndividualStaff = exports.createNewPassword = exports.resetAdminPassword = exports.approveCorrection = exports.viewCorrection = exports.viewCorrections = exports.notifyByEmailAndSms = exports.reverseApproval = exports.searchCandidate = exports.uploadAnalysis = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
+exports.notificationAnalysis = exports.updateDeskOfficer = exports.deleteDeskOfficer = exports.viewIndividualStaff = exports.createNewPassword = exports.resetAdminPassword = exports.approveCorrection = exports.viewCorrection = exports.viewCorrections = exports.notifyByEmailAndSms = exports.reverseApproval = exports.searchCandidate = exports.documentsAnalysis = exports.uploadAnalysis = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const adminLogin_1 = require("../models/adminLogin");
 const DataQueue_1 = require("../utils/DataQueue");
@@ -608,6 +608,51 @@ const uploadAnalysis = (req, res) => __awaiter(void 0, void 0, void 0, function*
     }
 });
 exports.uploadAnalysis = uploadAnalysis;
+const documentsAnalysis = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const counts = yield candidateModel_1.Candidate.aggregate([
+        { $unwind: "$uploadedDocuments" }, // flatten uploadedDocuments
+        {
+            $match: {
+                "uploadedDocuments.fileUrl": { $nin: [null, ""] }, // ensure fileUrl exists
+            },
+        },
+        {
+            $group: {
+                _id: "$uploadedDocuments.fileType",
+                count: { $sum: 1 },
+            },
+        },
+        {
+            $project: {
+                _id: 0,
+                document: "$_id",
+                count: 1,
+            },
+        },
+    ]);
+    // ensure all documents in your list appear, even if count = 0
+    const result = documents_1.documents.map((doc) => {
+        const found = counts.find((c) => c.document === doc);
+        return {
+            document: doc,
+            count: found ? found.count : 0,
+        };
+    });
+    // return result;
+    const candidates = yield candidateModel_1.Candidate.countDocuments();
+    const totalDocumentsUploaded = result.reduce((acc, c) => acc + c.count, 0);
+    // console.log({
+    //   totalDocumentsUploaded,
+    //   result,
+    //   expectedDocuments: candidates * documents.length,
+    // });
+    res.send({
+        totalDocumentsUploaded: totalDocumentsUploaded.toLocaleString(),
+        result,
+        expectedDocuments: (candidates * documents_1.documents.length).toLocaleString(),
+    });
+});
+exports.documentsAnalysis = documentsAnalysis;
 const searchCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const candidates = yield candidateModel_1.Candidate.find({
         $or: [

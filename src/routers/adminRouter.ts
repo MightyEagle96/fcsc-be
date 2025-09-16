@@ -8,6 +8,7 @@ import {
   dashboardSummary,
   deleteCandidates,
   deleteDeskOfficer,
+  documentsAnalysis,
   loginAdmin,
   mdaOverview,
   notificationAnalysis,
@@ -74,6 +75,7 @@ adminRouter
   .get("/reverseapproval", authenticateToken, reverseApproval)
 
   .get("/uploadanalysis", authenticateToken, uploadAnalysis)
+  .get("/documentsanalysis", authenticateToken, documentsAnalysis)
 
   .get("/notifybyemailandsms", authenticateToken, notifyByEmailAndSms)
 

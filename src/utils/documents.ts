@@ -1,4 +1,4 @@
-const documents = [
+export const documents = [
   "Letter of First Appointment",
   "Gazette of Confirmation of Appointment",
   "Letter of Last Promotion",

@@ -13,7 +13,7 @@ import path from "path";
 import fs from "fs";
 import excelToJson from "convert-excel-to-json";
 import generateRandomPassword from "../utils/generateRandomPassword";
-import { documentsToUpload } from "../utils/documents";
+import { documents, documentsToUpload } from "../utils/documents";
 import calculateRemark from "../utils/calculateRemark";
 import { sendMailFunc } from "../utils/nodemailer";
 import { emailTemplate } from "./emailTemplate";
@@ -706,6 +706,53 @@ export const uploadAnalysis = async (req: Request, res: Response) => {
   }
 };
 
+export const documentsAnalysis = async (req: Request, res: Response) => {
+  const counts = await Candidate.aggregate([
+    { $unwind: "$uploadedDocuments" }, // flatten uploadedDocuments
+    {
+      $match: {
+        "uploadedDocuments.fileUrl": { $nin: [null, ""] }, // ensure fileUrl exists
+      },
+    },
+    {
+      $group: {
+        _id: "$uploadedDocuments.fileType",
+        count: { $sum: 1 },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        document: "$_id",
+        count: 1,
+      },
+    },
+  ]);
+
+  // ensure all documents in your list appear, even if count = 0
+  const result = documents.map((doc) => {
+    const found = counts.find((c) => c.document === doc);
+    return {
+      document: doc,
+      count: found ? found.count : 0,
+    };
+  });
+
+  // return result;
+
+  const candidates = await Candidate.countDocuments();
+  const totalDocumentsUploaded = result.reduce((acc, c) => acc + c.count, 0);
+  // console.log({
+  //   totalDocumentsUploaded,
+  //   result,
+  //   expectedDocuments: candidates * documents.length,
+  // });
+  res.send({
+    totalDocumentsUploaded: totalDocumentsUploaded.toLocaleString(),
+    result,
+    expectedDocuments: (candidates * documents.length).toLocaleString(),
+  });
+};
 export const searchCandidate = async (req: Request, res: Response) => {
   const candidates = await Candidate.find({
     $or: [

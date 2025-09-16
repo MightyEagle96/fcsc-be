@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.documentsToUpload = void 0;
-const documents = [
+exports.documentsToUpload = exports.documents = void 0;
+exports.documents = [
     "Letter of First Appointment",
     "Gazette of Confirmation of Appointment",
     "Letter of Last Promotion",
@@ -11,7 +11,7 @@ const documents = [
     "Passport Photograph",
     "Signature",
 ];
-exports.documentsToUpload = documents.map((doc) => {
+exports.documentsToUpload = exports.documents.map((doc) => {
     return {
         fileType: doc,
     };
