@@ -27,6 +27,7 @@ import AdminLogModel from "../models/adminLogs";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { applicationStatus } from "./promotionController";
+import { parseDuplicateError } from "../utils/parseDuplicateError";
 
 dayjs.extend(utc);
 
@@ -497,23 +498,6 @@ export const uploadFile = async (req: AuthenticatedAdmin, res: Response) => {
         { key: "dateOfLastPromotion", label: "Date of Last Promotion" },
       ];
 
-      // for (const field of dateFields) {
-      //   if (row[field.key]) {
-      //     console.log(row[field.key]);
-
-      //     const parsed = dayjs(row[field.key], ["D/M/YYYY", "DD/MM/YYYY"]); // strict mode
-      //     if (!parsed.isValid()) {
-      //       console.log(
-      //         `Invalid ${field.label} '${row[field.key]}' at row ${rowNumber}`
-      //       );
-      //       return res.status(400).json({
-      //         message: `Invalid ${field.label} '${
-      //           row[field.key]
-      //         }' at row ${rowNumber}. Must be in DD/MM/YYYY format.`,
-      //       });
-      //     }
-      //   }
-      // }
       for (const field of dateFields) {
         if (row[field.key]) {
           let parsed;
@@ -585,47 +569,11 @@ export const uploadFile = async (req: AuthenticatedAdmin, res: Response) => {
     });
     res.send(`Created ${allRows.length.toLocaleString()} candidates`);
   } catch (err: any) {
-    // if (err.code === 11000) {
-    //   return res
-    //     .status(400)
-    //     .send(
-    //       "Duplicate records in IPPIS number, email, or phone number found in the database. Please ensure these fields are unique."
-    //     );
-    // }
-    // res.status(500).send(err.message || "An unexpected error occurred");
-    // if (err.code === 11000) {
-    //   const key = Object.keys(err.keyPattern || {})[0];
-    //   const value = err.keyValue ? JSON.stringify(err.keyValue) : "unknown";
-
-    //   return res.status(400).json({
-    //     message: `Duplicate ${key} found: ${value}. Please ensure it is unique.`,
-    //   });
-    // }
-    // res.status(500).send(err.message || "An unexpected error occurred");
-
     if (err.code === 11000 || err.writeErrors) {
-      // Handle duplicate errors
-      const duplicates = [];
-
-      if (err.writeErrors) {
-        console.log(err.writeErrors);
-        // Multiple duplicate errors
-        for (const we of err.writeErrors) {
-          const key = Object.keys(we.err?.keyPattern || {})[0];
-          const value = we.err?.keyValue
-            ? JSON.stringify(we.err.keyValue)
-            : "unknown";
-          duplicates.push(`Duplicate ${key}: ${value}`);
-        }
-      } else {
-        // Single duplicate error
-        const key = Object.keys(err.keyPattern || {})[0];
-        const value = err.keyValue ? JSON.stringify(err.keyValue) : "unknown";
-        duplicates.push(`Duplicate ${key}: ${value}`);
-      }
+      const duplicates = parseDuplicateError(err);
 
       return res.status(400).json({
-        message: `Some records could not be inserted due to duplicates`,
+        message: "Some records could not be inserted due to duplicates",
         duplicates,
       });
     }

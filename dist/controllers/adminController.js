@@ -35,6 +35,7 @@ const adminLogs_1 = __importDefault(require("../models/adminLogs"));
 const dayjs_1 = __importDefault(require("dayjs"));
 const utc_1 = __importDefault(require("dayjs/plugin/utc"));
 const promotionController_1 = require("./promotionController");
+const parseDuplicateError_1 = require("../utils/parseDuplicateError");
 dayjs_1.default.extend(utc_1.default);
 //view candidates
 const viewCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -269,7 +270,7 @@ function cleanExcelDate(value) {
         .replace(/[-.]/g, "/"); // unify delimiters
 }
 const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d;
+    var _a, _b;
     if (!req.file) {
         return res.status(400).send("No file uploaded");
     }
@@ -434,22 +435,6 @@ const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
                 { key: "dateOfConfirmation", label: "Date of Confirmation" },
                 { key: "dateOfLastPromotion", label: "Date of Last Promotion" },
             ];
-            // for (const field of dateFields) {
-            //   if (row[field.key]) {
-            //     console.log(row[field.key]);
-            //     const parsed = dayjs(row[field.key], ["D/M/YYYY", "DD/MM/YYYY"]); // strict mode
-            //     if (!parsed.isValid()) {
-            //       console.log(
-            //         `Invalid ${field.label} '${row[field.key]}' at row ${rowNumber}`
-            //       );
-            //       return res.status(400).json({
-            //         message: `Invalid ${field.label} '${
-            //           row[field.key]
-            //         }' at row ${rowNumber}. Must be in DD/MM/YYYY format.`,
-            //       });
-            //     }
-            //   }
-            // }
             for (const field of dateFields) {
                 if (row[field.key]) {
                     let parsed;
@@ -483,10 +468,10 @@ const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             // const plainPassword = generateRandomPassword(8);
             // 🔹 Generate plain + hashed passwords for each candidate in parallel
             const preparedBatch = yield Promise.all(batch.map((c) => __awaiter(void 0, void 0, void 0, function* () {
-                var _e;
+                var _c;
                 const plainPassword = (0, generateRandomPassword_1.default)(8);
                 const hashedPassword = yield bcrypt_1.default.hash(plainPassword, 8); // use cost 8 for speed
-                return Object.assign(Object.assign({}, c), { ippisNumber: normalizeString(c.ippisNumber), email: normalizeString(c.email), cadre: normalizeString(c.cadre), currentMDA: normalizeString(c.currentMDA), phoneNumber: (_e = c.phoneNumber) === null || _e === void 0 ? void 0 : _e.toString().replace(/\D/g, ""), password: hashedPassword, passwords: [plainPassword], uploadedDocuments: documents_1.documentsToUpload, remark: (0, calculateRemark_1.default)(c) });
+                return Object.assign(Object.assign({}, c), { ippisNumber: normalizeString(c.ippisNumber), email: normalizeString(c.email), cadre: normalizeString(c.cadre), currentMDA: normalizeString(c.currentMDA), phoneNumber: (_c = c.phoneNumber) === null || _c === void 0 ? void 0 : _c.toString().replace(/\D/g, ""), password: hashedPassword, passwords: [plainPassword], uploadedDocuments: documents_1.documentsToUpload, remark: (0, calculateRemark_1.default)(c) });
             })));
             //await Candidate.insertMany(preparedBatch);
             // ✅ atomic insert: fail the whole batch if any error occurs
@@ -499,44 +484,10 @@ const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         res.send(`Created ${allRows.length.toLocaleString()} candidates`);
     }
     catch (err) {
-        // if (err.code === 11000) {
-        //   return res
-        //     .status(400)
-        //     .send(
-        //       "Duplicate records in IPPIS number, email, or phone number found in the database. Please ensure these fields are unique."
-        //     );
-        // }
-        // res.status(500).send(err.message || "An unexpected error occurred");
-        // if (err.code === 11000) {
-        //   const key = Object.keys(err.keyPattern || {})[0];
-        //   const value = err.keyValue ? JSON.stringify(err.keyValue) : "unknown";
-        //   return res.status(400).json({
-        //     message: `Duplicate ${key} found: ${value}. Please ensure it is unique.`,
-        //   });
-        // }
-        // res.status(500).send(err.message || "An unexpected error occurred");
         if (err.code === 11000 || err.writeErrors) {
-            // Handle duplicate errors
-            const duplicates = [];
-            if (err.writeErrors) {
-                console.log(err.writeErrors);
-                // Multiple duplicate errors
-                for (const we of err.writeErrors) {
-                    const key = Object.keys(((_c = we.err) === null || _c === void 0 ? void 0 : _c.keyPattern) || {})[0];
-                    const value = ((_d = we.err) === null || _d === void 0 ? void 0 : _d.keyValue)
-                        ? JSON.stringify(we.err.keyValue)
-                        : "unknown";
-                    duplicates.push(`Duplicate ${key}: ${value}`);
-                }
-            }
-            else {
-                // Single duplicate error
-                const key = Object.keys(err.keyPattern || {})[0];
-                const value = err.keyValue ? JSON.stringify(err.keyValue) : "unknown";
-                duplicates.push(`Duplicate ${key}: ${value}`);
-            }
+            const duplicates = (0, parseDuplicateError_1.parseDuplicateError)(err);
             return res.status(400).json({
-                message: `Some records could not be inserted due to duplicates`,
+                message: "Some records could not be inserted due to duplicates",
                 duplicates,
             });
         }
@@ -555,7 +506,7 @@ const deleteCandidates = (req, res) => __awaiter(void 0, void 0, void 0, functio
 });
 exports.deleteCandidates = deleteCandidates;
 const createOfficerAccount = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _f;
+    var _d;
     try {
         // return res.status(400).send("Admin already exists oooo");
         /**Check for existing email */
@@ -569,7 +520,7 @@ const createOfficerAccount = (req, res) => __awaiter(void 0, void 0, void 0, fun
         const newAdmin = new adminLogin_1.AdminModel(Object.assign(Object.assign({}, req.body), { email: req.body.email, password: hashedPassowrd, yetToChangePassword: true }));
         yield newAdmin.save();
         yield adminLogs_1.default.create({
-            account: (_f = req.admin) === null || _f === void 0 ? void 0 : _f._id,
+            account: (_d = req.admin) === null || _d === void 0 ? void 0 : _d._id,
             action: `Created ${req.body.firstName} ${req.body.lastName} as admin staff`,
         });
         res.send("Account created");
@@ -750,7 +701,7 @@ const searchCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function
 });
 exports.searchCandidate = searchCandidate;
 const reverseApproval = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _g;
+    var _e;
     try {
         const candidate = yield candidateModel_1.Candidate.findById(req.query._id);
         if (!candidate) {
@@ -766,7 +717,7 @@ const reverseApproval = (req, res) => __awaiter(void 0, void 0, void 0, function
             },
         });
         yield adminLogs_1.default.create({
-            account: (_g = req.admin) === null || _g === void 0 ? void 0 : _g._id,
+            account: (_e = req.admin) === null || _e === void 0 ? void 0 : _e._id,
             action: `Reversed approval for ${candidate.fullName}`,
         });
         res.send("Approval reversed");
@@ -862,7 +813,7 @@ const viewCorrections = (req, res) => __awaiter(void 0, void 0, void 0, function
 });
 exports.viewCorrections = viewCorrections;
 const viewCorrection = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _h;
+    var _f;
     try {
         const correction = yield correctionData_1.CorrectionModel.findById(req.query.id);
         if (!correction) {
@@ -879,7 +830,7 @@ const viewCorrection = (req, res) => __awaiter(void 0, void 0, void 0, function*
             reason: correction.reason,
             status: correction.status,
             newData: correction.data,
-            oldData: (_h = candidate[correction.correctionField]) !== null && _h !== void 0 ? _h : "-",
+            oldData: (_f = candidate[correction.correctionField]) !== null && _f !== void 0 ? _f : "-",
         });
     }
     catch (error) {
@@ -889,7 +840,7 @@ const viewCorrection = (req, res) => __awaiter(void 0, void 0, void 0, function*
 });
 exports.viewCorrection = viewCorrection;
 const approveCorrection = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _j;
+    var _g;
     try {
         const correction = yield correctionData_1.CorrectionModel.findById(req.query.id);
         if (!correction) {
@@ -903,7 +854,7 @@ const approveCorrection = (req, res) => __awaiter(void 0, void 0, void 0, functi
         yield correctionData_1.CorrectionModel.findByIdAndUpdate(req.query.id, {
             status: "approved",
             dateCorrected: new Date(),
-            correctedBy: (_j = req.admin) === null || _j === void 0 ? void 0 : _j._id,
+            correctedBy: (_g = req.admin) === null || _g === void 0 ? void 0 : _g._id,
         });
         res.send("Correction approved");
     }
@@ -939,13 +890,13 @@ const resetAdminPassword = (req, res) => __awaiter(void 0, void 0, void 0, funct
                     resetToken
                 : "http://localhost:3000/admin/resetpassword/" + resetToken;
             adminPasswordResetQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
-                var _k;
+                var _h;
                 const link = resetLink(resetToken);
                 const phoneNumber = `234${account.phoneNumber.slice(1, account.phoneNumber.length)}`;
                 const message = `Dear ${account.firstName.toUpperCase()}, your password has been reset. Please click the link below to reset your password. ${link}`;
                 yield (0, nodemailer_1.sendMailFunc)(account.email, "PASSWORD RESET", (0, resetPasswordTemplate_1.resetPasswordTemplate)(account.firstName, link));
                 yield adminLogs_1.default.create({
-                    account: (_k = req.admin) === null || _k === void 0 ? void 0 : _k._id,
+                    account: (_h = req.admin) === null || _h === void 0 ? void 0 : _h._id,
                     action: `${account.firstName.toUpperCase()} applied to reset password`,
                 });
                 yield (0, smsHandler_1.SendSms)(message, phoneNumber);
@@ -962,7 +913,7 @@ const resetAdminPassword = (req, res) => __awaiter(void 0, void 0, void 0, funct
 });
 exports.resetAdminPassword = resetAdminPassword;
 const createNewPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _l;
+    var _j;
     try {
         //const { token } = req.params;
         const { password, token } = req.body;
@@ -982,7 +933,7 @@ const createNewPassword = (req, res) => __awaiter(void 0, void 0, void 0, functi
         yield admin.save();
         res.send("Password reset successful");
         yield adminLogs_1.default.create({
-            account: (_l = req.admin) === null || _l === void 0 ? void 0 : _l._id,
+            account: (_j = req.admin) === null || _j === void 0 ? void 0 : _j._id,
             action: `${admin.firstName.toUpperCase()} reset password successfully`,
         });
     }
@@ -1005,7 +956,7 @@ const viewIndividualStaff = (req, res) => __awaiter(void 0, void 0, void 0, func
 });
 exports.viewIndividualStaff = viewIndividualStaff;
 const deleteDeskOfficer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _m, _o;
+    var _k, _l;
     try {
         const adminId = req.query.id;
         // Check if admin is tied to any candidate
@@ -1024,8 +975,8 @@ const deleteDeskOfficer = (req, res) => __awaiter(void 0, void 0, void 0, functi
         const account = yield adminLogin_1.AdminModel.findByIdAndDelete(adminId);
         res.send("Staff deleted successfully");
         yield adminLogs_1.default.create({
-            account: (_m = req.admin) === null || _m === void 0 ? void 0 : _m._id,
-            action: `${(_o = req.admin) === null || _o === void 0 ? void 0 : _o.firstName.toUpperCase()} deleted ${account === null || account === void 0 ? void 0 : account.firstName} successfully`,
+            account: (_k = req.admin) === null || _k === void 0 ? void 0 : _k._id,
+            action: `${(_l = req.admin) === null || _l === void 0 ? void 0 : _l.firstName.toUpperCase()} deleted ${account === null || account === void 0 ? void 0 : account.firstName} successfully`,
         });
     }
     catch (error) {
@@ -1035,7 +986,7 @@ const deleteDeskOfficer = (req, res) => __awaiter(void 0, void 0, void 0, functi
 });
 exports.deleteDeskOfficer = deleteDeskOfficer;
 const updateDeskOfficer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _p, _q;
+    var _m, _o;
     const officer = yield adminLogin_1.AdminModel.findById(req.body._id);
     if (!officer) {
         return res.status(400).send("Officer not found");
@@ -1067,8 +1018,8 @@ const updateDeskOfficer = (req, res) => __awaiter(void 0, void 0, void 0, functi
         },
     });
     yield adminLogs_1.default.create({
-        account: (_p = req.admin) === null || _p === void 0 ? void 0 : _p._id,
-        action: `${(_q = req.admin) === null || _q === void 0 ? void 0 : _q.firstName.toUpperCase()} updated ${account === null || account === void 0 ? void 0 : account.firstName} successfully`,
+        account: (_m = req.admin) === null || _m === void 0 ? void 0 : _m._id,
+        action: `${(_o = req.admin) === null || _o === void 0 ? void 0 : _o.firstName.toUpperCase()} updated ${account === null || account === void 0 ? void 0 : account.firstName} successfully`,
     });
     res.send("Desk Officer updated successfully");
 });
