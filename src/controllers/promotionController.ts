@@ -44,6 +44,7 @@ export const recommendedCandidates = async (req: Request, res: Response) => {
         approved: 1,
         dateApproved: 1,
         approvedBy: 1,
+        status: 1,
       })
       .skip((page - 1) * limit)
       .limit(limit)

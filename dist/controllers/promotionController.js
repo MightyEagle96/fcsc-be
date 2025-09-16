@@ -55,6 +55,7 @@ const recommendedCandidates = (req, res) => __awaiter(void 0, void 0, void 0, fu
             approved: 1,
             dateApproved: 1,
             approvedBy: 1,
+            status: 1,
         })
             .skip((page - 1) * limit)
             .limit(limit)
