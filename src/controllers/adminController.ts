@@ -25,6 +25,9 @@ import { resetPasswordTemplate } from "./resetPasswordTemplate";
 import crypto from "crypto";
 import AdminLogModel from "../models/adminLogs";
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+
+dayjs.extend(utc);
 
 //view candidates
 export const viewCandidates = async (req: Request, res: Response) => {
@@ -268,6 +271,29 @@ for (const s of stateAndLgas) {
     s.lgas.map(normalizeString)
   );
 }
+
+// 🔹 Helper to clean and normalize Excel date values
+function cleanExcelDate(value: any): string {
+  if (!value) return "";
+
+  // If it's already a JS Date → format to DD/MM/YYYY
+  if (value instanceof Date) {
+    return dayjs(value).format("DD/MM/YYYY");
+  }
+
+  // If it's a number (Excel serial) → convert
+  if (!isNaN(value)) {
+    return dayjs("1899-12-30").add(value, "day").format("DD/MM/YYYY");
+  }
+
+  // If it's a string → sanitize
+  return value
+    .toString()
+    .trim()
+    .replace(/\u200B/g, "") // remove zero-width spaces
+    .replace(/\s+/g, "") // remove stray spaces
+    .replace(/[-.]/g, "/"); // unify delimiters
+}
 export const uploadFile = async (req: AuthenticatedAdmin, res: Response) => {
   if (!req.file) {
     return res.status(400).send("No file uploaded");
@@ -426,6 +452,63 @@ export const uploadFile = async (req: AuthenticatedAdmin, res: Response) => {
           message: `Invalid phone number '${row.phoneNumber}' at row ${rowNumber}. Must be at least 11 digits.`,
         });
       }
+
+      // 🔹 Validate date fields
+      const dateFields = [
+        { key: "dateOfBirth", label: "Date of Birth" },
+        { key: "dateOfFirstAppointment", label: "Date of First Appointment" },
+        { key: "dateOfConfirmation", label: "Date of Confirmation" },
+        { key: "dateOfLastPromotion", label: "Date of Last Promotion" },
+      ];
+
+      // for (const field of dateFields) {
+      //   if (row[field.key]) {
+      //     console.log(row[field.key]);
+
+      //     const parsed = dayjs(row[field.key], ["D/M/YYYY", "DD/MM/YYYY"]); // strict mode
+      //     if (!parsed.isValid()) {
+      //       console.log(
+      //         `Invalid ${field.label} '${row[field.key]}' at row ${rowNumber}`
+      //       );
+      //       return res.status(400).json({
+      //         message: `Invalid ${field.label} '${
+      //           row[field.key]
+      //         }' at row ${rowNumber}. Must be in DD/MM/YYYY format.`,
+      //       });
+      //     }
+      //   }
+      // }
+      for (const field of dateFields) {
+        if (row[field.key]) {
+          let parsed;
+
+          // Handle different input types from excelToJson
+          if (typeof row[field.key] === "string") {
+            // Parse string dates with strict format
+            parsed = dayjs(row[field.key], ["D/M/YYYY", "DD/MM/YYYY"], true);
+          } else if (row[field.key] instanceof Date) {
+            // Convert Date object to UTC and normalize to start of day
+            parsed = dayjs.utc(row[field.key]).startOf("day");
+          } else {
+            // Handle Excel serial numbers or other formats
+            parsed = dayjs.utc(row[field.key]).startOf("day");
+          }
+
+          if (!parsed.isValid()) {
+            console.log(
+              `Invalid ${field.label} '${row[field.key]}' at row ${rowNumber}`
+            );
+            return res.status(400).json({
+              message: `Invalid ${field.label} '${
+                row[field.key]
+              }' at row ${rowNumber}. Must be in DD/MM/YYYY format or a valid date.`,
+            });
+          }
+
+          // Store the normalized date as a JavaScript Date object in UTC
+          row[field.key] = parsed.toDate();
+        }
+      }
     }
 
     // If validation passed, insert in batches
@@ -444,19 +527,6 @@ export const uploadFile = async (req: AuthenticatedAdmin, res: Response) => {
             ...c,
             ippisNumber: normalizeString(c.ippisNumber),
             email: normalizeString(c.email),
-            dateOfBirth: dayjs(c.dateOfBirth, "DD/MM/YYYY").toDate(),
-            dateOfFirstAppointment: dayjs(
-              c.dateOfFirstAppointment,
-              "DD/MM/YYYY"
-            ).toDate(),
-            dateOfConfirmation: dayjs(
-              c.dateOfConfirmation,
-              "DD/MM/YYYY"
-            ).toDate(),
-            dateOfLastPromotion: dayjs(
-              c.dateOfLastPromotion,
-              "DD/MM/YYYY"
-            ).toDate(),
             cadre: normalizeString(c.cadre),
             currentMDA: normalizeString(c.currentMDA),
             phoneNumber: c.phoneNumber?.toString().replace(/\D/g, ""),

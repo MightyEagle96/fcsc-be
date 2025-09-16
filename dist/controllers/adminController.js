@@ -33,6 +33,8 @@ const resetPasswordTemplate_1 = require("./resetPasswordTemplate");
 const crypto_1 = __importDefault(require("crypto"));
 const adminLogs_1 = __importDefault(require("../models/adminLogs"));
 const dayjs_1 = __importDefault(require("dayjs"));
+const utc_1 = __importDefault(require("dayjs/plugin/utc"));
+dayjs_1.default.extend(utc_1.default);
 //view candidates
 const viewCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -243,6 +245,26 @@ const NORMALIZED_STATE_AND_LGAS = {};
 for (const s of excelData_1.stateAndLgas) {
     NORMALIZED_STATE_AND_LGAS[normalizeString(s.state)] = new Set(s.lgas.map(normalizeString));
 }
+// 🔹 Helper to clean and normalize Excel date values
+function cleanExcelDate(value) {
+    if (!value)
+        return "";
+    // If it's already a JS Date → format to DD/MM/YYYY
+    if (value instanceof Date) {
+        return (0, dayjs_1.default)(value).format("DD/MM/YYYY");
+    }
+    // If it's a number (Excel serial) → convert
+    if (!isNaN(value)) {
+        return (0, dayjs_1.default)("1899-12-30").add(value, "day").format("DD/MM/YYYY");
+    }
+    // If it's a string → sanitize
+    return value
+        .toString()
+        .trim()
+        .replace(/\u200B/g, "") // remove zero-width spaces
+        .replace(/\s+/g, "") // remove stray spaces
+        .replace(/[-.]/g, "/"); // unify delimiters
+}
 const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     if (!req.file) {
@@ -373,6 +395,55 @@ const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
                     message: `Invalid phone number '${row.phoneNumber}' at row ${rowNumber}. Must be at least 11 digits.`,
                 });
             }
+            // 🔹 Validate date fields
+            const dateFields = [
+                { key: "dateOfBirth", label: "Date of Birth" },
+                { key: "dateOfFirstAppointment", label: "Date of First Appointment" },
+                { key: "dateOfConfirmation", label: "Date of Confirmation" },
+                { key: "dateOfLastPromotion", label: "Date of Last Promotion" },
+            ];
+            // for (const field of dateFields) {
+            //   if (row[field.key]) {
+            //     console.log(row[field.key]);
+            //     const parsed = dayjs(row[field.key], ["D/M/YYYY", "DD/MM/YYYY"]); // strict mode
+            //     if (!parsed.isValid()) {
+            //       console.log(
+            //         `Invalid ${field.label} '${row[field.key]}' at row ${rowNumber}`
+            //       );
+            //       return res.status(400).json({
+            //         message: `Invalid ${field.label} '${
+            //           row[field.key]
+            //         }' at row ${rowNumber}. Must be in DD/MM/YYYY format.`,
+            //       });
+            //     }
+            //   }
+            // }
+            for (const field of dateFields) {
+                if (row[field.key]) {
+                    let parsed;
+                    // Handle different input types from excelToJson
+                    if (typeof row[field.key] === "string") {
+                        // Parse string dates with strict format
+                        parsed = (0, dayjs_1.default)(row[field.key], ["D/M/YYYY", "DD/MM/YYYY"], true);
+                    }
+                    else if (row[field.key] instanceof Date) {
+                        // Convert Date object to UTC and normalize to start of day
+                        parsed = dayjs_1.default.utc(row[field.key]).startOf("day");
+                    }
+                    else {
+                        // Handle Excel serial numbers or other formats
+                        parsed = dayjs_1.default.utc(row[field.key]).startOf("day");
+                    }
+                    if (!parsed.isValid()) {
+                        console.log(`Invalid ${field.label} '${row[field.key]}' at row ${rowNumber}`);
+                        return res.status(400).json({
+                            message: `Invalid ${field.label} '${row[field.key]}' at row ${rowNumber}. Must be in DD/MM/YYYY format or a valid date.`,
+                        });
+                    }
+                    // Store the normalized date as a JavaScript Date object in UTC
+                    row[field.key] = parsed.toDate();
+                }
+            }
         }
         // If validation passed, insert in batches
         for (let i = 0; i < allRows.length; i += 500) {
@@ -383,7 +454,7 @@ const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
                 var _c;
                 const plainPassword = (0, generateRandomPassword_1.default)(8);
                 const hashedPassword = yield bcrypt_1.default.hash(plainPassword, 8); // use cost 8 for speed
-                return Object.assign(Object.assign({}, c), { ippisNumber: normalizeString(c.ippisNumber), email: normalizeString(c.email), dateOfBirth: (0, dayjs_1.default)(c.dateOfBirth, "DD/MM/YYYY").toDate(), dateOfFirstAppointment: (0, dayjs_1.default)(c.dateOfFirstAppointment, "DD/MM/YYYY").toDate(), dateOfConfirmation: (0, dayjs_1.default)(c.dateOfConfirmation, "DD/MM/YYYY").toDate(), dateOfLastPromotion: (0, dayjs_1.default)(c.dateOfLastPromotion, "DD/MM/YYYY").toDate(), cadre: normalizeString(c.cadre), currentMDA: normalizeString(c.currentMDA), phoneNumber: (_c = c.phoneNumber) === null || _c === void 0 ? void 0 : _c.toString().replace(/\D/g, ""), password: hashedPassword, passwords: [plainPassword], uploadedDocuments: documents_1.documentsToUpload, remark: (0, calculateRemark_1.default)(c) });
+                return Object.assign(Object.assign({}, c), { ippisNumber: normalizeString(c.ippisNumber), email: normalizeString(c.email), cadre: normalizeString(c.cadre), currentMDA: normalizeString(c.currentMDA), phoneNumber: (_c = c.phoneNumber) === null || _c === void 0 ? void 0 : _c.toString().replace(/\D/g, ""), password: hashedPassword, passwords: [plainPassword], uploadedDocuments: documents_1.documentsToUpload, remark: (0, calculateRemark_1.default)(c) });
             })));
             //await Candidate.insertMany(preparedBatch);
             // ✅ atomic insert: fail the whole batch if any error occurs
