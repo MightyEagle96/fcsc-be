@@ -15,7 +15,12 @@ const uploadToB2_1 = require("../utils/uploadToB2");
 const b2_1 = require("../b2");
 const correctionData_1 = require("./correctionData");
 const candidateSchema = new mongoose_1.Schema({
-    ippisNumber: { type: String, unique: true, lowercase: true },
+    ippisNumber: {
+        type: String,
+        unique: true,
+        lowercase: true,
+        required: true,
+    },
     fullName: { type: String, lowercase: true },
     dateOfBirth: Date,
     gender: { type: String, lowercase: true },
@@ -36,7 +41,7 @@ const candidateSchema = new mongoose_1.Schema({
         maxlength: 11,
         match: [/^\d{11}$/, "Phone number must be exactly 11 digits"],
     },
-    email: { type: String, unique: true, lowercase: true },
+    email: { type: String, unique: true, lowercase: true, required: true },
     stateOfCurrentPosting: { type: String, lowercase: true },
     year2021: Number,
     year2022: Number,

@@ -356,6 +356,7 @@ export const uploadFile = async (req: AuthenticatedAdmin, res: Response) => {
     // Track duplicates within this upload
     const seenIppis = new Set<string>();
     const seenEmails = new Set<string>();
+    const seenPhoneNumbers = new Set<string>();
 
     // 🔎 Validate rows before insert
     for (let rowIndex = 0; rowIndex < allRows.length; rowIndex++) {
@@ -433,6 +434,13 @@ export const uploadFile = async (req: AuthenticatedAdmin, res: Response) => {
           });
         }
         seenIppis.add(ippisNumber);
+      } else {
+        console.log(
+          `Invalid IPPIS Number '${row.ippisNumber}' at row ${rowNumber}`
+        );
+        return res.status(400).json({
+          message: `Invalid IPPIS Number '${row.ippisNumber}' at row ${rowNumber}`,
+        });
       }
 
       // 🔹 Validate email uniqueness
@@ -444,6 +452,31 @@ export const uploadFile = async (req: AuthenticatedAdmin, res: Response) => {
           });
         }
         seenEmails.add(email);
+      } else {
+        console.log(`Invalid email '${row.email}' at row ${rowNumber}`);
+        return res.status(400).json({
+          message: `Invalid email '${row.email}' at row ${rowNumber}`,
+        });
+      }
+
+      // 🔹 Validate phone uniqueness
+      if (phone) {
+        if (seenPhoneNumbers.has(phone)) {
+          console.log(
+            `Duplicate phone number '${row.phoneNumber}' at row ${rowNumber}`
+          );
+          return res.status(400).json({
+            message: `Duplicate phone number '${row.phoneNumber}' at row ${rowNumber}`,
+          });
+        }
+        seenPhoneNumbers.add(phone);
+      } else {
+        console.log(
+          `Invalid phone number '${row.phoneNumber}' at row ${rowNumber}`
+        );
+        return res.status(400).json({
+          message: `Invalid phone number '${row.phoneNumber}' at row ${rowNumber}`,
+        });
       }
 
       // 🔹 Validate phone number (must exist & be 11–15 digits)
@@ -552,13 +585,51 @@ export const uploadFile = async (req: AuthenticatedAdmin, res: Response) => {
     });
     res.send(`Created ${allRows.length.toLocaleString()} candidates`);
   } catch (err: any) {
-    if (err.code === 11000) {
-      return res
-        .status(400)
-        .send(
-          "Duplicate records in IPPIS number, email, or phone number found in the database. Please ensure these fields are unique."
-        );
+    // if (err.code === 11000) {
+    //   return res
+    //     .status(400)
+    //     .send(
+    //       "Duplicate records in IPPIS number, email, or phone number found in the database. Please ensure these fields are unique."
+    //     );
+    // }
+    // res.status(500).send(err.message || "An unexpected error occurred");
+    // if (err.code === 11000) {
+    //   const key = Object.keys(err.keyPattern || {})[0];
+    //   const value = err.keyValue ? JSON.stringify(err.keyValue) : "unknown";
+
+    //   return res.status(400).json({
+    //     message: `Duplicate ${key} found: ${value}. Please ensure it is unique.`,
+    //   });
+    // }
+    // res.status(500).send(err.message || "An unexpected error occurred");
+
+    if (err.code === 11000 || err.writeErrors) {
+      // Handle duplicate errors
+      const duplicates = [];
+
+      if (err.writeErrors) {
+        console.log(err.writeErrors);
+        // Multiple duplicate errors
+        for (const we of err.writeErrors) {
+          const key = Object.keys(we.err?.keyPattern || {})[0];
+          const value = we.err?.keyValue
+            ? JSON.stringify(we.err.keyValue)
+            : "unknown";
+          duplicates.push(`Duplicate ${key}: ${value}`);
+        }
+      } else {
+        // Single duplicate error
+        const key = Object.keys(err.keyPattern || {})[0];
+        const value = err.keyValue ? JSON.stringify(err.keyValue) : "unknown";
+        duplicates.push(`Duplicate ${key}: ${value}`);
+      }
+
+      return res.status(400).json({
+        message: `Some records could not be inserted due to duplicates`,
+        duplicates,
+      });
     }
+
     res.status(500).send(err.message || "An unexpected error occurred");
   } finally {
     if (newPath && fs.existsSync(newPath)) {

@@ -66,7 +66,12 @@ export interface AuthenticatedCandidate extends Request {
 
 const candidateSchema = new Schema<ICandidate>(
   {
-    ippisNumber: { type: String, unique: true, lowercase: true },
+    ippisNumber: {
+      type: String,
+      unique: true,
+      lowercase: true,
+      required: true,
+    },
     fullName: { type: String, lowercase: true },
     dateOfBirth: Date,
     gender: { type: String, lowercase: true },
@@ -87,7 +92,7 @@ const candidateSchema = new Schema<ICandidate>(
       maxlength: 11,
       match: [/^\d{11}$/, "Phone number must be exactly 11 digits"],
     },
-    email: { type: String, unique: true, lowercase: true },
+    email: { type: String, unique: true, lowercase: true, required: true },
     stateOfCurrentPosting: { type: String, lowercase: true },
     year2021: Number,
     year2022: Number,

@@ -8,7 +8,7 @@ const environment = process.env.NODE_ENV || "development";
 const databaseURI = (
   environment === "production"
     ? process.env.PROD_DB_URI
-    : process.env.PROD_DB_URI
+    : process.env.DEV_DB_URI
 ) as string; //process.env.DEV_DB_URI
 
 //const databaseURI = process.env.MONGO_URI as string;
