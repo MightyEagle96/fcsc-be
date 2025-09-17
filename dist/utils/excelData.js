@@ -73,6 +73,7 @@ exports.CADRES = [
     "quantity surveyor",
     "registrar (trade marks)",
     "registrar of co-operative societies",
+    "scientific officer",
     "scientific officer (fed. min. of agriculture & food security)",
     "scientific officer (fed. min. of environment)",
     "scientific officer (fed. min. of innovation, science & technology)",
