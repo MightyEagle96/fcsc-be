@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.notificationAnalysis = exports.updateDeskOfficer = exports.deleteDeskOfficer = exports.viewIndividualStaff = exports.createNewPassword = exports.resetAdminPassword = exports.approveCorrection = exports.viewCorrection = exports.viewCorrections = exports.notifyByEmailAndSms = exports.reverseApproval = exports.searchCandidate = exports.documentsAnalysis = exports.uploadAnalysis = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
+exports.notificationAnalysis = exports.updateDeskOfficer = exports.deleteDeskOfficer = exports.viewIndividualStaff = exports.createNewPassword = exports.resetAdminPassword = exports.notifyByEmailAndSms = exports.reverseApproval = exports.searchCandidate = exports.documentsAnalysis = exports.uploadAnalysis = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const adminLogin_1 = require("../models/adminLogin");
 const DataQueue_1 = require("../utils/DataQueue");
@@ -27,7 +27,6 @@ const calculateRemark_1 = __importDefault(require("../utils/calculateRemark"));
 const nodemailer_1 = require("../utils/nodemailer");
 const emailTemplate_1 = require("./emailTemplate");
 const smsHandler_1 = require("../utils/smsHandler");
-const correctionData_1 = require("../models/correctionData");
 const excelData_1 = require("../utils/excelData");
 const resetPasswordTemplate_1 = require("./resetPasswordTemplate");
 const crypto_1 = __importDefault(require("crypto"));
@@ -795,82 +794,6 @@ const notifyByEmailAndSms = (req, res) => __awaiter(void 0, void 0, void 0, func
     }
 });
 exports.notifyByEmailAndSms = notifyByEmailAndSms;
-const viewCorrections = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const corrections = yield correctionData_1.CorrectionModel.find()
-            .lean()
-            .populate("candidate");
-        const data = corrections
-            .filter((c) => c.candidate !== null) // remove orphans
-            .map((c, i) => (Object.assign(Object.assign({}, c), { name: c.candidate.fullName, mda: c.candidate.currentMDA, id: i + 1 })));
-        console.log(data);
-        res.send(data);
-    }
-    catch (error) {
-        console.log(error);
-        res.status(500).send("Error occurred");
-    }
-});
-exports.viewCorrections = viewCorrections;
-const viewCorrection = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _f;
-    try {
-        const correction = yield correctionData_1.CorrectionModel.findById(req.query.id);
-        if (!correction) {
-            return res.status(404).send("Correction not found");
-        }
-        const candidate = yield candidateModel_1.Candidate.findById(correction.candidate)
-            .select({ [correction.correctionField]: 1 })
-            .lean();
-        if (!candidate) {
-            return res.status(404).send("Candidate not found");
-        }
-        res.send({
-            _id: correction._id,
-            reason: correction.reason,
-            status: correction.status,
-            newData: correction.data,
-            oldData: (_f = candidate[correction.correctionField]) !== null && _f !== void 0 ? _f : "-",
-        });
-    }
-    catch (error) {
-        console.error("viewCorrection error:", error);
-        res.status(500).send("Error occurred");
-    }
-});
-exports.viewCorrection = viewCorrection;
-const approveCorrection = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _g, _h;
-    try {
-        const correction = yield correctionData_1.CorrectionModel.findById(req.query.id);
-        if (!correction) {
-            return res.status(404).send("Correction not found");
-        }
-        const candidate = yield candidateModel_1.Candidate.findOne({ _id: correction.candidate });
-        yield correctionData_1.CorrectionModel.findByIdAndUpdate(req.query.id, {
-            status: "approved",
-            dateCorrected: new Date(),
-            correctedBy: (_g = req.admin) === null || _g === void 0 ? void 0 : _g._id,
-            oldData: candidate === null || candidate === void 0 ? void 0 : candidate[correction.correctionField],
-        });
-        yield candidateModel_1.Candidate.updateOne({ _id: correction.candidate }, {
-            $set: {
-                [correction.correctionField]: correction.data,
-            },
-        });
-        yield correctionData_1.CorrectionModel.findByIdAndUpdate(req.query.id, {
-            status: "approved",
-            dateCorrected: new Date(),
-            correctedBy: (_h = req.admin) === null || _h === void 0 ? void 0 : _h._id,
-        });
-        res.send("Correction approved");
-    }
-    catch (error) {
-        console.error("approveCorrection error:", error);
-        res.status(500).send("Error occurred");
-    }
-});
-exports.approveCorrection = approveCorrection;
 const adminPasswordResetQueue = new DataQueue_1.ConcurrentJobQueue({
     concurrency: 20, // run 20 at once
     maxQueueSize: 10000, // cap queue if needed
@@ -897,13 +820,13 @@ const resetAdminPassword = (req, res) => __awaiter(void 0, void 0, void 0, funct
                     resetToken
                 : "http://localhost:3000/admin/resetpassword/" + resetToken;
             adminPasswordResetQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
-                var _j;
+                var _f;
                 const link = resetLink(resetToken);
                 const phoneNumber = `234${account.phoneNumber.slice(1, account.phoneNumber.length)}`;
                 const message = `Dear ${account.firstName.toUpperCase()}, your password has been reset. Please click the link below to reset your password. ${link}`;
                 yield (0, nodemailer_1.sendMailFunc)(account.email, "PASSWORD RESET", (0, resetPasswordTemplate_1.resetPasswordTemplate)(account.firstName, link));
                 yield adminLogs_1.default.create({
-                    account: (_j = req.admin) === null || _j === void 0 ? void 0 : _j._id,
+                    account: (_f = req.admin) === null || _f === void 0 ? void 0 : _f._id,
                     action: `${account.firstName.toUpperCase()} applied to reset password`,
                 });
                 yield (0, smsHandler_1.SendSms)(message, phoneNumber);
@@ -920,7 +843,7 @@ const resetAdminPassword = (req, res) => __awaiter(void 0, void 0, void 0, funct
 });
 exports.resetAdminPassword = resetAdminPassword;
 const createNewPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _k;
+    var _g;
     try {
         //const { token } = req.params;
         const { password, token } = req.body;
@@ -940,7 +863,7 @@ const createNewPassword = (req, res) => __awaiter(void 0, void 0, void 0, functi
         yield admin.save();
         res.send("Password reset successful");
         yield adminLogs_1.default.create({
-            account: (_k = req.admin) === null || _k === void 0 ? void 0 : _k._id,
+            account: (_g = req.admin) === null || _g === void 0 ? void 0 : _g._id,
             action: `${admin.firstName.toUpperCase()} reset password successfully`,
         });
     }
@@ -963,7 +886,7 @@ const viewIndividualStaff = (req, res) => __awaiter(void 0, void 0, void 0, func
 });
 exports.viewIndividualStaff = viewIndividualStaff;
 const deleteDeskOfficer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _l, _m;
+    var _h, _j;
     try {
         const adminId = req.query.id;
         // Check if admin is tied to any candidate
@@ -982,8 +905,8 @@ const deleteDeskOfficer = (req, res) => __awaiter(void 0, void 0, void 0, functi
         const account = yield adminLogin_1.AdminModel.findByIdAndDelete(adminId);
         res.send("Staff deleted successfully");
         yield adminLogs_1.default.create({
-            account: (_l = req.admin) === null || _l === void 0 ? void 0 : _l._id,
-            action: `${(_m = req.admin) === null || _m === void 0 ? void 0 : _m.firstName.toUpperCase()} deleted ${account === null || account === void 0 ? void 0 : account.firstName} successfully`,
+            account: (_h = req.admin) === null || _h === void 0 ? void 0 : _h._id,
+            action: `${(_j = req.admin) === null || _j === void 0 ? void 0 : _j.firstName.toUpperCase()} deleted ${account === null || account === void 0 ? void 0 : account.firstName} successfully`,
         });
     }
     catch (error) {
@@ -993,7 +916,7 @@ const deleteDeskOfficer = (req, res) => __awaiter(void 0, void 0, void 0, functi
 });
 exports.deleteDeskOfficer = deleteDeskOfficer;
 const updateDeskOfficer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _o, _p;
+    var _k, _l;
     const officer = yield adminLogin_1.AdminModel.findById(req.body._id);
     if (!officer) {
         return res.status(400).send("Officer not found");
@@ -1025,8 +948,8 @@ const updateDeskOfficer = (req, res) => __awaiter(void 0, void 0, void 0, functi
         },
     });
     yield adminLogs_1.default.create({
-        account: (_o = req.admin) === null || _o === void 0 ? void 0 : _o._id,
-        action: `${(_p = req.admin) === null || _p === void 0 ? void 0 : _p.firstName.toUpperCase()} updated ${account === null || account === void 0 ? void 0 : account.firstName} successfully`,
+        account: (_k = req.admin) === null || _k === void 0 ? void 0 : _k._id,
+        action: `${(_l = req.admin) === null || _l === void 0 ? void 0 : _l.firstName.toUpperCase()} updated ${account === null || account === void 0 ? void 0 : account.firstName} successfully`,
     });
     res.send("Desk Officer updated successfully");
 });

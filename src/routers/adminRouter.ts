@@ -1,7 +1,6 @@
 import { Router } from "express";
 
 import {
-  approveCorrection,
   createAccount,
   createNewPassword,
   createOfficerAccount,
@@ -21,8 +20,6 @@ import {
   uploadAnalysis,
   uploadFile,
   viewAdminStaff,
-  viewCorrection,
-  viewCorrections,
   viewIndividualStaff,
   viewUploadedDocuments,
 } from "../controllers/adminController";
@@ -44,6 +41,11 @@ import {
   pushApplication,
   viewCandidate,
 } from "../controllers/candidateController";
+import {
+  approveCorrection,
+  viewCorrection,
+  viewCorrections,
+} from "../controllers/correctionController";
 
 const adminRouter = Router();
 

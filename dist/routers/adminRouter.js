@@ -10,6 +10,7 @@ const multer_1 = __importDefault(require("multer"));
 const hrController_1 = require("../controllers/hrController");
 const promotionController_1 = require("../controllers/promotionController");
 const candidateController_1 = require("../controllers/candidateController");
+const correctionController_1 = require("../controllers/correctionController");
 const adminRouter = (0, express_1.Router)();
 const upload = (0, multer_1.default)({ dest: "adminuploads/" });
 adminRouter
@@ -36,9 +37,9 @@ adminRouter
     .get("/uploadanalysis", jwtController_1.authenticateToken, adminController_1.uploadAnalysis)
     .get("/documentsanalysis", jwtController_1.authenticateToken, adminController_1.documentsAnalysis)
     .get("/notifybyemailandsms", jwtController_1.authenticateToken, adminController_1.notifyByEmailAndSms)
-    .get("/corrections", jwtController_1.authenticateToken, adminController_1.viewCorrections)
-    .get("/correction", jwtController_1.authenticateToken, adminController_1.viewCorrection)
-    .get("/approvecorrection", jwtController_1.authenticateToken, adminController_1.approveCorrection)
+    .get("/corrections", jwtController_1.authenticateToken, correctionController_1.viewCorrections)
+    .get("/correction", jwtController_1.authenticateToken, correctionController_1.viewCorrection)
+    .get("/approvecorrection", jwtController_1.authenticateToken, correctionController_1.approveCorrection)
     .post("/resetpassword", adminController_1.resetAdminPassword)
     .post("/createnewpassword", adminController_1.createNewPassword)
     .get("/viewindividualstaff", jwtController_1.authenticateToken, adminController_1.viewIndividualStaff)
