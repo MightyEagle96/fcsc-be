@@ -6,6 +6,7 @@ export interface ICorrection {
   correctionField: string;
   reason: string;
   data: any;
+  oldData: any;
   status: "pending" | "approved" | "rejected";
   dateApplied: Date;
   dateCorrected: Date;
@@ -20,6 +21,7 @@ const correctionSchema = new Schema<ICorrection>(
     reason: String,
     status: { type: String, default: "pending" },
     data: Schema.Types.Mixed,
+    oldData: Schema.Types.Mixed,
     dateApplied: { type: Date, default: new Date() },
     dateCorrected: Date,
     correctedBy: { type: Schema.Types.ObjectId, ref: "Admin" },

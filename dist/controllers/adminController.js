@@ -840,12 +840,19 @@ const viewCorrection = (req, res) => __awaiter(void 0, void 0, void 0, function*
 });
 exports.viewCorrection = viewCorrection;
 const approveCorrection = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _g;
+    var _g, _h;
     try {
         const correction = yield correctionData_1.CorrectionModel.findById(req.query.id);
         if (!correction) {
             return res.status(404).send("Correction not found");
         }
+        const candidate = yield candidateModel_1.Candidate.findOne({ _id: correction.candidate });
+        yield correctionData_1.CorrectionModel.findByIdAndUpdate(req.query.id, {
+            status: "approved",
+            dateCorrected: new Date(),
+            correctedBy: (_g = req.admin) === null || _g === void 0 ? void 0 : _g._id,
+            oldData: candidate === null || candidate === void 0 ? void 0 : candidate[correction.correctionField],
+        });
         yield candidateModel_1.Candidate.updateOne({ _id: correction.candidate }, {
             $set: {
                 [correction.correctionField]: correction.data,
@@ -854,7 +861,7 @@ const approveCorrection = (req, res) => __awaiter(void 0, void 0, void 0, functi
         yield correctionData_1.CorrectionModel.findByIdAndUpdate(req.query.id, {
             status: "approved",
             dateCorrected: new Date(),
-            correctedBy: (_g = req.admin) === null || _g === void 0 ? void 0 : _g._id,
+            correctedBy: (_h = req.admin) === null || _h === void 0 ? void 0 : _h._id,
         });
         res.send("Correction approved");
     }
@@ -890,13 +897,13 @@ const resetAdminPassword = (req, res) => __awaiter(void 0, void 0, void 0, funct
                     resetToken
                 : "http://localhost:3000/admin/resetpassword/" + resetToken;
             adminPasswordResetQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
-                var _h;
+                var _j;
                 const link = resetLink(resetToken);
                 const phoneNumber = `234${account.phoneNumber.slice(1, account.phoneNumber.length)}`;
                 const message = `Dear ${account.firstName.toUpperCase()}, your password has been reset. Please click the link below to reset your password. ${link}`;
                 yield (0, nodemailer_1.sendMailFunc)(account.email, "PASSWORD RESET", (0, resetPasswordTemplate_1.resetPasswordTemplate)(account.firstName, link));
                 yield adminLogs_1.default.create({
-                    account: (_h = req.admin) === null || _h === void 0 ? void 0 : _h._id,
+                    account: (_j = req.admin) === null || _j === void 0 ? void 0 : _j._id,
                     action: `${account.firstName.toUpperCase()} applied to reset password`,
                 });
                 yield (0, smsHandler_1.SendSms)(message, phoneNumber);
@@ -913,7 +920,7 @@ const resetAdminPassword = (req, res) => __awaiter(void 0, void 0, void 0, funct
 });
 exports.resetAdminPassword = resetAdminPassword;
 const createNewPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _j;
+    var _k;
     try {
         //const { token } = req.params;
         const { password, token } = req.body;
@@ -933,7 +940,7 @@ const createNewPassword = (req, res) => __awaiter(void 0, void 0, void 0, functi
         yield admin.save();
         res.send("Password reset successful");
         yield adminLogs_1.default.create({
-            account: (_j = req.admin) === null || _j === void 0 ? void 0 : _j._id,
+            account: (_k = req.admin) === null || _k === void 0 ? void 0 : _k._id,
             action: `${admin.firstName.toUpperCase()} reset password successfully`,
         });
     }
@@ -956,7 +963,7 @@ const viewIndividualStaff = (req, res) => __awaiter(void 0, void 0, void 0, func
 });
 exports.viewIndividualStaff = viewIndividualStaff;
 const deleteDeskOfficer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _k, _l;
+    var _l, _m;
     try {
         const adminId = req.query.id;
         // Check if admin is tied to any candidate
@@ -975,8 +982,8 @@ const deleteDeskOfficer = (req, res) => __awaiter(void 0, void 0, void 0, functi
         const account = yield adminLogin_1.AdminModel.findByIdAndDelete(adminId);
         res.send("Staff deleted successfully");
         yield adminLogs_1.default.create({
-            account: (_k = req.admin) === null || _k === void 0 ? void 0 : _k._id,
-            action: `${(_l = req.admin) === null || _l === void 0 ? void 0 : _l.firstName.toUpperCase()} deleted ${account === null || account === void 0 ? void 0 : account.firstName} successfully`,
+            account: (_l = req.admin) === null || _l === void 0 ? void 0 : _l._id,
+            action: `${(_m = req.admin) === null || _m === void 0 ? void 0 : _m.firstName.toUpperCase()} deleted ${account === null || account === void 0 ? void 0 : account.firstName} successfully`,
         });
     }
     catch (error) {
@@ -986,7 +993,7 @@ const deleteDeskOfficer = (req, res) => __awaiter(void 0, void 0, void 0, functi
 });
 exports.deleteDeskOfficer = deleteDeskOfficer;
 const updateDeskOfficer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _m, _o;
+    var _o, _p;
     const officer = yield adminLogin_1.AdminModel.findById(req.body._id);
     if (!officer) {
         return res.status(400).send("Officer not found");
@@ -1018,8 +1025,8 @@ const updateDeskOfficer = (req, res) => __awaiter(void 0, void 0, void 0, functi
         },
     });
     yield adminLogs_1.default.create({
-        account: (_m = req.admin) === null || _m === void 0 ? void 0 : _m._id,
-        action: `${(_o = req.admin) === null || _o === void 0 ? void 0 : _o.firstName.toUpperCase()} updated ${account === null || account === void 0 ? void 0 : account.firstName} successfully`,
+        account: (_o = req.admin) === null || _o === void 0 ? void 0 : _o._id,
+        action: `${(_p = req.admin) === null || _p === void 0 ? void 0 : _p.firstName.toUpperCase()} updated ${account === null || account === void 0 ? void 0 : account.firstName} successfully`,
     });
     res.send("Desk Officer updated successfully");
 });

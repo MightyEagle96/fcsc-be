@@ -1020,6 +1020,16 @@ export const approveCorrection = async (
       return res.status(404).send("Correction not found");
     }
 
+    const candidate = await Candidate.findOne({ _id: correction.candidate });
+
+    await CorrectionModel.findByIdAndUpdate(req.query.id as string, {
+      status: "approved",
+      dateCorrected: new Date(),
+      correctedBy: req.admin?._id,
+      oldData:
+        candidate?.[correction.correctionField as keyof typeof candidate],
+    });
+
     await Candidate.updateOne(
       { _id: correction.candidate },
       {

@@ -9,6 +9,7 @@ const correctionSchema = new mongoose_1.Schema({
     reason: String,
     status: { type: String, default: "pending" },
     data: mongoose_1.Schema.Types.Mixed,
+    oldData: mongoose_1.Schema.Types.Mixed,
     dateApplied: { type: Date, default: new Date() },
     dateCorrected: Date,
     correctedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: "Admin" },
