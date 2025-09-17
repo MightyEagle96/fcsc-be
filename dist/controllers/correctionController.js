@@ -9,22 +9,32 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.approveCorrection = exports.viewCorrection = exports.viewCorrections = void 0;
+exports.correctionsDashboard = exports.approveCorrection = exports.viewCorrection = exports.viewCorrections = void 0;
 const correctionData_1 = require("../models/correctionData");
 const candidateModel_1 = require("../models/candidateModel");
 const viewCorrections = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        const page = (req.query.page || 1);
+        const limit = (req.query.limit || 50);
         const corrections = yield correctionData_1.CorrectionModel.find()
             .lean()
+            .skip((page - 1) * limit)
+            .limit(limit)
             .populate("candidate");
         const data = corrections
             .filter((c) => c.candidate !== null) // remove orphans
-            .map((c, i) => (Object.assign(Object.assign({}, c), { name: c.candidate.fullName, mda: c.candidate.currentMDA, id: i + 1 })));
-        res.send(data);
+            .map((c, i) => (Object.assign(Object.assign({}, c), { name: c.candidate.fullName, mda: c.candidate.currentMDA, id: (page - 1) * limit + i + 1 })));
+        const total = yield correctionData_1.CorrectionModel.countDocuments();
+        res.send({
+            corrections: data,
+            total,
+            page,
+            limit,
+        });
     }
     catch (error) {
-        console.log(error);
-        res.status(500).send("Error occurred");
+        //   console.log(error);
+        //   res.status(500).send("Error occurred");
     }
 });
 exports.viewCorrections = viewCorrections;
@@ -87,3 +97,22 @@ const approveCorrection = (req, res) => __awaiter(void 0, void 0, void 0, functi
     }
 });
 exports.approveCorrection = approveCorrection;
+const correctionsDashboard = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const [pending, approved, total] = yield Promise.all([
+            correctionData_1.CorrectionModel.countDocuments({ status: "pending" }),
+            correctionData_1.CorrectionModel.countDocuments({ status: "approved" }),
+            correctionData_1.CorrectionModel.countDocuments(),
+        ]);
+        res.send({
+            pending: pending.toLocaleString(),
+            approved: approved.toLocaleString(),
+            total: total.toLocaleString(),
+        });
+    }
+    catch (error) {
+        console.error("correctionsDashboard error:", error);
+        res.status(500).send("Error occurred");
+    }
+});
+exports.correctionsDashboard = correctionsDashboard;

@@ -43,6 +43,7 @@ import {
 } from "../controllers/candidateController";
 import {
   approveCorrection,
+  correctionsDashboard,
   viewCorrection,
   viewCorrections,
 } from "../controllers/correctionController";
@@ -102,6 +103,9 @@ adminRouter
   .get("/notificationanalysis", authenticateToken, notificationAnalysis)
 
   .get("/viewcandidate", authenticateToken, viewCandidate)
-  .get("/deletecandidate", authenticateToken, deleteCandidate);
+  .get("/deletecandidate", authenticateToken, deleteCandidate)
+
+  //corrections
+  .get("/correctionsdashboard", authenticateToken, correctionsDashboard);
 
 export default adminRouter;

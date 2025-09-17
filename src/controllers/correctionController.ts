@@ -6,13 +6,13 @@ import { AuthenticatedAdmin } from "../models/adminLogin";
 
 export const viewCorrections = async (req: Request, res: Response) => {
   try {
+    //  console.log(req.query);
     interface Candidate {
       _id: Types.ObjectId;
       fullName: string;
       currentMDA: string;
       // add other fields you care about
     }
-
     interface CorrectionLean {
       _id: Types.ObjectId;
       candidate: Candidate; // after populate, it's no longer just ObjectId
@@ -25,24 +25,32 @@ export const viewCorrections = async (req: Request, res: Response) => {
       dateCorrected?: Date;
       correctedBy?: Types.ObjectId;
     }
-
+    const page = (req.query.page || 1) as number;
+    const limit = (req.query.limit || 50) as number;
     const corrections = await CorrectionModel.find()
       .lean<CorrectionLean[]>()
+      .skip((page - 1) * limit)
+      .limit(limit)
       .populate("candidate");
-
     const data = corrections
       .filter((c) => c.candidate !== null) // remove orphans
       .map((c, i) => ({
         ...c,
         name: c.candidate!.fullName,
         mda: c.candidate!.currentMDA,
-        id: i + 1,
-      }));
 
-    res.send(data);
+        id: (page - 1) * limit + i + 1,
+      }));
+    const total = await CorrectionModel.countDocuments();
+    res.send({
+      corrections: data,
+      total,
+      page,
+      limit,
+    });
   } catch (error) {
-    console.log(error);
-    res.status(500).send("Error occurred");
+    //   console.log(error);
+    //   res.status(500).send("Error occurred");
   }
 };
 
@@ -113,6 +121,25 @@ export const approveCorrection = async (
     res.send("Correction approved");
   } catch (error) {
     console.error("approveCorrection error:", error);
+    res.status(500).send("Error occurred");
+  }
+};
+
+export const correctionsDashboard = async (req: Request, res: Response) => {
+  try {
+    const [pending, approved, total] = await Promise.all([
+      CorrectionModel.countDocuments({ status: "pending" }),
+      CorrectionModel.countDocuments({ status: "approved" }),
+      CorrectionModel.countDocuments(),
+    ]);
+
+    res.send({
+      pending: pending.toLocaleString(),
+      approved: approved.toLocaleString(),
+      total: total.toLocaleString(),
+    });
+  } catch (error) {
+    console.error("correctionsDashboard error:", error);
     res.status(500).send("Error occurred");
   }
 };
