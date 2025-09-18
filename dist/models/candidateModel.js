@@ -78,6 +78,8 @@ const candidateSchema = new mongoose_1.Schema({
     timeEmailwasSent: Date,
     smsSent: { type: Boolean, default: false },
     timeSmswasSent: Date,
+    badEmail: { type: Boolean, default: false },
+    timeAttempted: Date,
 }, { timestamps: true });
 // ✅ Explicit unique indexes
 // candidateSchema.index({ email: 1 }, { unique: true });

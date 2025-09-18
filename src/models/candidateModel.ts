@@ -58,6 +58,8 @@ export interface ICandidate {
   timeEmailwasSent: Date;
   smsSent: boolean;
   timeSmswasSent: Date;
+  badEmail: boolean;
+  timeAttempted: Date;
 }
 
 export interface AuthenticatedCandidate extends Request {
@@ -133,6 +135,8 @@ const candidateSchema = new Schema<ICandidate>(
     timeEmailwasSent: Date,
     smsSent: { type: Boolean, default: false },
     timeSmswasSent: Date,
+    badEmail: { type: Boolean, default: false },
+    timeAttempted: Date,
   },
   { timestamps: true }
 );

@@ -853,7 +853,10 @@ const notificationQueue = new ConcurrentJobQueue({
 });
 export const notifyByEmailAndSms = async (req: Request, res: Response) => {
   try {
-    const candidates = await Candidate.find().select({ uploadedDocuments: 0 });
+    const candidates = await Candidate.find({
+      emailSent: false,
+      badEmail: false,
+    }).select({ uploadedDocuments: 0 });
 
     res.send("Sending notifications");
     const smsMessage = (
@@ -888,6 +891,12 @@ export const notifyByEmailAndSms = async (req: Request, res: Response) => {
               });
               console.log(`✅ Email sent to ${c.fullName}`);
             } else {
+              await Candidate.findByIdAndUpdate(c._id, {
+                $set: {
+                  badEmail: true,
+                  timeAttempted: new Date(),
+                },
+              });
               console.log(`❌ Failed to send email to ${c.fullName}`);
             }
           } else {
