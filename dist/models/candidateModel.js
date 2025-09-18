@@ -78,7 +78,7 @@ const candidateSchema = new mongoose_1.Schema({
     timeEmailwasSent: Date,
     smsSent: { type: Boolean, default: false },
     timeSmswasSent: Date,
-    badEmail: { type: Boolean, default: false },
+    badEmail: Boolean,
     timeAttempted: Date,
 }, { timestamps: true });
 // ✅ Explicit unique indexes

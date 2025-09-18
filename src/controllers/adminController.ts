@@ -855,9 +855,10 @@ export const notifyByEmailAndSms = async (req: Request, res: Response) => {
   try {
     const candidates = await Candidate.find({
       emailSent: false,
-      badEmail: false,
+      $or: [{ badEmail: false }, { badEmail: { $exists: false } }],
     }).select({ uploadedDocuments: 0 });
 
+    console.log({ length: candidates.length });
     res.send("Sending notifications");
     const smsMessage = (
       name: string,

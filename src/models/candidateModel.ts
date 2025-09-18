@@ -135,7 +135,7 @@ const candidateSchema = new Schema<ICandidate>(
     timeEmailwasSent: Date,
     smsSent: { type: Boolean, default: false },
     timeSmswasSent: Date,
-    badEmail: { type: Boolean, default: false },
+    badEmail: Boolean,
     timeAttempted: Date,
   },
   { timestamps: true }
