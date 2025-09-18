@@ -49,5 +49,6 @@ adminRouter
     .get("/viewcandidate", jwtController_1.authenticateToken, candidateController_1.viewCandidate)
     .get("/deletecandidate", jwtController_1.authenticateToken, candidateController_1.deleteCandidate)
     //corrections
-    .get("/correctionsdashboard", jwtController_1.authenticateToken, correctionController_1.correctionsDashboard);
+    .get("/correctionsdashboard", jwtController_1.authenticateToken, correctionController_1.correctionsDashboard)
+    .get("/candidate", jwtController_1.authenticateToken, candidateController_1.getCandidate);
 exports.default = adminRouter;

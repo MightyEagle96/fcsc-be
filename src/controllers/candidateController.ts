@@ -342,6 +342,20 @@ export const submitCorrection = async (
   });
 };
 
+export const getCandidate = async (req: AuthenticatedAdmin, res: Response) => {
+  try {
+    const candidate = await Candidate.findById(req.query.id).select({
+      uploadedDocuments: 0,
+      passwords: 0,
+      password: 0,
+    });
+
+    res.send(candidate);
+  } catch (error) {
+    res.status(500).send("Error occurred");
+  }
+};
+
 export const myCorrections = async (
   req: AuthenticatedCandidate,
   res: Response

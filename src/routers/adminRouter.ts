@@ -38,6 +38,7 @@ import {
 } from "../controllers/promotionController";
 import {
   deleteCandidate,
+  getCandidate,
   pushApplication,
   viewCandidate,
 } from "../controllers/candidateController";
@@ -106,6 +107,8 @@ adminRouter
   .get("/deletecandidate", authenticateToken, deleteCandidate)
 
   //corrections
-  .get("/correctionsdashboard", authenticateToken, correctionsDashboard);
+  .get("/correctionsdashboard", authenticateToken, correctionsDashboard)
+
+  .get("/candidate", authenticateToken, getCandidate);
 
 export default adminRouter;

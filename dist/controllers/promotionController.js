@@ -64,7 +64,7 @@ const recommendedCandidates = (req, res) => __awaiter(void 0, void 0, void 0, fu
             status: exports.applicationStatus.recommended,
         });
         const totalCandidates = candidates.map((c, i) => {
-            return Object.assign(Object.assign({}, c), { recommendedBy: `${c.recommendedBy.firstName} ${c.recommendedBy.lastName}`, remark: c.remark, id: (page - 1) * limit + i + 1 });
+            return Object.assign(Object.assign({}, c), { candidate: c._id, recommendedBy: `${c.recommendedBy.firstName} ${c.recommendedBy.lastName}`, remark: c.remark, id: (page - 1) * limit + i + 1 });
         });
         res.send({
             candidates: totalCandidates,

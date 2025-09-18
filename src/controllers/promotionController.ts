@@ -57,6 +57,7 @@ export const recommendedCandidates = async (req: Request, res: Response) => {
     const totalCandidates = candidates.map((c: any, i) => {
       return {
         ...c,
+        candidate: c._id,
         recommendedBy: `${c.recommendedBy.firstName} ${c.recommendedBy.lastName}`,
         remark: c.remark,
         id: (page - 1) * limit + i + 1,
