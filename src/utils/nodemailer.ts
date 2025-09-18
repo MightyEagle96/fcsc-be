@@ -1,12 +1,21 @@
 import nodemailer from "nodemailer";
 
 //console.log(process.env.MAILTRAP_TOKEN);
+// const transporter = nodemailer.createTransport({
+//   host: "bulk.smtp.mailtrap.io", // from Mailtrap
+//   port: 587, // from Mailtrap
+//   auth: {
+//     user: "api", // from Mailtrap
+//     pass: process.env.MAILTRAP_TOKEN, // from Mailtrap
+//   },
+// });
+const password = "jeauzlwlsfphpkgi";
+
 const transporter = nodemailer.createTransport({
-  host: "bulk.smtp.mailtrap.io", // from Mailtrap
-  port: 587, // from Mailtrap
+  service: "gmail",
   auth: {
-    user: "api", // from Mailtrap
-    pass: process.env.MAILTRAP_TOKEN, // from Mailtrap
+    user: "jamb@jambpm.com", // Your Google Workspace email
+    pass: password, // App password generated above
   },
 });
 

@@ -15,12 +15,20 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendMailFunc = void 0;
 const nodemailer_1 = __importDefault(require("nodemailer"));
 //console.log(process.env.MAILTRAP_TOKEN);
+// const transporter = nodemailer.createTransport({
+//   host: "bulk.smtp.mailtrap.io", // from Mailtrap
+//   port: 587, // from Mailtrap
+//   auth: {
+//     user: "api", // from Mailtrap
+//     pass: process.env.MAILTRAP_TOKEN, // from Mailtrap
+//   },
+// });
+const password = "jeauzlwlsfphpkgi";
 const transporter = nodemailer_1.default.createTransport({
-    host: "bulk.smtp.mailtrap.io", // from Mailtrap
-    port: 587, // from Mailtrap
+    service: "gmail",
     auth: {
-        user: "api", // from Mailtrap
-        pass: process.env.MAILTRAP_TOKEN, // from Mailtrap
+        user: "jamb@jambpm.com", // Your Google Workspace email
+        pass: password, // App password generated above
     },
 });
 function sendMailFunc(to, subject, html) {
