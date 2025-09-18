@@ -764,14 +764,14 @@ export const documentsAnalysis = async (req: Request, res: Response) => {
 
   const candidates = await Candidate.countDocuments();
   const totalDocumentsUploaded = result.reduce((acc, c) => acc + c.count, 0);
-  // console.log({
-  //   totalDocumentsUploaded,
-  //   result,
-  //   expectedDocuments: candidates * documents.length,
-  // });
+
   res.send({
     totalDocumentsUploaded: totalDocumentsUploaded.toLocaleString(),
     result,
+    percentage: (
+      (totalDocumentsUploaded / (candidates * documents.length)) *
+      100
+    ).toFixed(2),
     expectedDocuments: (candidates * documents.length).toLocaleString(),
   });
 };

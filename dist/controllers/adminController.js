@@ -659,14 +659,11 @@ const documentsAnalysis = (req, res) => __awaiter(void 0, void 0, void 0, functi
     // return result;
     const candidates = yield candidateModel_1.Candidate.countDocuments();
     const totalDocumentsUploaded = result.reduce((acc, c) => acc + c.count, 0);
-    // console.log({
-    //   totalDocumentsUploaded,
-    //   result,
-    //   expectedDocuments: candidates * documents.length,
-    // });
     res.send({
         totalDocumentsUploaded: totalDocumentsUploaded.toLocaleString(),
         result,
+        percentage: ((totalDocumentsUploaded / (candidates * documents_1.documents.length)) *
+            100).toFixed(2),
         expectedDocuments: (candidates * documents_1.documents.length).toLocaleString(),
     });
 });
