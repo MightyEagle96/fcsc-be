@@ -251,6 +251,10 @@ const uploadDocument = (req, res) => __awaiter(void 0, void 0, void 0, function*
                         if (err) {
                             console.error("Error deleting file:", err);
                         }
+                        console.log({
+                            activeCount: uploadQueue.activeCount,
+                            pending: uploadQueue.pendingCount,
+                        });
                     });
                 });
             });

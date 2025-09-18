@@ -294,6 +294,10 @@ export const uploadDocument = async (
               if (err) {
                 console.error("Error deleting file:", err);
               }
+              console.log({
+                activeCount: uploadQueue.activeCount,
+                pending: uploadQueue.pendingCount,
+              });
             });
           });
       });
