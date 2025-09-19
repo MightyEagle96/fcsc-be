@@ -1,17 +1,17 @@
 {
   "files": {
     "main.css": "/static/css/main.06e09e6a.css",
-    "main.js": "/static/js/main.3c5003fb.js",
+    "main.js": "/static/js/main.28e00826.js",
     "static/js/453.670e15c7.chunk.js": "/static/js/453.670e15c7.chunk.js",
     "static/media/logo.png": "/static/media/logo.c590e16fd6da0bffff30.png",
     "static/media/fcsclogo.png": "/static/media/fcsclogo.95de9e7e81b355299082.png",
     "index.html": "/index.html",
     "main.06e09e6a.css.map": "/static/css/main.06e09e6a.css.map",
-    "main.3c5003fb.js.map": "/static/js/main.3c5003fb.js.map",
+    "main.28e00826.js.map": "/static/js/main.28e00826.js.map",
     "453.670e15c7.chunk.js.map": "/static/js/453.670e15c7.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.06e09e6a.css",
-    "static/js/main.3c5003fb.js"
+    "static/js/main.28e00826.js"
   ]
 }
