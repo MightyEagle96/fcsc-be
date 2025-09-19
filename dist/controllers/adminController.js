@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.notificationAnalysis = exports.updateDeskOfficer = exports.deleteDeskOfficer = exports.viewIndividualStaff = exports.createNewPassword = exports.resetAdminPassword = exports.notifyByEmailAndSms = exports.reverseApproval = exports.searchCandidate = exports.documentsAnalysis = exports.uploadAnalysis = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
+exports.rectifyRemarks = exports.notificationAnalysis = exports.updateDeskOfficer = exports.deleteDeskOfficer = exports.viewIndividualStaff = exports.createNewPassword = exports.resetAdminPassword = exports.notifyByEmailAndSms = exports.reverseApproval = exports.searchCandidate = exports.documentsAnalysis = exports.uploadAnalysis = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const adminLogin_1 = require("../models/adminLogin");
 const DataQueue_1 = require("../utils/DataQueue");
@@ -160,79 +160,6 @@ const dashboardSummary = (req, res) => __awaiter(void 0, void 0, void 0, functio
     });
 });
 exports.dashboardSummary = dashboardSummary;
-// export const uploadFile = async (req: Request, res: Response) => {
-//   if (!req.file) {
-//     return res.status(400).send("No file uploaded");
-//   }
-//   let newPath = "";
-//   try {
-//     const uploadDir = path.join(__dirname, "../adminuploads");
-//     // Ensure folder exists
-//     if (!fs.existsSync(uploadDir)) {
-//       fs.mkdirSync(uploadDir, { recursive: true });
-//     }
-//     const extension = path.extname(req.file.originalname);
-//     const newFileName = `${Date.now()}${extension}`;
-//     newPath = path.join(uploadDir, newFileName);
-//     // Rename (move) the file
-//     fs.renameSync(req.file.path, newPath);
-//     const result = excelToJson({
-//       sourceFile: newPath,
-//       header: { rows: 1 },
-//       columnToKey: {
-//         A: "ippisNumber",
-//         B: "fullName",
-//         C: "dateOfBirth",
-//         D: "gender",
-//         E: "stateOfOrigin",
-//         F: "lga",
-//         G: "poolOffice",
-//         H: "currentMDA",
-//         I: "cadre",
-//         J: "gradeLevel",
-//         K: "dateOfFirstAppointment",
-//         L: "dateOfConfirmation",
-//         M: "dateOfLastPromotion",
-//         N: "phoneNumber",
-//         O: "email",
-//         P: "stateOfCurrentPosting",
-//         Q: "year2021",
-//         R: "year2022",
-//         S: "year2023",
-//         T: "year2024",
-//         U: "remark",
-//       },
-//     });
-//     const allRows = Object.values(result).flat();
-//     for (let i = 0; i < allRows.length; i += 500) {
-//       const batch = allRows.slice(i, i + 500);
-//       const plainPassword = generateRandomPassword(8);
-//       const hashedPassword = await bcrypt.hash(plainPassword, 10);
-//       const preparedBatch = batch.map((c: ICandidate) => ({
-//         ...c,
-//         password: hashedPassword,
-//         passwords: [plainPassword],
-//         uploadedDocuments: documentsToUpload,
-//         remark: calculateRemark(c),
-//       }));
-//       await Candidate.insertMany(preparedBatch);
-//     }
-//     res.send(`Created ${allRows.length.toLocaleString()} candidates`);
-//   } catch (err: any) {
-//     //console.error("Mongo error:", err);
-//     if (err.code === 11000) {
-//       return res
-//         .status(400)
-//         .send(
-//           "Duplicate records in IPPIS number, email or phone number. Please ensure this field is unique."
-//         );
-//     }
-//     res.status(500).send(err.message || "An unexpected error occurred");
-//   } finally {
-//     // Delete the uploaded file
-//     fs.unlinkSync(newPath);
-//   }
-// };
 function normalizeString(value) {
     if (!value)
         return "";
@@ -962,13 +889,25 @@ const updateDeskOfficer = (req, res) => __awaiter(void 0, void 0, void 0, functi
 });
 exports.updateDeskOfficer = updateDeskOfficer;
 const notificationAnalysis = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const [emails, sms] = yield Promise.all([
+    const [emails, sms, badEmails] = yield Promise.all([
         candidateModel_1.Candidate.countDocuments({ emailSent: true }),
         candidateModel_1.Candidate.countDocuments({ smsSent: true }),
+        candidateModel_1.Candidate.countDocuments({ badEmail: true }),
     ]);
     res.send({
         emails,
         sms,
+        badEmails,
     });
 });
 exports.notificationAnalysis = notificationAnalysis;
+const rectifyRemarks = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const candidates = yield candidateModel_1.Candidate.find({ remark: null });
+    for (let i = 0; i < candidates.length; i++) {
+        const remark = (0, calculateRemark_1.default)(candidates[i]);
+        //console.log(remark);
+        yield candidateModel_1.Candidate.updateOne({ _id: candidates[i]._id }, { $set: { remark } });
+    }
+    res.send("Done");
+});
+exports.rectifyRemarks = rectifyRemarks;

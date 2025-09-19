@@ -28,9 +28,11 @@ export const viewCorrections = async (req: Request, res: Response) => {
     const page = (req.query.page || 1) as number;
     const limit = (req.query.limit || 50) as number;
     const corrections = await CorrectionModel.find()
+      .sort({ pending: 1 })
       .lean<CorrectionLean[]>()
       .skip((page - 1) * limit)
       .limit(limit)
+
       .populate("candidate");
     const data = corrections
       .filter((c) => c.candidate !== null) // remove orphans

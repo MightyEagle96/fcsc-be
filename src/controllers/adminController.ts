@@ -3,12 +3,7 @@ import { Candidate, ICandidate } from "../models/candidateModel";
 import { AdminModel, AuthenticatedAdmin } from "../models/adminLogin";
 import { ConcurrentJobQueue } from "../utils/DataQueue";
 import bcrypt from "bcrypt";
-import {
-  generateRefreshToken,
-  generateToken,
-  JointInterface,
-  tokens,
-} from "./jwtController";
+import { generateRefreshToken, generateToken, tokens } from "./jwtController";
 import path from "path";
 import fs from "fs";
 import excelToJson from "convert-excel-to-json";
@@ -18,8 +13,7 @@ import calculateRemark from "../utils/calculateRemark";
 import { sendMailFunc } from "../utils/nodemailer";
 import { emailTemplate } from "./emailTemplate";
 import { SendSms } from "../utils/smsHandler";
-import { CorrectionModel } from "../models/correctionData";
-import { Types } from "mongoose";
+
 import { CADRES, MDAS, stateAndLgas } from "../utils/excelData";
 import { resetPasswordTemplate } from "./resetPasswordTemplate";
 import crypto from "crypto";
@@ -172,91 +166,6 @@ export const dashboardSummary = async (req: Request, res: Response) => {
     disqualified: disqualified.toLocaleString(),
   });
 };
-
-// export const uploadFile = async (req: Request, res: Response) => {
-//   if (!req.file) {
-//     return res.status(400).send("No file uploaded");
-//   }
-
-//   let newPath = "";
-//   try {
-//     const uploadDir = path.join(__dirname, "../adminuploads");
-
-//     // Ensure folder exists
-//     if (!fs.existsSync(uploadDir)) {
-//       fs.mkdirSync(uploadDir, { recursive: true });
-//     }
-//     const extension = path.extname(req.file.originalname);
-//     const newFileName = `${Date.now()}${extension}`;
-//     newPath = path.join(uploadDir, newFileName);
-
-//     // Rename (move) the file
-//     fs.renameSync(req.file.path, newPath);
-
-//     const result = excelToJson({
-//       sourceFile: newPath,
-//       header: { rows: 1 },
-//       columnToKey: {
-//         A: "ippisNumber",
-//         B: "fullName",
-//         C: "dateOfBirth",
-//         D: "gender",
-//         E: "stateOfOrigin",
-//         F: "lga",
-//         G: "poolOffice",
-//         H: "currentMDA",
-//         I: "cadre",
-//         J: "gradeLevel",
-//         K: "dateOfFirstAppointment",
-//         L: "dateOfConfirmation",
-//         M: "dateOfLastPromotion",
-//         N: "phoneNumber",
-//         O: "email",
-//         P: "stateOfCurrentPosting",
-//         Q: "year2021",
-//         R: "year2022",
-//         S: "year2023",
-//         T: "year2024",
-//         U: "remark",
-//       },
-//     });
-
-//     const allRows = Object.values(result).flat();
-
-//     for (let i = 0; i < allRows.length; i += 500) {
-//       const batch = allRows.slice(i, i + 500);
-
-//       const plainPassword = generateRandomPassword(8);
-//       const hashedPassword = await bcrypt.hash(plainPassword, 10);
-
-//       const preparedBatch = batch.map((c: ICandidate) => ({
-//         ...c,
-//         password: hashedPassword,
-//         passwords: [plainPassword],
-//         uploadedDocuments: documentsToUpload,
-//         remark: calculateRemark(c),
-//       }));
-
-//       await Candidate.insertMany(preparedBatch);
-//     }
-//     res.send(`Created ${allRows.length.toLocaleString()} candidates`);
-//   } catch (err: any) {
-//     //console.error("Mongo error:", err);
-
-//     if (err.code === 11000) {
-//       return res
-//         .status(400)
-//         .send(
-//           "Duplicate records in IPPIS number, email or phone number. Please ensure this field is unique."
-//         );
-//     }
-
-//     res.status(500).send(err.message || "An unexpected error occurred");
-//   } finally {
-//     // Delete the uploaded file
-//     fs.unlinkSync(newPath);
-//   }
-// };
 
 function normalizeString(value?: string): string {
   if (!value) return "";
@@ -1152,13 +1061,28 @@ export const updateDeskOfficer = async (
 };
 
 export const notificationAnalysis = async (req: Request, res: Response) => {
-  const [emails, sms] = await Promise.all([
+  const [emails, sms, badEmails] = await Promise.all([
     Candidate.countDocuments({ emailSent: true }),
     Candidate.countDocuments({ smsSent: true }),
+    Candidate.countDocuments({ badEmail: true }),
   ]);
 
   res.send({
     emails,
     sms,
+    badEmails,
   });
+};
+
+export const rectifyRemarks = async (req: Request, res: Response) => {
+  const candidates = await Candidate.find({ remark: null });
+
+  for (let i = 0; i < candidates.length; i++) {
+    const remark = calculateRemark(candidates[i]);
+    //console.log(remark);
+
+    await Candidate.updateOne({ _id: candidates[i]._id }, { $set: { remark } });
+  }
+
+  res.send("Done");
 };

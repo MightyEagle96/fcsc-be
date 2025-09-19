@@ -17,6 +17,7 @@ const viewCorrections = (req, res) => __awaiter(void 0, void 0, void 0, function
         const page = (req.query.page || 1);
         const limit = (req.query.limit || 50);
         const corrections = yield correctionData_1.CorrectionModel.find()
+            .sort({ pending: 1 })
             .lean()
             .skip((page - 1) * limit)
             .limit(limit)
