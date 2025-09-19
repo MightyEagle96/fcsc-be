@@ -176,25 +176,6 @@ for (const s of excelData_1.stateAndLgas) {
     NORMALIZED_STATE_AND_LGAS[normalizeString(s.state)] = new Set(s.lgas.map(normalizeString));
 }
 // 🔹 Helper to clean and normalize Excel date values
-function cleanExcelDate(value) {
-    if (!value)
-        return "";
-    // If it's already a JS Date → format to DD/MM/YYYY
-    if (value instanceof Date) {
-        return (0, dayjs_1.default)(value).format("DD/MM/YYYY");
-    }
-    // If it's a number (Excel serial) → convert
-    if (!isNaN(value)) {
-        return (0, dayjs_1.default)("1899-12-30").add(value, "day").format("DD/MM/YYYY");
-    }
-    // If it's a string → sanitize
-    return value
-        .toString()
-        .trim()
-        .replace(/\u200B/g, "") // remove zero-width spaces
-        .replace(/\s+/g, "") // remove stray spaces
-        .replace(/[-.]/g, "/"); // unify delimiters
-}
 const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     if (!req.file) {
@@ -273,6 +254,13 @@ const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
                 console.log(`Invalid MDA '${row.currentMDA}' at row ${rowNumber}`);
                 return res.status(400).json({
                     message: `Invalid MDA '${row.currentMDA}' at row ${rowNumber}`,
+                });
+            }
+            // 🔹 Validate POOL OFFICE
+            if (poolOffice && !NORMALIZED_MDAS.includes(poolOffice)) {
+                console.log(`Invalid POOL OFFICE '${row.poolOffice}' at row ${rowNumber}`);
+                return res.status(400).json({
+                    message: `Invalid POOL OFFICE '${row.poolOffice}' at row ${rowNumber}`,
                 });
             }
             // 🔹 Validate State
