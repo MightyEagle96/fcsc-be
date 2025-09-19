@@ -6,5 +6,6 @@ const promotionController_1 = require("../controllers/promotionController");
 const promotionRouter = (0, express_1.Router)();
 promotionRouter
     .get("/candidatesacrossmda", jwtController_1.authenticateToken, promotionController_1.viewCandidatesAcrossMDA)
+    .get("/candidatesacrosspooloffice", jwtController_1.authenticateToken, promotionController_1.viewCandidatesAcrossPoolOffice)
     .get("/disqualifycandidate", jwtController_1.authenticateToken, promotionController_1.disqualifyCandidate);
 exports.default = promotionRouter;

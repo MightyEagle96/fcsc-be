@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.disqualifyCandidate = exports.viewCandidatesAcrossMDA = exports.approvedCandidates = exports.approveCandidate = exports.recommendedCandidates = exports.applicationStatus = exports.promotionDashboard = void 0;
+exports.disqualifyCandidate = exports.viewCandidatesAcrossPoolOffice = exports.viewCandidatesAcrossMDA = exports.approvedCandidates = exports.approveCandidate = exports.recommendedCandidates = exports.applicationStatus = exports.promotionDashboard = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const adminLogs_1 = __importDefault(require("../models/adminLogs"));
 const DataQueue_1 = require("../utils/DataQueue");
@@ -173,6 +173,38 @@ const viewCandidatesAcrossMDA = (req, res) => __awaiter(void 0, void 0, void 0, 
     res.send(arrangedResults);
 });
 exports.viewCandidatesAcrossMDA = viewCandidatesAcrossMDA;
+const viewCandidatesAcrossPoolOffice = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield candidateModel_1.Candidate.aggregate([
+        // Step 1: Group by currentMDA, counting only "recommended" candidates
+        {
+            $group: {
+                _id: "$poolOffice",
+                candidateCount: {
+                    $sum: {
+                        $cond: [{ $eq: ["$status", "recommended"] }, 1, 0],
+                    },
+                },
+            },
+        },
+        // Step 2: Reshape output
+        {
+            $project: {
+                _id: 0,
+                poolOffice: "$_id",
+                candidateCount: 1,
+            },
+        },
+        // Step 3: Sort (optional)
+        {
+            $sort: { candidateCount: -1 },
+        },
+    ]);
+    const arrangedResults = result.map((c, i) => {
+        return Object.assign(Object.assign({}, c), { id: i + 1 });
+    });
+    res.send(arrangedResults);
+});
+exports.viewCandidatesAcrossPoolOffice = viewCandidatesAcrossPoolOffice;
 const disqualificationQueue = new DataQueue_1.ConcurrentJobQueue({
     concurrency: 1,
     maxQueueSize: 100,

@@ -176,6 +176,42 @@ export const viewCandidatesAcrossMDA = async (req: Request, res: Response) => {
   res.send(arrangedResults);
 };
 
+export const viewCandidatesAcrossPoolOffice = async (
+  req: Request,
+  res: Response
+) => {
+  const result = await Candidate.aggregate([
+    // Step 1: Group by currentMDA, counting only "recommended" candidates
+    {
+      $group: {
+        _id: "$poolOffice",
+        candidateCount: {
+          $sum: {
+            $cond: [{ $eq: ["$status", "recommended"] }, 1, 0],
+          },
+        },
+      },
+    },
+    // Step 2: Reshape output
+    {
+      $project: {
+        _id: 0,
+        poolOffice: "$_id",
+        candidateCount: 1,
+      },
+    },
+    // Step 3: Sort (optional)
+    {
+      $sort: { candidateCount: -1 },
+    },
+  ]);
+
+  const arrangedResults = result.map((c, i) => {
+    return { ...c, id: i + 1 };
+  });
+  res.send(arrangedResults);
+};
+
 const disqualificationQueue = new ConcurrentJobQueue({
   concurrency: 1,
   maxQueueSize: 100,
