@@ -106,7 +106,9 @@ export const approvedCandidates = async (req: Request, res: Response) => {
         fullName: 1,
         currentMDA: 1,
         approvedBy: 1,
-
+        cadre: 1,
+        poolOffice: 1,
+        gradeLevel: 1,
         remark: 1,
         status: 1,
         dateApproved: 1,
