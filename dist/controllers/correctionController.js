@@ -14,18 +14,44 @@ const correctionData_1 = require("../models/correctionData");
 const candidateModel_1 = require("../models/candidateModel");
 const viewCorrections = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const page = (req.query.page || 1);
-        const limit = (req.query.limit || 50);
-        const corrections = yield correctionData_1.CorrectionModel.find()
-            .sort({ pending: 1 })
-            .lean()
-            .skip((page - 1) * limit)
-            .limit(limit)
-            .populate("candidate");
-        const data = corrections
-            .filter((c) => c.candidate !== null) // remove orphans
-            .map((c, i) => (Object.assign(Object.assign({}, c), { name: c.candidate.fullName, mda: c.candidate.currentMDA, id: (page - 1) * limit + i + 1 })));
+        const page = Number(req.query.page) || 1;
+        const limit = Number(req.query.limit) || 50;
+        const corrections = yield correctionData_1.CorrectionModel.aggregate([
+            // Add custom sort order
+            {
+                $addFields: {
+                    sortOrder: {
+                        $switch: {
+                            branches: [
+                                { case: { $eq: ["$status", "pending"] }, then: 0 },
+                                { case: { $eq: ["$status", "approved"] }, then: 1 },
+                                { case: { $eq: ["$status", "rejected"] }, then: 2 },
+                            ],
+                            default: 99,
+                        },
+                    },
+                },
+            },
+            // Sort by sortOrder first, then maybe by dateApplied descending
+            { $sort: { sortOrder: 1, dateApplied: -1 } },
+            // Pagination
+            { $skip: (page - 1) * limit },
+            { $limit: limit },
+            // Lookup candidate (like populate)
+            {
+                $lookup: {
+                    from: "candidates",
+                    localField: "candidate",
+                    foreignField: "_id",
+                    as: "candidate",
+                },
+            },
+            { $unwind: "$candidate" }, // remove array wrapper
+        ]);
+        // Get total count (without pagination)
         const total = yield correctionData_1.CorrectionModel.countDocuments();
+        // Transform to match your original response
+        const data = corrections.map((c, i) => (Object.assign(Object.assign({}, c), { name: c.candidate.fullName, mda: c.candidate.currentMDA, id: (page - 1) * limit + i + 1 })));
         res.send({
             corrections: data,
             total,
@@ -34,8 +60,8 @@ const viewCorrections = (req, res) => __awaiter(void 0, void 0, void 0, function
         });
     }
     catch (error) {
-        //   console.log(error);
-        //   res.status(500).send("Error occurred");
+        console.error(error);
+        res.status(500).send("Error occurred");
     }
 });
 exports.viewCorrections = viewCorrections;
