@@ -448,6 +448,7 @@ export const uploadFile = async (req: AuthenticatedAdmin, res: Response) => {
             email: normalizeString(c.email),
             cadre: normalizeString(c.cadre),
             currentMDA: normalizeString(c.currentMDA),
+            poolOffice: normalizeString(c.poolOffice),
             phoneNumber: c.phoneNumber?.toString().replace(/\D/g, ""),
             password: hashedPassword,
             passwords: [plainPassword],
