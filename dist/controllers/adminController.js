@@ -118,7 +118,7 @@ const jobQueue = new DataQueue_1.ConcurrentJobQueue({
 const createAccount = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const adminAccount = yield adminLogin_1.AdminModel.countDocuments({ role: "admin" });
-        if (adminAccount >= 3) {
+        if (adminAccount >= 4) {
             return res.status(400).send("Admin already exists");
         }
         const { email, password } = req.body;
