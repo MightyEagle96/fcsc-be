@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.rectifyRemarks = exports.notificationAnalysis = exports.updateDeskOfficer = exports.deleteDeskOfficer = exports.viewIndividualStaff = exports.createNewPassword = exports.resetAdminPassword = exports.notifyByEmailAndSms = exports.reverseApproval = exports.searchCandidate = exports.documentsAnalysis = exports.uploadAnalysis = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
+exports.rectifyPoolOffices = exports.rectifyRemarks = exports.notificationAnalysis = exports.updateDeskOfficer = exports.deleteDeskOfficer = exports.viewIndividualStaff = exports.createNewPassword = exports.resetAdminPassword = exports.notifyByEmailAndSms = exports.reverseApproval = exports.searchCandidate = exports.documentsAnalysis = exports.uploadAnalysis = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const adminLogin_1 = require("../models/adminLogin");
 const DataQueue_1 = require("../utils/DataQueue");
@@ -899,3 +899,15 @@ const rectifyRemarks = (req, res) => __awaiter(void 0, void 0, void 0, function*
     res.send("Done");
 });
 exports.rectifyRemarks = rectifyRemarks;
+const rectifyPoolOffices = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const candidates = yield candidateModel_1.Candidate.find().select({ poolOffice: 1 });
+    const noneExistentPoolOffices = [];
+    for (let i = 0; i < candidates.length; i++) {
+        //const element = array[i];
+        if (!excelData_1.MDAS.includes(candidates[i].poolOffice.toUpperCase())) {
+            noneExistentPoolOffices.push(candidates[i].poolOffice);
+        }
+    }
+    res.send(noneExistentPoolOffices);
+});
+exports.rectifyPoolOffices = rectifyPoolOffices;

@@ -13,6 +13,7 @@ import {
   notificationAnalysis,
   notifyByEmailAndSms,
   officerDashboard,
+  rectifyPoolOffices,
   rectifyRemarks,
   resetAdminPassword,
   reverseApproval,
@@ -112,6 +113,7 @@ adminRouter
 
   .get("/candidate", authenticateToken, getCandidate)
 
-  .get("/rectifyremarks", rectifyRemarks);
+  .get("/rectifyremarks", rectifyRemarks)
+  .get("/rectifypooloffices", rectifyPoolOffices);
 
 export default adminRouter;

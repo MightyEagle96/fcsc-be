@@ -1077,3 +1077,18 @@ export const rectifyRemarks = async (req: Request, res: Response) => {
 
   res.send("Done");
 };
+
+export const rectifyPoolOffices = async (req: Request, res: Response) => {
+  const candidates = await Candidate.find().select({ poolOffice: 1 });
+
+  const noneExistentPoolOffices = [];
+  for (let i = 0; i < candidates.length; i++) {
+    //const element = array[i];
+
+    if (!MDAS.includes(candidates[i].poolOffice.toUpperCase())) {
+      noneExistentPoolOffices.push(candidates[i].poolOffice);
+    }
+  }
+
+  res.send(noneExistentPoolOffices);
+};

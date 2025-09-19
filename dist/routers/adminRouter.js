@@ -51,5 +51,6 @@ adminRouter
     //corrections
     .get("/correctionsdashboard", jwtController_1.authenticateToken, correctionController_1.correctionsDashboard)
     .get("/candidate", jwtController_1.authenticateToken, candidateController_1.getCandidate)
-    .get("/rectifyremarks", adminController_1.rectifyRemarks);
+    .get("/rectifyremarks", adminController_1.rectifyRemarks)
+    .get("/rectifypooloffices", adminController_1.rectifyPoolOffices);
 exports.default = adminRouter;
