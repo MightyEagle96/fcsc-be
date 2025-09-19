@@ -113,6 +113,7 @@ export const approvedCandidates = async (req: Request, res: Response) => {
         status: 1,
         dateApproved: 1,
       })
+      .sort({ dateApproved: -1 }) // ✅ latest approvals first
       .skip((page - 1) * limit)
       .limit(limit)
       .lean();

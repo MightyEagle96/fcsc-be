@@ -117,6 +117,7 @@ const approvedCandidates = (req, res) => __awaiter(void 0, void 0, void 0, funct
             status: 1,
             dateApproved: 1,
         })
+            .sort({ dateApproved: -1 }) // ✅ latest approvals first
             .skip((page - 1) * limit)
             .limit(limit)
             .lean();
