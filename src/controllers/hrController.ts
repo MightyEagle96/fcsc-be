@@ -174,7 +174,9 @@ export const recommendMultipleCandidates = async (
       await Candidate.updateMany(
         {
           _id: { $in: result.map((c) => c._id) },
-          status: { $nin: ["recommended", "approved"] }, // 🚀 exclude approved too
+          status: {
+            $nin: ["recommended", "approved", "rejcted", "disqualified"],
+          }, // 🚀 exclude approved too
         },
         {
           $set: {
