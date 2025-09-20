@@ -1098,15 +1098,48 @@ export const viewAdminLogs = async (req: Request, res: Response) => {
   const limit = (req.query.limit || 50) as number;
   const logs = await AdminLogModel.find()
     .skip((page - 1) * limit)
+    .populate("account", { firstName: 1, lastName: 1 })
     .limit(limit)
     .sort({ createdAt: -1 })
     .lean();
 
   const total = await AdminLogModel.countDocuments();
+
+  const totalLogs = logs.map((c, i) => {
+    return {
+      ...c,
+      id: (page - 1) * limit + i + 1,
+    };
+  });
   res.send({
     total,
-    logs,
+    logs: totalLogs,
     page,
     limit,
   });
+};
+
+export const fixApprovedCandidates = async (req: Request, res: Response) => {
+  try {
+    const result = await Candidate.updateMany(
+      {
+        approvedBy: { $exists: true, $ne: null }, // has an approvedBy
+        status: { $ne: "approved" }, // but status is not approved
+      },
+      {
+        $set: {
+          status: "approved",
+        },
+      }
+    );
+
+    res.json({
+      message: "Candidates with approvedBy fixed to approved status",
+      matched: result.matchedCount,
+      modified: result.modifiedCount,
+    });
+  } catch (error) {
+    console.error("Error fixing approved candidates:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 };

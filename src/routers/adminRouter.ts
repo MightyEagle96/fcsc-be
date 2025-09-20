@@ -8,6 +8,7 @@ import {
   deleteCandidates,
   deleteDeskOfficer,
   documentsAnalysis,
+  fixApprovedCandidates,
   loginAdmin,
   mdaOverview,
   notificationAnalysis,
@@ -117,6 +118,8 @@ adminRouter
   .get("/rectifyremarks", rectifyRemarks)
   .get("/rectifypooloffices", rectifyPoolOffices)
 
-  .get("/adminlogs", authenticateToken, viewAdminLogs);
+  .get("/adminlogs", authenticateToken, viewAdminLogs)
+
+  .get("/fixapprovedcandidates", fixApprovedCandidates);
 
 export default adminRouter;

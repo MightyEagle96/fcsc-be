@@ -83,7 +83,7 @@ export const recommendedCandidates = async (req: Request, res: Response) => {
 };
 
 export const approveCandidate = async (req: JointInterface, res: Response) => {
-  await Candidate.findByIdAndUpdate(req.query.candidate, {
+  const candidate = await Candidate.findByIdAndUpdate(req.query.candidate, {
     status: "approved",
     dateApproved: new Date(),
     approvedBy: req.admin?._id,
@@ -91,7 +91,7 @@ export const approveCandidate = async (req: JointInterface, res: Response) => {
 
   await AdminLogModel.create({
     account: req.admin?._id,
-    action: `Approved ${req.query.candidate}'s application`,
+    action: `Approved ${candidate?.fullName}'s application`,
   });
   res.send("Candidate approved");
 };

@@ -88,14 +88,14 @@ const recommendedCandidates = (req, res) => __awaiter(void 0, void 0, void 0, fu
 exports.recommendedCandidates = recommendedCandidates;
 const approveCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
-    yield candidateModel_1.Candidate.findByIdAndUpdate(req.query.candidate, {
+    const candidate = yield candidateModel_1.Candidate.findByIdAndUpdate(req.query.candidate, {
         status: "approved",
         dateApproved: new Date(),
         approvedBy: (_a = req.admin) === null || _a === void 0 ? void 0 : _a._id,
     });
     yield adminLogs_1.default.create({
         account: (_b = req.admin) === null || _b === void 0 ? void 0 : _b._id,
-        action: `Approved ${req.query.candidate}'s application`,
+        action: `Approved ${candidate === null || candidate === void 0 ? void 0 : candidate.fullName}'s application`,
     });
     res.send("Candidate approved");
 });
