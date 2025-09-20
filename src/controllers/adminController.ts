@@ -1092,3 +1092,21 @@ export const rectifyPoolOffices = async (req: Request, res: Response) => {
 
   res.send(noneExistentPoolOffices);
 };
+
+export const viewAdminLogs = async (req: Request, res: Response) => {
+  const page = (req.query.page || 1) as number;
+  const limit = (req.query.limit || 50) as number;
+  const logs = await AdminLogModel.find()
+    .skip((page - 1) * limit)
+    .limit(limit)
+    .sort({ createdAt: -1 })
+    .lean();
+
+  const total = await AdminLogModel.countDocuments();
+  res.send({
+    total,
+    logs,
+    page,
+    limit,
+  });
+};

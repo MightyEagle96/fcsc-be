@@ -169,7 +169,7 @@ const recommendMultipleCandidates = (req, res) => __awaiter(void 0, void 0, void
             var _e, _f;
             yield candidateModel_1.Candidate.updateMany({
                 _id: { $in: result.map((c) => c._id) },
-                status: { $ne: "recommended" }, // only those not already recommended
+                status: { $nin: ["recommended", "approved"] }, // 🚀 exclude approved too
             }, {
                 $set: {
                     status: "recommended",

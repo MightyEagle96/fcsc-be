@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.rectifyPoolOffices = exports.rectifyRemarks = exports.notificationAnalysis = exports.updateDeskOfficer = exports.deleteDeskOfficer = exports.viewIndividualStaff = exports.createNewPassword = exports.resetAdminPassword = exports.notifyByEmailAndSms = exports.reverseApproval = exports.searchCandidate = exports.documentsAnalysis = exports.uploadAnalysis = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
+exports.viewAdminLogs = exports.rectifyPoolOffices = exports.rectifyRemarks = exports.notificationAnalysis = exports.updateDeskOfficer = exports.deleteDeskOfficer = exports.viewIndividualStaff = exports.createNewPassword = exports.resetAdminPassword = exports.notifyByEmailAndSms = exports.reverseApproval = exports.searchCandidate = exports.documentsAnalysis = exports.uploadAnalysis = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const adminLogin_1 = require("../models/adminLogin");
 const DataQueue_1 = require("../utils/DataQueue");
@@ -911,3 +911,20 @@ const rectifyPoolOffices = (req, res) => __awaiter(void 0, void 0, void 0, funct
     res.send(noneExistentPoolOffices);
 });
 exports.rectifyPoolOffices = rectifyPoolOffices;
+const viewAdminLogs = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const page = (req.query.page || 1);
+    const limit = (req.query.limit || 50);
+    const logs = yield adminLogs_1.default.find()
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .sort({ createdAt: -1 })
+        .lean();
+    const total = yield adminLogs_1.default.countDocuments();
+    res.send({
+        total,
+        logs,
+        page,
+        limit,
+    });
+});
+exports.viewAdminLogs = viewAdminLogs;

@@ -21,6 +21,7 @@ import {
   updateDeskOfficer,
   uploadAnalysis,
   uploadFile,
+  viewAdminLogs,
   viewAdminStaff,
   viewIndividualStaff,
   viewUploadedDocuments,
@@ -114,6 +115,8 @@ adminRouter
   .get("/candidate", authenticateToken, getCandidate)
 
   .get("/rectifyremarks", rectifyRemarks)
-  .get("/rectifypooloffices", rectifyPoolOffices);
+  .get("/rectifypooloffices", rectifyPoolOffices)
+
+  .get("/adminlogs", authenticateToken, viewAdminLogs);
 
 export default adminRouter;
