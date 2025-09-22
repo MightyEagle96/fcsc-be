@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.fixApprovedCandidates = exports.viewAdminLogs = exports.rectifyPoolOffices = exports.rectifyRemarks = exports.notificationAnalysis = exports.updateDeskOfficer = exports.deleteDeskOfficer = exports.viewIndividualStaff = exports.createNewPassword = exports.resetAdminPassword = exports.notifyByEmailAndSms = exports.reverseApproval = exports.searchCandidate = exports.documentsAnalysis = exports.uploadAnalysis = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
+exports.updateCandidateContact = exports.fixApprovedCandidates = exports.viewAdminLogs = exports.rectifyPoolOffices = exports.rectifyRemarks = exports.notificationAnalysis = exports.updateDeskOfficer = exports.deleteDeskOfficer = exports.viewIndividualStaff = exports.createNewPassword = exports.resetAdminPassword = exports.notifyByEmailAndSms = exports.reverseApproval = exports.searchCandidate = exports.documentsAnalysis = exports.uploadAnalysis = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const adminLogin_1 = require("../models/adminLogin");
 const DataQueue_1 = require("../utils/DataQueue");
@@ -961,3 +961,14 @@ const fixApprovedCandidates = (req, res) => __awaiter(void 0, void 0, void 0, fu
     }
 });
 exports.fixApprovedCandidates = fixApprovedCandidates;
+const updateCandidateContact = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        console.log(req.body);
+        console.log(req.query);
+        res.send("Contact updated");
+    }
+    catch (error) {
+        res.status(500).send("Error occurred");
+    }
+});
+exports.updateCandidateContact = updateCandidateContact;

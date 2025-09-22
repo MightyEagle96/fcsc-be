@@ -1154,3 +1154,18 @@ export const fixApprovedCandidates = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+export const updateCandidateContact = async (
+  req: AuthenticatedAdmin,
+  res: Response
+) => {
+  try {
+    console.log(req.body);
+
+    console.log(req.query);
+
+    res.send("Contact updated");
+  } catch (error) {
+    res.status(500).send("Error occurred");
+  }
+};

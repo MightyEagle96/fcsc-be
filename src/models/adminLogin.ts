@@ -19,6 +19,8 @@ export interface IAdmin {
 
   yetToChangePassword: boolean;
 
+  hasRightToCorrection: boolean;
+
   // 🔑 new fields
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
@@ -38,6 +40,7 @@ const adminSchema = new Schema<IAdmin>(
     mda: { type: String, lowercase: true },
     role: { type: String, lowercase: true },
     yetToChangePassword: { type: Boolean },
+    hasRightToCorrection: { type: Boolean, default: false },
 
     // 🔑 reset fields
     resetPasswordToken: String,

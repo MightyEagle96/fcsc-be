@@ -11,6 +11,7 @@ const adminSchema = new mongoose_1.Schema({
     mda: { type: String, lowercase: true },
     role: { type: String, lowercase: true },
     yetToChangePassword: { type: Boolean },
+    hasRightToCorrection: { type: Boolean, default: false },
     // 🔑 reset fields
     resetPasswordToken: String,
     resetPasswordExpires: Date,
