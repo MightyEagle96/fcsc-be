@@ -22,6 +22,7 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { applicationStatus } from "./promotionController";
 import { parseDuplicateError } from "../utils/parseDuplicateError";
+import { CorrectionModel } from "../models/correctionData";
 
 dayjs.extend(utc);
 
@@ -976,11 +977,21 @@ export const deleteDeskOfficer = async (
       ],
     });
 
+    const corrections = await CorrectionModel.exists({ correctedBy: adminId });
+
     if (hasReferences) {
       return res
         .status(400)
         .send(
           "Account cannot be deleted because they are linked to candidate records"
+        );
+    }
+
+    if (corrections) {
+      return res
+        .status(400)
+        .send(
+          "Account cannot be deleted because they are linked to correction records"
         );
     }
 

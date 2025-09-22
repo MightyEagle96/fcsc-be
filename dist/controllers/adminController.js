@@ -35,6 +35,7 @@ const dayjs_1 = __importDefault(require("dayjs"));
 const utc_1 = __importDefault(require("dayjs/plugin/utc"));
 const promotionController_1 = require("./promotionController");
 const parseDuplicateError_1 = require("../utils/parseDuplicateError");
+const correctionData_1 = require("../models/correctionData");
 dayjs_1.default.extend(utc_1.default);
 //view candidates
 const viewCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -819,10 +820,16 @@ const deleteDeskOfficer = (req, res) => __awaiter(void 0, void 0, void 0, functi
                 { rejectedBy: adminId },
             ],
         });
+        const corrections = yield correctionData_1.CorrectionModel.exists({ correctedBy: adminId });
         if (hasReferences) {
             return res
                 .status(400)
                 .send("Account cannot be deleted because they are linked to candidate records");
+        }
+        if (corrections) {
+            return res
+                .status(400)
+                .send("Account cannot be deleted because they are linked to correction records");
         }
         const account = yield adminLogin_1.AdminModel.findByIdAndDelete(adminId);
         res.send("Staff deleted successfully");
