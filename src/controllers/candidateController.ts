@@ -22,6 +22,7 @@ import { AdminModel, AuthenticatedAdmin, IAdmin } from "../models/adminLogin";
 import { error } from "console";
 import { CorrectionModel, ICorrection } from "../models/correctionData";
 import mongoose from "mongoose";
+import { RejectionModel } from "../models/rejectionModel";
 
 export const batchUploadCandidates = async (req: Request, res: Response) => {
   //res.send("Hello");
@@ -64,38 +65,43 @@ export const batchUploadCandidates = async (req: Request, res: Response) => {
 };
 
 export const loginCandidate = async (req: Request, res: Response) => {
-  const candidate = await Candidate.findOne({ email: req.body.email }).lean();
+  try {
+    const candidate = await Candidate.findOne({ email: req.body.email }).lean();
 
-  if (!candidate) {
-    return res.status(404).send("Candidate not found");
-  }
+    if (!candidate) {
+      return res.status(404).send("Candidate not found");
+    }
 
-  const isPasswordValid = await bcrypt.compare(
-    req.body.password,
-    candidate.password
-  );
+    const isPasswordValid = await bcrypt.compare(
+      req.body.password,
+      candidate.password
+    );
 
-  if (isPasswordValid) {
-    const accessToken = generateToken({ _id: candidate._id });
+    if (isPasswordValid) {
+      const accessToken = generateToken({ _id: candidate._id });
 
-    const refreshToken = generateRefreshToken({ _id: candidate._id });
+      const refreshToken = generateRefreshToken({ _id: candidate._id });
 
-    res
-      .cookie(tokens.auth_token, accessToken, {
-        httpOnly: false,
-        secure: true,
-        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-        maxAge: 1000 * 60 * 60, // 1h
-      })
-      .cookie(tokens.refresh_token, refreshToken, {
-        httpOnly: false,
-        secure: true,
-        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-        maxAge: 1000 * 60 * 60 * 24 * 7, // 7d
-      })
-      .send("Logged In");
-  } else {
-    res.status(400).send("Invalid password");
+      res
+        .cookie(tokens.auth_token, accessToken, {
+          httpOnly: false,
+          secure: true,
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+          maxAge: 1000 * 60 * 60, // 1h
+        })
+        .cookie(tokens.refresh_token, refreshToken, {
+          httpOnly: false,
+          secure: true,
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+          maxAge: 1000 * 60 * 60 * 24 * 7, // 7d
+        })
+        .send("Logged In");
+    } else {
+      res.status(400).send("Invalid password");
+    }
+  } catch (error) {
+    //console.error(error);
+    res.status(500).send("Invalid credentials");
   }
 };
 
@@ -404,4 +410,34 @@ export const deleteCandidate = async (
 ) => {
   //await Candidate.deleteOne({ ippisNumber: req.query.ippisnumber });
   res.send("Candidate deleted");
+};
+
+export const viewRejections = async (
+  req: AuthenticatedAdmin,
+  res: Response
+) => {
+  const page = (req.query.page || 1) as number;
+  const limit = (req.query.limit || 50) as number;
+  const rejections = await RejectionModel.find({
+    rejectedBy: { $exists: true },
+  })
+    .populate(["rejectedBy", "candidate"])
+    .skip((page - 1) * limit)
+    .limit(limit)
+    .lean();
+
+  const total = await RejectionModel.countDocuments();
+
+  const totalRejections = rejections.map((c, i) => {
+    return {
+      ...c,
+      id: (page - 1) * limit + i + 1,
+    };
+  });
+  res.send({
+    total,
+    rejections: totalRejections,
+    page,
+    limit,
+  });
 };

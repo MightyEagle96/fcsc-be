@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteCandidate = exports.viewCandidate = exports.pushApplication = exports.myCorrections = exports.getCandidate = exports.submitCorrection = exports.uploadDocument = exports.viewMyDocuments = exports.getRefreshToken = exports.logoutCandidate = exports.fullCandidateProfile = exports.myProfile = exports.loginCandidate = exports.batchUploadCandidates = void 0;
+exports.viewRejections = exports.deleteCandidate = exports.viewCandidate = exports.pushApplication = exports.myCorrections = exports.getCandidate = exports.submitCorrection = exports.uploadDocument = exports.viewMyDocuments = exports.getRefreshToken = exports.logoutCandidate = exports.fullCandidateProfile = exports.myProfile = exports.loginCandidate = exports.batchUploadCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const generateRandomPassword_1 = __importDefault(require("../utils/generateRandomPassword"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
@@ -27,6 +27,7 @@ const adminLogin_1 = require("../models/adminLogin");
 const console_1 = require("console");
 const correctionData_1 = require("../models/correctionData");
 const mongoose_1 = __importDefault(require("mongoose"));
+const rejectionModel_1 = require("../models/rejectionModel");
 const batchUploadCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //res.send("Hello");
     try {
@@ -59,31 +60,37 @@ const batchUploadCandidates = (req, res) => __awaiter(void 0, void 0, void 0, fu
 });
 exports.batchUploadCandidates = batchUploadCandidates;
 const loginCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const candidate = yield candidateModel_1.Candidate.findOne({ email: req.body.email }).lean();
-    if (!candidate) {
-        return res.status(404).send("Candidate not found");
+    try {
+        const candidate = yield candidateModel_1.Candidate.findOne({ email: req.body.email }).lean();
+        if (!candidate) {
+            return res.status(404).send("Candidate not found");
+        }
+        const isPasswordValid = yield bcrypt_1.default.compare(req.body.password, candidate.password);
+        if (isPasswordValid) {
+            const accessToken = (0, jwtController_1.generateToken)({ _id: candidate._id });
+            const refreshToken = (0, jwtController_1.generateRefreshToken)({ _id: candidate._id });
+            res
+                .cookie(jwtController_1.tokens.auth_token, accessToken, {
+                httpOnly: false,
+                secure: true,
+                sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+                maxAge: 1000 * 60 * 60, // 1h
+            })
+                .cookie(jwtController_1.tokens.refresh_token, refreshToken, {
+                httpOnly: false,
+                secure: true,
+                sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+                maxAge: 1000 * 60 * 60 * 24 * 7, // 7d
+            })
+                .send("Logged In");
+        }
+        else {
+            res.status(400).send("Invalid password");
+        }
     }
-    const isPasswordValid = yield bcrypt_1.default.compare(req.body.password, candidate.password);
-    if (isPasswordValid) {
-        const accessToken = (0, jwtController_1.generateToken)({ _id: candidate._id });
-        const refreshToken = (0, jwtController_1.generateRefreshToken)({ _id: candidate._id });
-        res
-            .cookie(jwtController_1.tokens.auth_token, accessToken, {
-            httpOnly: false,
-            secure: true,
-            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-            maxAge: 1000 * 60 * 60, // 1h
-        })
-            .cookie(jwtController_1.tokens.refresh_token, refreshToken, {
-            httpOnly: false,
-            secure: true,
-            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-            maxAge: 1000 * 60 * 60 * 24 * 7, // 7d
-        })
-            .send("Logged In");
-    }
-    else {
-        res.status(400).send("Invalid password");
+    catch (error) {
+        //console.error(error);
+        res.status(500).send("Invalid credentials");
     }
 });
 exports.loginCandidate = loginCandidate;
@@ -347,3 +354,25 @@ const deleteCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function
     res.send("Candidate deleted");
 });
 exports.deleteCandidate = deleteCandidate;
+const viewRejections = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const page = (req.query.page || 1);
+    const limit = (req.query.limit || 50);
+    const rejections = yield rejectionModel_1.RejectionModel.find({
+        rejectedBy: { $exists: true },
+    })
+        .populate(["rejectedBy", "candidate"])
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean();
+    const total = yield rejectionModel_1.RejectionModel.countDocuments();
+    const totalRejections = rejections.map((c, i) => {
+        return Object.assign(Object.assign({}, c), { id: (page - 1) * limit + i + 1 });
+    });
+    res.send({
+        total,
+        rejections: totalRejections,
+        page,
+        limit,
+    });
+});
+exports.viewRejections = viewRejections;

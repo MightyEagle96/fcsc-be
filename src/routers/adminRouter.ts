@@ -45,6 +45,7 @@ import {
   getCandidate,
   pushApplication,
   viewCandidate,
+  viewRejections,
 } from "../controllers/candidateController";
 import {
   approveCorrection,
@@ -120,6 +121,8 @@ adminRouter
 
   .get("/adminlogs", authenticateToken, viewAdminLogs)
 
-  .get("/fixapprovedcandidates", fixApprovedCandidates);
+  .get("/fixapprovedcandidates", fixApprovedCandidates)
+
+  .get("/rejections", authenticateToken, viewRejections);
 
 export default adminRouter;
