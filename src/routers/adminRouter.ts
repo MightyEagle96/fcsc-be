@@ -13,12 +13,14 @@ import {
   mdaOverview,
   notificationAnalysis,
   notifyByEmailAndSms,
+  notifyCandidate,
   officerDashboard,
   rectifyPoolOffices,
   rectifyRemarks,
   resetAdminPassword,
   reverseApproval,
   searchCandidate,
+  updateCandidateContact,
   updateDeskOfficer,
   uploadAnalysis,
   uploadFile,
@@ -123,6 +125,9 @@ adminRouter
 
   .get("/fixapprovedcandidates", fixApprovedCandidates)
 
-  .get("/rejections", authenticateToken, viewRejections);
+  .get("/rejections", authenticateToken, viewRejections)
+
+  .patch("/updatecandidatecontact", authenticateToken, updateCandidateContact)
+  .get("/notifycandidate", authenticateToken, notifyCandidate);
 
 export default adminRouter;

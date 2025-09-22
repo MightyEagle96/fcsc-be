@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateCandidateContact = exports.fixApprovedCandidates = exports.viewAdminLogs = exports.rectifyPoolOffices = exports.rectifyRemarks = exports.notificationAnalysis = exports.updateDeskOfficer = exports.deleteDeskOfficer = exports.viewIndividualStaff = exports.createNewPassword = exports.resetAdminPassword = exports.notifyByEmailAndSms = exports.reverseApproval = exports.searchCandidate = exports.documentsAnalysis = exports.uploadAnalysis = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
+exports.notifyCandidate = exports.updateCandidateContact = exports.fixApprovedCandidates = exports.viewAdminLogs = exports.rectifyPoolOffices = exports.rectifyRemarks = exports.notificationAnalysis = exports.updateDeskOfficer = exports.deleteDeskOfficer = exports.viewIndividualStaff = exports.createNewPassword = exports.resetAdminPassword = exports.notifyByEmailAndSms = exports.reverseApproval = exports.searchCandidate = exports.documentsAnalysis = exports.uploadAnalysis = exports.mdaOverview = exports.viewUploadedDocuments = exports.viewAdminStaff = exports.officerDashboard = exports.createOfficerAccount = exports.deleteCandidates = exports.uploadFile = exports.dashboardSummary = exports.createAccount = exports.loginAdmin = exports.viewCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const adminLogin_1 = require("../models/adminLogin");
 const DataQueue_1 = require("../utils/DataQueue");
@@ -647,6 +647,7 @@ const notificationQueue = new DataQueue_1.ConcurrentJobQueue({
     retryDelay: 2000, // wait 2s between retries
     shutdownTimeout: 60000, //
 });
+const smsMessage = (name, password, link, email) => `Dear ${name.toUpperCase()}, your Federal Civil Service Commission candidate verification portal account has been created. Your email is ${email} and your password is ${password}.  Please click the link below to access your account. ${link}`;
 const notifyByEmailAndSms = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const candidates = yield candidateModel_1.Candidate.find({
@@ -655,7 +656,6 @@ const notifyByEmailAndSms = (req, res) => __awaiter(void 0, void 0, void 0, func
         }).select({ uploadedDocuments: 0 });
         console.log({ length: candidates.length });
         res.send("Sending notifications");
-        const smsMessage = (name, password, link, email) => `Dear ${name.toUpperCase()}, your Federal Civil Service Commission candidate verification portal account has been created. Your email is ${email} and your password is ${password}.  Please click the link below to access your account. ${link}`;
         candidates.forEach((c) => {
             notificationQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
                 try {
@@ -962,9 +962,36 @@ const fixApprovedCandidates = (req, res) => __awaiter(void 0, void 0, void 0, fu
 });
 exports.fixApprovedCandidates = fixApprovedCandidates;
 const updateCandidateContact = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _m, _o;
     try {
         console.log(req.body);
-        console.log(req.query);
+        //check if the phone number being updated to belongs to another
+        const phoneNumberExists = yield candidateModel_1.Candidate.findOne({
+            _id: { $ne: req.body._id },
+            phoneNumber: req.body.phoneNumber,
+        });
+        if (phoneNumberExists) {
+            return res.status(400).send("Phone number already exists");
+        }
+        //check if the email being updated to belongs to another
+        const emailExists = yield candidateModel_1.Candidate.findOne({
+            _id: { $ne: req.body._id },
+            email: req.body.email,
+        });
+        if (emailExists) {
+            return res.status(400).send("Email already exists");
+        }
+        yield candidateModel_1.Candidate.updateOne({ _id: req.body._id }, {
+            $set: {
+                phoneNumber: req.body.phoneNumber,
+                email: req.body.email,
+                contactUpdatedBy: (_m = req.admin) === null || _m === void 0 ? void 0 : _m._id,
+            },
+        });
+        yield adminLogs_1.default.create({
+            account: (_o = req.admin) === null || _o === void 0 ? void 0 : _o._id,
+            action: `Updated contact for ${req.body.fullName}`,
+        });
         res.send("Contact updated");
     }
     catch (error) {
@@ -972,3 +999,60 @@ const updateCandidateContact = (req, res) => __awaiter(void 0, void 0, void 0, f
     }
 });
 exports.updateCandidateContact = updateCandidateContact;
+const notifyCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const candidate = yield candidateModel_1.Candidate.findById(req.query.candidate);
+    if (!candidate) {
+        return res.status(404).send("Candidate not found");
+    }
+    notificationQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
+        var _p, _q;
+        try {
+            const mailSent = yield (0, nodemailer_1.sendMailFunc)(candidate.email, "ACCOUNT CREATED", (0, emailTemplate_1.emailTemplate)(candidate.fullName, candidate.passwords[0], "https://promotion.fedcivilservice.gov.ng"));
+            if (mailSent) {
+                yield candidateModel_1.Candidate.updateOne({ _id: candidate._id }, {
+                    $set: {
+                        emailSent: true,
+                        timeEmailwasSent: new Date(),
+                    },
+                });
+                console.log(`✅ Email sent to ${candidate.fullName}`);
+                yield adminLogs_1.default.create({
+                    account: (_p = req.admin) === null || _p === void 0 ? void 0 : _p._id,
+                    action: `Sent email notification to ${candidate.email}`,
+                });
+            }
+            else {
+                yield candidateModel_1.Candidate.findByIdAndUpdate(candidate._id, {
+                    $set: {
+                        badEmail: true,
+                        timeAttempted: new Date(),
+                    },
+                });
+                console.log(`❌ Failed to send email to ${candidate.fullName}`);
+            }
+            const phoneNumber = `234${candidate.phoneNumber.slice(1)}`;
+            const status = yield (0, smsHandler_1.SendSms)(smsMessage(candidate.fullName, candidate.passwords[0], "https://promotion.fedcivilservice.gov.ng", candidate.email), phoneNumber);
+            if (status === "delivered") {
+                yield candidateModel_1.Candidate.findByIdAndUpdate(candidate._id, {
+                    $set: {
+                        timeSmswasSent: new Date(),
+                        smsSent: true,
+                    },
+                });
+                console.log(`✅ SMS sent to ${candidate.fullName}`);
+                yield adminLogs_1.default.create({
+                    account: (_q = req.admin) === null || _q === void 0 ? void 0 : _q._id,
+                    action: `Sent sms notification to ${candidate.email}`,
+                });
+            }
+            else {
+                console.log(`❌ Failed to send SMS to ${candidate.fullName}`);
+            }
+        }
+        catch (error) {
+            console.log(error);
+        }
+    }));
+    res.send("Notification sent");
+});
+exports.notifyCandidate = notifyCandidate;

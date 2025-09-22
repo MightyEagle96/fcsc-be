@@ -60,6 +60,7 @@ export interface ICandidate {
   timeSmswasSent: Date;
   badEmail: boolean;
   timeAttempted: Date;
+  contactUpdatedBy: Types.ObjectId;
 }
 
 export interface AuthenticatedCandidate extends Request {
@@ -137,6 +138,7 @@ const candidateSchema = new Schema<ICandidate>(
     timeSmswasSent: Date,
     badEmail: Boolean,
     timeAttempted: Date,
+    contactUpdatedBy: { type: Schema.Types.ObjectId, ref: "Admin" },
   },
   { timestamps: true }
 );

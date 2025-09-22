@@ -752,6 +752,15 @@ const notificationQueue = new ConcurrentJobQueue({
   retryDelay: 2000, // wait 2s between retries
   shutdownTimeout: 60000, //
 });
+
+const smsMessage = (
+  name: string,
+  password: string,
+  link: string,
+  email: string
+): string =>
+  `Dear ${name.toUpperCase()}, your Federal Civil Service Commission candidate verification portal account has been created. Your email is ${email} and your password is ${password}.  Please click the link below to access your account. ${link}`;
+
 export const notifyByEmailAndSms = async (req: Request, res: Response) => {
   try {
     const candidates = await Candidate.find({
@@ -761,13 +770,6 @@ export const notifyByEmailAndSms = async (req: Request, res: Response) => {
 
     console.log({ length: candidates.length });
     res.send("Sending notifications");
-    const smsMessage = (
-      name: string,
-      password: string,
-      link: string,
-      email: string
-    ): string =>
-      `Dear ${name.toUpperCase()}, your Federal Civil Service Commission candidate verification portal account has been created. Your email is ${email} and your password is ${password}.  Please click the link below to access your account. ${link}`;
 
     candidates.forEach((c) => {
       notificationQueue.enqueue(async () => {
@@ -1162,10 +1164,125 @@ export const updateCandidateContact = async (
   try {
     console.log(req.body);
 
-    console.log(req.query);
+    //check if the phone number being updated to belongs to another
+    const phoneNumberExists = await Candidate.findOne({
+      _id: { $ne: req.body._id },
+      phoneNumber: req.body.phoneNumber,
+    });
+
+    if (phoneNumberExists) {
+      return res.status(400).send("Phone number already exists");
+    }
+
+    //check if the email being updated to belongs to another
+    const emailExists = await Candidate.findOne({
+      _id: { $ne: req.body._id },
+      email: req.body.email,
+    });
+
+    if (emailExists) {
+      return res.status(400).send("Email already exists");
+    }
+
+    await Candidate.updateOne(
+      { _id: req.body._id },
+      {
+        $set: {
+          phoneNumber: req.body.phoneNumber,
+          email: req.body.email,
+          contactUpdatedBy: req.admin?._id,
+        },
+      }
+    );
+
+    await AdminLogModel.create({
+      account: req.admin?._id,
+      action: `Updated contact for ${req.body.fullName}`,
+    });
 
     res.send("Contact updated");
   } catch (error) {
     res.status(500).send("Error occurred");
   }
+};
+
+export const notifyCandidate = async (
+  req: AuthenticatedAdmin,
+  res: Response
+) => {
+  const candidate = await Candidate.findById(req.query.candidate);
+
+  if (!candidate) {
+    return res.status(404).send("Candidate not found");
+  }
+
+  notificationQueue.enqueue(async () => {
+    try {
+      const mailSent = await sendMailFunc(
+        candidate.email,
+        "ACCOUNT CREATED",
+        emailTemplate(
+          candidate.fullName,
+          candidate.passwords[0],
+          "https://promotion.fedcivilservice.gov.ng"
+        )
+      );
+
+      if (mailSent) {
+        await Candidate.updateOne(
+          { _id: candidate._id },
+          {
+            $set: {
+              emailSent: true,
+              timeEmailwasSent: new Date(),
+            },
+          }
+        );
+        console.log(`✅ Email sent to ${candidate.fullName}`);
+        await AdminLogModel.create({
+          account: req.admin?._id,
+          action: `Sent email notification to ${candidate.email}`,
+        });
+      } else {
+        await Candidate.findByIdAndUpdate(candidate._id, {
+          $set: {
+            badEmail: true,
+            timeAttempted: new Date(),
+          },
+        });
+        console.log(`❌ Failed to send email to ${candidate.fullName}`);
+      }
+
+      const phoneNumber = `234${candidate.phoneNumber.slice(1)}`;
+
+      const status = await SendSms(
+        smsMessage(
+          candidate.fullName,
+          candidate.passwords[0],
+          "https://promotion.fedcivilservice.gov.ng",
+          candidate.email
+        ),
+        phoneNumber
+      );
+      if (status === "delivered") {
+        await Candidate.findByIdAndUpdate(candidate._id, {
+          $set: {
+            timeSmswasSent: new Date(),
+            smsSent: true,
+          },
+        });
+        console.log(`✅ SMS sent to ${candidate.fullName}`);
+        await AdminLogModel.create({
+          account: req.admin?._id,
+          action: `Sent sms notification to ${candidate.email}`,
+        });
+      } else {
+        console.log(`❌ Failed to send SMS to ${candidate.fullName}`);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  });
+
+  res.send("Notification sent");
 };

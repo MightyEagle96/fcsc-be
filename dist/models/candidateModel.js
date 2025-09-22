@@ -80,6 +80,7 @@ const candidateSchema = new mongoose_1.Schema({
     timeSmswasSent: Date,
     badEmail: Boolean,
     timeAttempted: Date,
+    contactUpdatedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: "Admin" },
 }, { timestamps: true });
 // ✅ Explicit unique indexes
 // candidateSchema.index({ email: 1 }, { unique: true });

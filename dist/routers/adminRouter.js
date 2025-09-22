@@ -55,5 +55,7 @@ adminRouter
     .get("/rectifypooloffices", adminController_1.rectifyPoolOffices)
     .get("/adminlogs", jwtController_1.authenticateToken, adminController_1.viewAdminLogs)
     .get("/fixapprovedcandidates", adminController_1.fixApprovedCandidates)
-    .get("/rejections", jwtController_1.authenticateToken, candidateController_1.viewRejections);
+    .get("/rejections", jwtController_1.authenticateToken, candidateController_1.viewRejections)
+    .patch("/updatecandidatecontact", jwtController_1.authenticateToken, adminController_1.updateCandidateContact)
+    .get("/notifycandidate", jwtController_1.authenticateToken, adminController_1.notifyCandidate);
 exports.default = adminRouter;
