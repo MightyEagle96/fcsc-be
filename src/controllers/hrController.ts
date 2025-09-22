@@ -240,7 +240,7 @@ export const rejectApplication = async (
   };
 
   rejectionQueue.enqueue(async () => {
-    await RejectionModel.create(rejection);
+    const rejectionData = await RejectionModel.create(rejection);
 
     const candidate = await Candidate.findById(req.body.candidate);
 
@@ -260,7 +260,7 @@ export const rejectApplication = async (
         1,
         candidate.phoneNumber.length
       )}`;
-      await sendMailFunc(
+      const emailResult = await sendMailFunc(
         candidate.email,
         "Application Rejected",
         rejectionTemplate(candidate.fullName, req.body.reason)
@@ -269,7 +269,29 @@ export const rejectApplication = async (
       const message = `Hello ${candidate.fullName.toUpperCase()}, your application has been rejected. Reason: ${
         req.body.reason
       }. Kindly login to your portal and effect the change `;
-      await SendSms(message, phoneNumber);
+      const smsResult = await SendSms(message, phoneNumber);
+
+      if (emailResult) {
+        await RejectionModel.updateOne(
+          { _id: rejectionData._id },
+          {
+            $set: {
+              emailSent: true,
+            },
+          }
+        );
+      }
+
+      if (smsResult) {
+        await RejectionModel.updateOne(
+          { _id: rejectionData._id },
+          {
+            $set: {
+              smsSent: true,
+            },
+          }
+        );
+      }
 
       await AdminLogModel.create({
         account: req.admin?._id,

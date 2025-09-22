@@ -224,7 +224,7 @@ const rejectApplication = (req, res) => __awaiter(void 0, void 0, void 0, functi
     };
     rejectionQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
         var _j, _k;
-        yield rejectionModel_1.RejectionModel.create(rejection);
+        const rejectionData = yield rejectionModel_1.RejectionModel.create(rejection);
         const candidate = yield candidateModel_1.Candidate.findById(req.body.candidate);
         if (candidate) {
             yield candidateModel_1.Candidate.updateOne({ _id: req.body.candidate }, {
@@ -235,9 +235,23 @@ const rejectApplication = (req, res) => __awaiter(void 0, void 0, void 0, functi
                 },
             });
             const phoneNumber = `234${candidate.phoneNumber.slice(1, candidate.phoneNumber.length)}`;
-            yield (0, nodemailer_1.sendMailFunc)(candidate.email, "Application Rejected", (0, rejectionTemplate_1.rejectionTemplate)(candidate.fullName, req.body.reason));
+            const emailResult = yield (0, nodemailer_1.sendMailFunc)(candidate.email, "Application Rejected", (0, rejectionTemplate_1.rejectionTemplate)(candidate.fullName, req.body.reason));
             const message = `Hello ${candidate.fullName.toUpperCase()}, your application has been rejected. Reason: ${req.body.reason}. Kindly login to your portal and effect the change `;
-            yield (0, smsHandler_1.SendSms)(message, phoneNumber);
+            const smsResult = yield (0, smsHandler_1.SendSms)(message, phoneNumber);
+            if (emailResult) {
+                yield rejectionModel_1.RejectionModel.updateOne({ _id: rejectionData._id }, {
+                    $set: {
+                        emailSent: true,
+                    },
+                });
+            }
+            if (smsResult) {
+                yield rejectionModel_1.RejectionModel.updateOne({ _id: rejectionData._id }, {
+                    $set: {
+                        smsSent: true,
+                    },
+                });
+            }
             yield adminLogs_1.default.create({
                 account: (_k = req.admin) === null || _k === void 0 ? void 0 : _k._id,
                 action: `Rejected ${candidate.fullName}'s application`,
