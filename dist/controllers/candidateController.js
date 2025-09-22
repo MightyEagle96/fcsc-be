@@ -360,7 +360,11 @@ const viewRejections = (req, res) => __awaiter(void 0, void 0, void 0, function*
     const rejections = yield rejectionModel_1.RejectionModel.find({
         rejectedBy: { $exists: true },
     })
-        .populate(["rejectedBy", "candidate"])
+        .populate([
+        "rejectedBy",
+        { path: "candidate", select: "fullName ippisNumber" },
+    ])
+        .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(limit)
         .lean();

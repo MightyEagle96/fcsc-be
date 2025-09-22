@@ -421,7 +421,11 @@ export const viewRejections = async (
   const rejections = await RejectionModel.find({
     rejectedBy: { $exists: true },
   })
-    .populate(["rejectedBy", "candidate"])
+    .populate([
+      "rejectedBy",
+      { path: "candidate", select: "fullName ippisNumber" },
+    ])
+    .sort({ createdAt: -1 })
     .skip((page - 1) * limit)
     .limit(limit)
     .lean();
@@ -431,6 +435,7 @@ export const viewRejections = async (
   const totalRejections = rejections.map((c, i) => {
     return {
       ...c,
+
       id: (page - 1) * limit + i + 1,
     };
   });
