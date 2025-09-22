@@ -318,14 +318,14 @@ const myCorrections = (req, res) => __awaiter(void 0, void 0, void 0, function* 
 });
 exports.myCorrections = myCorrections;
 const pushApplication = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _k;
     // await Candidate.findByIdAndUpdate(req.candidate?._id, {
     //   status: "pending",
     // });
-    // await Candidate.findOneAndUpdate(
-    //   { _id: req.candidate?._id, status: "rejected" }, // condition
-    //   { $set: { status: "pending" } }, // update
-    //   { new: true } // return updated doc
-    // );
+    yield candidateModel_1.Candidate.findOneAndUpdate({ _id: (_k = req.candidate) === null || _k === void 0 ? void 0 : _k._id, status: "rejected" }, // condition
+    { $set: { status: "pending" } }, // update
+    { new: true } // return updated doc
+    );
     res.send("Application submitted");
 });
 exports.pushApplication = pushApplication;

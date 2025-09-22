@@ -377,11 +377,11 @@ export const pushApplication = async (
   // await Candidate.findByIdAndUpdate(req.candidate?._id, {
   //   status: "pending",
   // });
-  // await Candidate.findOneAndUpdate(
-  //   { _id: req.candidate?._id, status: "rejected" }, // condition
-  //   { $set: { status: "pending" } }, // update
-  //   { new: true } // return updated doc
-  // );
+  await Candidate.findOneAndUpdate(
+    { _id: req.candidate?._id, status: "rejected" }, // condition
+    { $set: { status: "pending" } }, // update
+    { new: true } // return updated doc
+  );
   res.send("Application submitted");
 };
 
