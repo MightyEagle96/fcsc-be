@@ -26,5 +26,6 @@ appRouter
     .patch("/submitcorrection", jwtController_1.authenticateToken, candidateController_1.submitCorrection)
     //admin session
     .get("/viewcandidates", jwtController_1.authenticateToken, adminController_1.viewCandidates)
-    .get("/mycorrections", jwtController_1.authenticateToken, candidateController_1.myCorrections);
+    .get("/mycorrections", jwtController_1.authenticateToken, candidateController_1.myCorrections)
+    .post("/retrievecredentials", candidateController_1.retrieveCredentials);
 exports.default = appRouter;

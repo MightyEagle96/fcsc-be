@@ -8,6 +8,7 @@ import {
   myCorrections,
   myProfile,
   pushApplication,
+  retrieveCredentials,
   submitCorrection,
   uploadDocument,
   viewMyDocuments,
@@ -46,6 +47,8 @@ appRouter
   //admin session
   .get("/viewcandidates", authenticateToken, viewCandidates)
 
-  .get("/mycorrections", authenticateToken, myCorrections);
+  .get("/mycorrections", authenticateToken, myCorrections)
+
+  .post("/retrievecredentials", retrieveCredentials);
 
 export default appRouter;

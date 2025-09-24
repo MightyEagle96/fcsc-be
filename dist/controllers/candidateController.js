@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.viewRejections = exports.deleteCandidate = exports.viewCandidate = exports.pushApplication = exports.myCorrections = exports.getCandidate = exports.submitCorrection = exports.uploadDocument = exports.viewMyDocuments = exports.getRefreshToken = exports.logoutCandidate = exports.fullCandidateProfile = exports.myProfile = exports.loginCandidate = exports.batchUploadCandidates = void 0;
+exports.retrieveCredentials = exports.viewRejections = exports.deleteCandidate = exports.viewCandidate = exports.pushApplication = exports.myCorrections = exports.getCandidate = exports.submitCorrection = exports.uploadDocument = exports.viewMyDocuments = exports.getRefreshToken = exports.logoutCandidate = exports.fullCandidateProfile = exports.myProfile = exports.loginCandidate = exports.batchUploadCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const generateRandomPassword_1 = __importDefault(require("../utils/generateRandomPassword"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
@@ -380,3 +380,16 @@ const viewRejections = (req, res) => __awaiter(void 0, void 0, void 0, function*
     });
 });
 exports.viewRejections = viewRejections;
+const retrieveCredentials = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const candidate = yield candidateModel_1.Candidate.findOne(req.body);
+    if (!candidate) {
+        return res.status(404).send("Candidate not found");
+    }
+    res.send({
+        name: candidate.fullName,
+        email: candidate.email,
+        password: candidate.passwords[0],
+        ippisNumber: candidate.ippisNumber,
+    });
+});
+exports.retrieveCredentials = retrieveCredentials;

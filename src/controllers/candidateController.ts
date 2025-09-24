@@ -446,3 +446,17 @@ export const viewRejections = async (
     limit,
   });
 };
+
+export const retrieveCredentials = async (req: Request, res: Response) => {
+  const candidate = await Candidate.findOne(req.body);
+
+  if (!candidate) {
+    return res.status(404).send("Candidate not found");
+  }
+  res.send({
+    name: candidate.fullName,
+    email: candidate.email,
+    password: candidate.passwords[0],
+    ippisNumber: candidate.ippisNumber,
+  });
+};
