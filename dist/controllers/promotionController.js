@@ -87,14 +87,19 @@ const recommendedCandidates = (req, res) => __awaiter(void 0, void 0, void 0, fu
 });
 exports.recommendedCandidates = recommendedCandidates;
 const approveCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b;
+    var _a, _b, _c;
+    if (((_a = req.admin) === null || _a === void 0 ? void 0 : _a.hasRightToCorrection) === false) {
+        return res
+            .status(403)
+            .send("You do not have permission to approve candidates");
+    }
     const candidate = yield candidateModel_1.Candidate.findByIdAndUpdate(req.query.candidate, {
         status: "approved",
         dateApproved: new Date(),
-        approvedBy: (_a = req.admin) === null || _a === void 0 ? void 0 : _a._id,
+        approvedBy: (_b = req.admin) === null || _b === void 0 ? void 0 : _b._id,
     });
     yield adminLogs_1.default.create({
-        account: (_b = req.admin) === null || _b === void 0 ? void 0 : _b._id,
+        account: (_c = req.admin) === null || _c === void 0 ? void 0 : _c._id,
         action: `Approved ${candidate === null || candidate === void 0 ? void 0 : candidate.fullName}'s application`,
     });
     res.send("Candidate approved");
@@ -214,9 +219,9 @@ const disqualificationQueue = new DataQueue_1.ConcurrentJobQueue({
     shutdownTimeout: 20000,
 });
 const disqualifyCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _c;
+    var _d;
     try {
-        const data = { candidate: req.query.candidate, admin: (_c = req.admin) === null || _c === void 0 ? void 0 : _c._id };
+        const data = { candidate: req.query.candidate, admin: (_d = req.admin) === null || _d === void 0 ? void 0 : _d._id };
         disqualificationQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
             yield candidateModel_1.Candidate.updateOne({ _id: data.candidate }, {
                 $set: {
