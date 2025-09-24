@@ -20,6 +20,7 @@ export interface IAdmin {
   yetToChangePassword: boolean;
 
   hasRightToCorrection: boolean;
+  restrictToCorrection: boolean;
 
   // 🔑 new fields
   resetPasswordToken?: string;
@@ -41,6 +42,7 @@ const adminSchema = new Schema<IAdmin>(
     role: { type: String, lowercase: true },
     yetToChangePassword: { type: Boolean },
     hasRightToCorrection: { type: Boolean, default: false },
+    restrictToCorrection: { type: Boolean, default: false },
 
     // 🔑 reset fields
     resetPasswordToken: String,
