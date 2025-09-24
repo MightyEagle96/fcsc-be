@@ -83,11 +83,11 @@ export const recommendedCandidates = async (req: Request, res: Response) => {
 };
 
 export const approveCandidate = async (req: JointInterface, res: Response) => {
-  if (req.admin?.hasRightToCorrection === false) {
-    return res
-      .status(403)
-      .send("You do not have permission to approve candidates");
-  }
+  // if (req.admin?.hasRightToCorrection === false) {
+  //   return res
+  //     .status(403)
+  //     .send("You do not have permission to approve candidates");
+  // }
   const candidate = await Candidate.findByIdAndUpdate(req.query.candidate, {
     status: "approved",
     dateApproved: new Date(),
