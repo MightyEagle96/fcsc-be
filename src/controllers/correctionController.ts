@@ -4,68 +4,68 @@ import { Request, Response } from "express";
 import { Candidate } from "../models/candidateModel";
 import { AuthenticatedAdmin } from "../models/adminLogin";
 
-export const viewCorrections = async (req: Request, res: Response) => {
-  try {
-    const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 50;
+// export const viewCorrections = async (req: Request, res: Response) => {
+//   try {
+//     const page = Number(req.query.page) || 1;
+//     const limit = Number(req.query.limit) || 50;
 
-    const corrections = await CorrectionModel.aggregate([
-      // Add custom sort order
-      {
-        $addFields: {
-          sortOrder: {
-            $switch: {
-              branches: [
-                { case: { $eq: ["$status", "pending"] }, then: 0 },
-                { case: { $eq: ["$status", "approved"] }, then: 1 },
-                { case: { $eq: ["$status", "rejected"] }, then: 2 },
-              ],
-              default: 99,
-            },
-          },
-        },
-      },
-      // Sort by sortOrder first, then maybe by dateApplied descending
-      { $sort: { sortOrder: 1, dateApplied: -1 } },
+//     const corrections = await CorrectionModel.aggregate([
+//       // Add custom sort order
+//       {
+//         $addFields: {
+//           sortOrder: {
+//             $switch: {
+//               branches: [
+//                 { case: { $eq: ["$status", "pending"] }, then: 0 },
+//                 { case: { $eq: ["$status", "approved"] }, then: 1 },
+//                 { case: { $eq: ["$status", "rejected"] }, then: 2 },
+//               ],
+//               default: 99,
+//             },
+//           },
+//         },
+//       },
+//       // Sort by sortOrder first, then maybe by dateApplied descending
+//       { $sort: { sortOrder: 1, dateApplied: -1 } },
 
-      // Pagination
-      { $skip: (page - 1) * limit },
-      { $limit: limit },
+//       // Pagination
+//       { $skip: (page - 1) * limit },
+//       { $limit: limit },
 
-      // Lookup candidate (like populate)
-      {
-        $lookup: {
-          from: "candidates",
-          localField: "candidate",
-          foreignField: "_id",
-          as: "candidate",
-        },
-      },
-      { $unwind: "$candidate" }, // remove array wrapper
-    ]);
+//       // Lookup candidate (like populate)
+//       {
+//         $lookup: {
+//           from: "candidates",
+//           localField: "candidate",
+//           foreignField: "_id",
+//           as: "candidate",
+//         },
+//       },
+//       { $unwind: "$candidate" }, // remove array wrapper
+//     ]);
 
-    // Get total count (without pagination)
-    const total = await CorrectionModel.countDocuments();
+//     // Get total count (without pagination)
+//     const total = await CorrectionModel.countDocuments();
 
-    // Transform to match your original response
-    const data = corrections.map((c, i) => ({
-      ...c,
-      name: c.candidate.fullName,
-      mda: c.candidate.currentMDA,
-      id: (page - 1) * limit + i + 1,
-    }));
+//     // Transform to match your original response
+//     const data = corrections.map((c, i) => ({
+//       ...c,
+//       name: c.candidate.fullName,
+//       mda: c.candidate.currentMDA,
+//       id: (page - 1) * limit + i + 1,
+//     }));
 
-    res.send({
-      corrections: data,
-      total,
-      page,
-      limit,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Error occurred");
-  }
-};
+//     res.send({
+//       corrections: data,
+//       total,
+//       page,
+//       limit,
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).send("Error occurred");
+//   }
+// };
 
 export const viewCorrection = async (req: Request, res: Response) => {
   try {
@@ -153,6 +153,100 @@ export const correctionsDashboard = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("correctionsDashboard error:", error);
+    res.status(500).send("Error occurred");
+  }
+};
+
+export const viewCorrections = async (req: Request, res: Response) => {
+  try {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 50;
+    const search = (req.query.search as string) || "";
+
+    const matchStage: any = {};
+
+    if (search) {
+      matchStage.$or = [
+        { "candidate.fullName": { $regex: search, $options: "i" } },
+        { "candidate.ippisNumber": { $regex: search, $options: "i" } },
+        { "candidate.phoneNumber": { $regex: search, $options: "i" } },
+        { "candidate.email": { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const corrections = await CorrectionModel.aggregate([
+      // Lookup candidate (like populate)
+      {
+        $lookup: {
+          from: "candidates",
+          localField: "candidate",
+          foreignField: "_id",
+          as: "candidate",
+        },
+      },
+      { $unwind: "$candidate" },
+
+      // 🔎 Apply search filter if provided
+      ...(search ? [{ $match: matchStage }] : []),
+
+      // Add custom sort order
+      {
+        $addFields: {
+          sortOrder: {
+            $switch: {
+              branches: [
+                { case: { $eq: ["$status", "pending"] }, then: 0 },
+                { case: { $eq: ["$status", "approved"] }, then: 1 },
+                { case: { $eq: ["$status", "rejected"] }, then: 2 },
+              ],
+              default: 99,
+            },
+          },
+        },
+      },
+
+      // Sort by status first, then by dateApplied
+      { $sort: { sortOrder: 1, dateApplied: -1 } },
+
+      // Pagination
+      { $skip: (page - 1) * limit },
+      { $limit: limit },
+    ]);
+
+    // Count total (with same filter)
+    const totalPipeline: any[] = [
+      {
+        $lookup: {
+          from: "candidates",
+          localField: "candidate",
+          foreignField: "_id",
+          as: "candidate",
+        },
+      },
+      { $unwind: "$candidate" },
+      ...(search ? [{ $match: matchStage }] : []),
+      { $count: "count" },
+    ];
+
+    const totalResult = await CorrectionModel.aggregate(totalPipeline);
+    const total = totalResult[0]?.count || 0;
+
+    // Transform response
+    const data = corrections.map((c, i) => ({
+      ...c,
+      name: c.candidate.fullName,
+      mda: c.candidate.currentMDA,
+      id: (page - 1) * limit + i + 1,
+    }));
+
+    res.send({
+      corrections: data,
+      total,
+      page,
+      limit,
+    });
+  } catch (error) {
+    console.error(error);
     res.status(500).send("Error occurred");
   }
 };
