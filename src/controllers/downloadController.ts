@@ -1,8 +1,9 @@
 import { Request, Response } from "express";
 import XLSX from "xlsx";
 import { Candidate } from "../models/candidateModel";
+import ExcelJS from "exceljs";
 
-export const HEADER_MAP = {
+export const HEADER_MAP: any = {
   "IPPIS Number": "ippisNumber",
   "Name (Surname, First Name)": "fullName",
   DOB: "dateOfBirth",
@@ -27,46 +28,85 @@ export const HEADER_MAP = {
   Status: "status",
 };
 
+// export const exportCandidatesExcel = async (req: Request, res: Response) => {
+//   try {
+//     // 1. Fetch all candidates
+//     const candidates = await Candidate.find().lean();
+
+//     // 2. Convert HEADER_MAP to an array of headers
+//     const headers = Object.keys(HEADER_MAP); // e.g. ["IPPIS Number", "Name...", "DOB", ...]
+
+//     // 3. Map candidates into rows with header mapping
+//     const rows = candidates.map((cand: any) => {
+//       const row: Record<string, any> = {};
+//       for (const [header, field] of Object.entries(HEADER_MAP)) {
+//         row[header] = cand[field] ?? ""; // fallback empty if missing
+//       }
+//       return row;
+//     });
+
+//     // 4. Create worksheet
+//     const worksheet = XLSX.utils.json_to_sheet(rows, { header: headers });
+
+//     // 5. Create workbook & append worksheet
+//     const workbook = XLSX.utils.book_new();
+//     XLSX.utils.book_append_sheet(workbook, worksheet, "Candidates");
+
+//     // 6. Write workbook to buffer
+//     const buffer = XLSX.write(workbook, {
+//       bookType: "xlsx",
+//       type: "buffer",
+//     });
+
+//     // 7. Send file as response
+//     res.setHeader(
+//       "Content-Disposition",
+//       "attachment; filename=candidates.xlsx"
+//     );
+//     res.setHeader(
+//       "Content-Type",
+//       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+//     );
+//     res.send(buffer);
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: "Error exporting candidates" });
+//   }
+// };
+
 export const exportCandidatesExcel = async (req: Request, res: Response) => {
   try {
-    // 1. Fetch all candidates
     const candidates = await Candidate.find().lean();
 
-    // 2. Convert HEADER_MAP to an array of headers
-    const headers = Object.keys(HEADER_MAP); // e.g. ["IPPIS Number", "Name...", "DOB", ...]
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Candidates");
 
-    // 3. Map candidates into rows with header mapping
-    const rows = candidates.map((cand: any) => {
-      const row: Record<string, any> = {};
-      for (const [header, field] of Object.entries(HEADER_MAP)) {
-        row[header] = cand[field] ?? ""; // fallback empty if missing
-      }
-      return row;
-    });
+    // 1. Add header row
+    const headers = Object.keys(HEADER_MAP);
+    worksheet.addRow(headers);
 
-    // 4. Create worksheet
-    const worksheet = XLSX.utils.json_to_sheet(rows, { header: headers });
+    // 2. Add candidate rows
+    for (const cand of candidates) {
+      const row = headers.map((header) => {
+        const field = HEADER_MAP[header];
+        return (cand as any)[field] ?? "";
+      });
+      worksheet.addRow(row);
+    }
 
-    // 5. Create workbook & append worksheet
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Candidates");
-
-    // 6. Write workbook to buffer
-    const buffer = XLSX.write(workbook, {
-      bookType: "xlsx",
-      type: "buffer",
-    });
-
-    // 7. Send file as response
-    res.setHeader(
-      "Content-Disposition",
-      "attachment; filename=candidates.xlsx"
-    );
+    // 3. Set response headers
     res.setHeader(
       "Content-Type",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     );
-    res.send(buffer);
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=candidates.xlsx"
+    );
+
+    // 4. Stream workbook directly to response
+    await workbook.xlsx.write(res);
+    res.end();
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Error exporting candidates" });
