@@ -252,6 +252,7 @@ export const uploadFile = async (req: AuthenticatedAdmin, res: Response) => {
     // 🔎 Validate rows before insert
     for (let rowIndex = 0; rowIndex < allRows.length; rowIndex++) {
       const row = allRows[rowIndex];
+      console.log(row);
       const rowNumber = rowIndex + 2; // Excel row (header is row 1)
 
       const ippisNumber = normalizeString(row.ippisNumber);

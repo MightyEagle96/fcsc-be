@@ -233,6 +233,7 @@ const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         // 🔎 Validate rows before insert
         for (let rowIndex = 0; rowIndex < allRows.length; rowIndex++) {
             const row = allRows[rowIndex];
+            console.log(row);
             const rowNumber = rowIndex + 2; // Excel row (header is row 1)
             const ippisNumber = normalizeString(row.ippisNumber);
             const email = normalizeString(row.email);

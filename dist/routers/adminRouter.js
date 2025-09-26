@@ -11,6 +11,7 @@ const hrController_1 = require("../controllers/hrController");
 const promotionController_1 = require("../controllers/promotionController");
 const candidateController_1 = require("../controllers/candidateController");
 const correctionController_1 = require("../controllers/correctionController");
+const downloadController_1 = require("../controllers/downloadController");
 const adminRouter = (0, express_1.Router)();
 const upload = (0, multer_1.default)({ dest: "adminuploads/" });
 adminRouter
@@ -57,5 +58,6 @@ adminRouter
     .get("/fixapprovedcandidates", adminController_1.fixApprovedCandidates)
     .get("/rejections", jwtController_1.authenticateToken, candidateController_1.viewRejections)
     .patch("/updatecandidatecontact", jwtController_1.authenticateToken, adminController_1.updateCandidateContact)
-    .get("/notifycandidate", jwtController_1.authenticateToken, adminController_1.notifyCandidate);
+    .get("/notifycandidate", jwtController_1.authenticateToken, adminController_1.notifyCandidate)
+    .get("/exportdataexcel", downloadController_1.exportCandidatesExcel);
 exports.default = adminRouter;

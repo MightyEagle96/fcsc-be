@@ -55,6 +55,7 @@ import {
   viewCorrection,
   viewCorrections,
 } from "../controllers/correctionController";
+import { exportCandidatesExcel } from "../controllers/downloadController";
 
 const adminRouter = Router();
 
@@ -128,6 +129,8 @@ adminRouter
   .get("/rejections", authenticateToken, viewRejections)
 
   .patch("/updatecandidatecontact", authenticateToken, updateCandidateContact)
-  .get("/notifycandidate", authenticateToken, notifyCandidate);
+  .get("/notifycandidate", authenticateToken, notifyCandidate)
+
+  .get("/exportdataexcel", exportCandidatesExcel);
 
 export default adminRouter;
