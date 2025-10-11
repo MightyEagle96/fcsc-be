@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendMailFunc = void 0;
+exports.sendMailFunc = sendMailFunc;
 const nodemailer_1 = __importDefault(require("nodemailer"));
 //console.log(process.env.MAILTRAP_TOKEN);
 // const transporter = nodemailer.createTransport({
@@ -47,4 +47,3 @@ function sendMailFunc(to, subject, html) {
         }
     });
 }
-exports.sendMailFunc = sendMailFunc;

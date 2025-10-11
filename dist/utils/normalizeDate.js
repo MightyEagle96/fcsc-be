@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.normalizeDate = void 0;
+exports.normalizeDate = normalizeDate;
 // utils/dateUtils.ts
 function normalizeDate(value) {
     if (!value)
@@ -24,4 +24,3 @@ function normalizeDate(value) {
     }
     return null;
 }
-exports.normalizeDate = normalizeDate;

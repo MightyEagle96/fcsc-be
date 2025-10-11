@@ -95,7 +95,7 @@ const loginCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function*
 });
 exports.loginCandidate = loginCandidate;
 const myProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _b, _c;
+    var _a, _b;
     try {
         if (req.candidate) {
             const candidate = req.candidate;
@@ -109,7 +109,7 @@ const myProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 gradeLevel: candidate.gradeLevel,
                 cadre: candidate.cadre,
                 status: candidate.status,
-                passport: ((_c = (_b = candidate.uploadedDocuments) === null || _b === void 0 ? void 0 : _b.find((c) => c.fileType === "Passport Photograph")) === null || _c === void 0 ? void 0 : _c.fileUrl) || "",
+                passport: ((_b = (_a = candidate.uploadedDocuments) === null || _a === void 0 ? void 0 : _a.find((c) => c.fileType === "Passport Photograph")) === null || _b === void 0 ? void 0 : _b.fileUrl) || "",
                 role: candidate.role,
             });
         }
@@ -126,8 +126,8 @@ const myProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 });
 exports.myProfile = myProfile;
 const fullCandidateProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _d;
-    const candidate = yield candidateModel_1.Candidate.findById((_d = req.candidate) === null || _d === void 0 ? void 0 : _d._id).select({
+    var _a;
+    const candidate = yield candidateModel_1.Candidate.findById((_a = req.candidate) === null || _a === void 0 ? void 0 : _a._id).select({
         uploadedDocuments: 0,
         passwords: 0,
         password: 0,
@@ -201,9 +201,9 @@ const getRefreshToken = (req, res) => __awaiter(void 0, void 0, void 0, function
 });
 exports.getRefreshToken = getRefreshToken;
 const viewMyDocuments = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _e, _f;
-    const uploadedDocuments = (_e = req.candidate) === null || _e === void 0 ? void 0 : _e.uploadedDocuments.filter((c) => c.fileUrl).length;
-    res.send({ documents: (_f = req.candidate) === null || _f === void 0 ? void 0 : _f.uploadedDocuments, uploadedDocuments });
+    var _a, _b;
+    const uploadedDocuments = (_a = req.candidate) === null || _a === void 0 ? void 0 : _a.uploadedDocuments.filter((c) => c.fileUrl).length;
+    res.send({ documents: (_b = req.candidate) === null || _b === void 0 ? void 0 : _b.uploadedDocuments, uploadedDocuments });
 });
 exports.viewMyDocuments = viewMyDocuments;
 const uploadQueue = new DataQueue_1.ConcurrentJobQueue({
@@ -214,7 +214,7 @@ const uploadQueue = new DataQueue_1.ConcurrentJobQueue({
     shutdownTimeout: 20000,
 });
 const uploadDocument = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _g;
+    var _a;
     try {
         if (!req.file) {
             return res.status(400).send("No file uploaded");
@@ -224,7 +224,7 @@ const uploadDocument = (req, res) => __awaiter(void 0, void 0, void 0, function*
             oldName: `./uploads/${req.file.filename}`,
             newName: `./uploads/${req.headers.documentid}${extension}`,
             path: req.file.path,
-            candidate: (_g = req.candidate) === null || _g === void 0 ? void 0 : _g._id,
+            candidate: (_a = req.candidate) === null || _a === void 0 ? void 0 : _a._id,
             documentId: req.headers.documentid,
             mimetype: req.file.mimetype,
         };
@@ -281,9 +281,9 @@ const correctionQueue = new DataQueue_1.ConcurrentJobQueue({
     shutdownTimeout: 20000,
 });
 const submitCorrection = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _h;
+    var _a;
     const correction = req.body;
-    correction.candidate = new mongoose_1.default.Types.ObjectId((_h = req.candidate) === null || _h === void 0 ? void 0 : _h._id.toString());
+    correction.candidate = new mongoose_1.default.Types.ObjectId((_a = req.candidate) === null || _a === void 0 ? void 0 : _a._id.toString());
     const correctionData = yield correctionData_1.CorrectionModel.findOne({
         candidate: correction.candidate,
         correctionField: correction.correctionField,
@@ -314,9 +314,9 @@ const getCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* (
 });
 exports.getCandidate = getCandidate;
 const myCorrections = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _j;
+    var _a;
     const corrections = yield correctionData_1.CorrectionModel.find({
-        candidate: (_j = req.candidate) === null || _j === void 0 ? void 0 : _j._id,
+        candidate: (_a = req.candidate) === null || _a === void 0 ? void 0 : _a._id,
     });
     const correctionsOrdered = corrections.map((c, i) => {
         return Object.assign(Object.assign({}, c.toObject()), { id: i + 1 });
@@ -325,11 +325,11 @@ const myCorrections = (req, res) => __awaiter(void 0, void 0, void 0, function* 
 });
 exports.myCorrections = myCorrections;
 const pushApplication = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _k;
+    var _a;
     // await Candidate.findByIdAndUpdate(req.candidate?._id, {
     //   status: "pending",
     // });
-    yield candidateModel_1.Candidate.findOneAndUpdate({ _id: (_k = req.candidate) === null || _k === void 0 ? void 0 : _k._id, status: "rejected" }, // condition
+    yield candidateModel_1.Candidate.findOneAndUpdate({ _id: (_a = req.candidate) === null || _a === void 0 ? void 0 : _a._id, status: "rejected" }, // condition
     { $set: { status: "pending" } }, // update
     { new: true } // return updated doc
     );

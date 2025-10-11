@@ -219,9 +219,9 @@ const disqualificationQueue = new DataQueue_1.ConcurrentJobQueue({
     shutdownTimeout: 20000,
 });
 const disqualifyCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _c;
+    var _a;
     try {
-        const data = { candidate: req.query.candidate, admin: (_c = req.admin) === null || _c === void 0 ? void 0 : _c._id };
+        const data = { candidate: req.query.candidate, admin: (_a = req.admin) === null || _a === void 0 ? void 0 : _a._id };
         disqualificationQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
             yield candidateModel_1.Candidate.updateOne({ _id: data.candidate }, {
                 $set: {

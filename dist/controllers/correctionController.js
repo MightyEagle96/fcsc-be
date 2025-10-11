@@ -96,7 +96,7 @@ const viewCorrection = (req, res) => __awaiter(void 0, void 0, void 0, function*
 });
 exports.viewCorrection = viewCorrection;
 const approveCorrection = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _b, _c;
+    var _a, _b;
     try {
         const correction = yield correctionData_1.CorrectionModel.findById(req.query.id);
         if (!correction) {
@@ -106,7 +106,7 @@ const approveCorrection = (req, res) => __awaiter(void 0, void 0, void 0, functi
         yield correctionData_1.CorrectionModel.findByIdAndUpdate(req.query.id, {
             status: "approved",
             dateCorrected: new Date(),
-            correctedBy: (_b = req.admin) === null || _b === void 0 ? void 0 : _b._id,
+            correctedBy: (_a = req.admin) === null || _a === void 0 ? void 0 : _a._id,
             oldData: candidate === null || candidate === void 0 ? void 0 : candidate[correction.correctionField],
         });
         yield candidateModel_1.Candidate.updateOne({ _id: correction.candidate }, {
@@ -117,7 +117,7 @@ const approveCorrection = (req, res) => __awaiter(void 0, void 0, void 0, functi
         yield correctionData_1.CorrectionModel.findByIdAndUpdate(req.query.id, {
             status: "approved",
             dateCorrected: new Date(),
-            correctedBy: (_c = req.admin) === null || _c === void 0 ? void 0 : _c._id,
+            correctedBy: (_b = req.admin) === null || _b === void 0 ? void 0 : _b._id,
         });
         res.send("Correction approved");
     }
@@ -147,7 +147,7 @@ const correctionsDashboard = (req, res) => __awaiter(void 0, void 0, void 0, fun
 });
 exports.correctionsDashboard = correctionsDashboard;
 const viewCorrections = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _d;
+    var _a;
     try {
         const page = Number(req.query.page) || 1;
         const limit = Number(req.query.limit) || 50;
@@ -210,7 +210,7 @@ const viewCorrections = (req, res) => __awaiter(void 0, void 0, void 0, function
             { $count: "count" },
         ];
         const totalResult = yield correctionData_1.CorrectionModel.aggregate(totalPipeline);
-        const total = ((_d = totalResult[0]) === null || _d === void 0 ? void 0 : _d.count) || 0;
+        const total = ((_a = totalResult[0]) === null || _a === void 0 ? void 0 : _a.count) || 0;
         // Transform response
         const data = corrections.map((c, i) => (Object.assign(Object.assign({}, c), { name: c.candidate.fullName, mda: c.candidate.currentMDA, id: (page - 1) * limit + i + 1 })));
         res.send({

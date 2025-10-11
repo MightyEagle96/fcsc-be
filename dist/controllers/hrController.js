@@ -104,15 +104,15 @@ const recommendationQueue = new DataQueue_1.ConcurrentJobQueue({
 const recommendCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         recommendationQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
-            var _b, _c;
+            var _a, _b;
             const candidate = yield candidateModel_1.Candidate.findById(req.query.candidate);
             if (candidate && candidate.status !== "recommended") {
-                candidate.recommendedBy = new mongoose_1.default.Types.ObjectId((_b = req.admin) === null || _b === void 0 ? void 0 : _b._id.toString());
+                candidate.recommendedBy = new mongoose_1.default.Types.ObjectId((_a = req.admin) === null || _a === void 0 ? void 0 : _a._id.toString());
                 candidate.dateRecommended = new Date();
                 candidate.status = "recommended";
                 yield candidate.save();
                 yield adminLogs_1.default.create({
-                    account: (_c = req.admin) === null || _c === void 0 ? void 0 : _c._id,
+                    account: (_b = req.admin) === null || _b === void 0 ? void 0 : _b._id,
                     action: `Recommended ${candidate.fullName}`,
                 });
             }
@@ -134,12 +134,12 @@ const bulkRecommendationQueue = new DataQueue_1.ConcurrentJobQueue({
     maxQueueSize: 100,
 });
 const recommendMultipleCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _d;
+    var _a;
     try {
         const result = yield candidateModel_1.Candidate.aggregate([
             // Step 1: Match by MDA
             {
-                $match: { currentMDA: (_d = req.admin) === null || _d === void 0 ? void 0 : _d.mda }, // replace with your MDA
+                $match: { currentMDA: (_a = req.admin) === null || _a === void 0 ? void 0 : _a.mda }, // replace with your MDA
             },
             // Step 2: Filter uploadedDocuments where fileUrl is not null or empty
             {
@@ -166,21 +166,21 @@ const recommendMultipleCandidates = (req, res) => __awaiter(void 0, void 0, void
             },
         ]);
         bulkRecommendationQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
-            var _e, _f;
+            var _a, _b;
             yield candidateModel_1.Candidate.updateMany({
                 _id: { $in: result.map((c) => c._id) },
                 status: {
-                    $nin: ["recommended", "approved", "rejcted", "disqualified"],
+                    $nin: ["recommended", "approved", "rejected", "disqualified"],
                 }, // 🚀 exclude approved too
             }, {
                 $set: {
                     status: "recommended",
-                    recommendedBy: (_e = req.admin) === null || _e === void 0 ? void 0 : _e._id,
+                    recommendedBy: (_a = req.admin) === null || _a === void 0 ? void 0 : _a._id,
                     dateRecommended: new Date(),
                 },
             });
             yield adminLogs_1.default.create({
-                account: (_f = req.admin) === null || _f === void 0 ? void 0 : _f._id,
+                account: (_b = req.admin) === null || _b === void 0 ? void 0 : _b._id,
                 action: `Did bulk recommendation`,
             });
         }));
@@ -194,10 +194,10 @@ const recommendMultipleCandidates = (req, res) => __awaiter(void 0, void 0, void
 });
 exports.recommendMultipleCandidates = recommendMultipleCandidates;
 const viewRecommendedCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _g;
+    var _a;
     const candidates = yield candidateModel_1.Candidate.find({
         status: "recommended",
-        currentMDA: (_g = req.admin) === null || _g === void 0 ? void 0 : _g.mda,
+        currentMDA: (_a = req.admin) === null || _a === void 0 ? void 0 : _a.mda,
     })
         .populate("recommendedBy")
         .lean();
@@ -216,21 +216,21 @@ const rejectionQueue = new DataQueue_1.ConcurrentJobQueue({
     maxQueueSize: 100,
 });
 const rejectApplication = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _h;
+    var _a;
     const rejection = {
         candidate: req.body.candidate,
         reason: req.body.reason,
-        rejectedBy: (_h = req.admin) === null || _h === void 0 ? void 0 : _h._id,
+        rejectedBy: (_a = req.admin) === null || _a === void 0 ? void 0 : _a._id,
     };
     rejectionQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
-        var _j, _k;
+        var _a, _b;
         const rejectionData = yield rejectionModel_1.RejectionModel.create(rejection);
         const candidate = yield candidateModel_1.Candidate.findById(req.body.candidate);
         if (candidate) {
             yield candidateModel_1.Candidate.updateOne({ _id: req.body.candidate }, {
                 $set: {
                     status: promotionController_1.applicationStatus.rejected,
-                    rejectedBy: (_j = req.admin) === null || _j === void 0 ? void 0 : _j._id,
+                    rejectedBy: (_a = req.admin) === null || _a === void 0 ? void 0 : _a._id,
                     dateRejected: new Date(),
                 },
             });
@@ -253,7 +253,7 @@ const rejectApplication = (req, res) => __awaiter(void 0, void 0, void 0, functi
                 });
             }
             yield adminLogs_1.default.create({
-                account: (_k = req.admin) === null || _k === void 0 ? void 0 : _k._id,
+                account: (_b = req.admin) === null || _b === void 0 ? void 0 : _b._id,
                 action: `Rejected ${candidate.fullName}'s application`,
             });
         }

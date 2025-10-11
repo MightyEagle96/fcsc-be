@@ -12,7 +12,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.authenticateToken = exports.generateRefreshToken = exports.generateToken = exports.tokens = void 0;
+exports.tokens = void 0;
+exports.generateToken = generateToken;
+exports.generateRefreshToken = generateRefreshToken;
+exports.authenticateToken = authenticateToken;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const candidateModel_1 = require("../models/candidateModel");
@@ -32,13 +35,11 @@ function generateToken(payload) {
         expiresIn: "1d",
     });
 }
-exports.generateToken = generateToken;
 function generateRefreshToken(payload) {
     return jsonwebtoken_1.default.sign(payload, process.env.REFRESH_TOKEN, {
         expiresIn: "2d",
     });
 }
-exports.generateRefreshToken = generateRefreshToken;
 function authenticateToken(req, res, next) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -78,4 +79,3 @@ function authenticateToken(req, res, next) {
         }
     });
 }
-exports.authenticateToken = authenticateToken;

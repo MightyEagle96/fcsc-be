@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseDuplicateError = void 0;
+exports.parseDuplicateError = parseDuplicateError;
 function parseDuplicateError(error) {
     const duplicates = [];
     if (error.writeErrors) {
@@ -49,4 +49,3 @@ function parseDuplicateError(error) {
     }
     return duplicates;
 }
-exports.parseDuplicateError = parseDuplicateError;

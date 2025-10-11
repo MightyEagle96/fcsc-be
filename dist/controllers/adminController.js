@@ -384,10 +384,10 @@ const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             // const plainPassword = generateRandomPassword(8);
             // 🔹 Generate plain + hashed passwords for each candidate in parallel
             const preparedBatch = yield Promise.all(batch.map((c) => __awaiter(void 0, void 0, void 0, function* () {
-                var _c;
+                var _a;
                 const plainPassword = (0, generateRandomPassword_1.default)(8);
                 const hashedPassword = yield bcrypt_1.default.hash(plainPassword, 8); // use cost 8 for speed
-                return Object.assign(Object.assign({}, c), { ippisNumber: normalizeString(c.ippisNumber), email: normalizeString(c.email), cadre: normalizeString(c.cadre), currentMDA: normalizeString(c.currentMDA), poolOffice: normalizeString(c.poolOffice), phoneNumber: (_c = c.phoneNumber) === null || _c === void 0 ? void 0 : _c.toString().replace(/\D/g, ""), password: hashedPassword, passwords: [plainPassword], uploadedDocuments: documents_1.documentsToUpload, remark: (0, calculateRemark_1.default)(c) });
+                return Object.assign(Object.assign({}, c), { ippisNumber: normalizeString(c.ippisNumber), email: normalizeString(c.email), cadre: normalizeString(c.cadre), currentMDA: normalizeString(c.currentMDA), poolOffice: normalizeString(c.poolOffice), phoneNumber: (_a = c.phoneNumber) === null || _a === void 0 ? void 0 : _a.toString().replace(/\D/g, ""), password: hashedPassword, passwords: [plainPassword], uploadedDocuments: documents_1.documentsToUpload, remark: (0, calculateRemark_1.default)(c) });
             })));
             //await Candidate.insertMany(preparedBatch);
             // ✅ atomic insert: fail the whole batch if any error occurs
@@ -422,7 +422,7 @@ const deleteCandidates = (req, res) => __awaiter(void 0, void 0, void 0, functio
 });
 exports.deleteCandidates = deleteCandidates;
 const createOfficerAccount = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _d;
+    var _a;
     try {
         // return res.status(400).send("Admin already exists oooo");
         /**Check for existing email */
@@ -436,7 +436,7 @@ const createOfficerAccount = (req, res) => __awaiter(void 0, void 0, void 0, fun
         const newAdmin = new adminLogin_1.AdminModel(Object.assign(Object.assign({}, req.body), { email: req.body.email, password: hashedPassowrd, yetToChangePassword: true }));
         yield newAdmin.save();
         yield adminLogs_1.default.create({
-            account: (_d = req.admin) === null || _d === void 0 ? void 0 : _d._id,
+            account: (_a = req.admin) === null || _a === void 0 ? void 0 : _a._id,
             action: `Created ${req.body.firstName} ${req.body.lastName} as admin staff`,
         });
         res.send("Account created");
@@ -614,7 +614,7 @@ const searchCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function
 });
 exports.searchCandidate = searchCandidate;
 const reverseApproval = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _e;
+    var _a;
     try {
         const candidate = yield candidateModel_1.Candidate.findById(req.query._id);
         if (!candidate) {
@@ -630,7 +630,7 @@ const reverseApproval = (req, res) => __awaiter(void 0, void 0, void 0, function
             },
         });
         yield adminLogs_1.default.create({
-            account: (_e = req.admin) === null || _e === void 0 ? void 0 : _e._id,
+            account: (_a = req.admin) === null || _a === void 0 ? void 0 : _a._id,
             action: `Reversed approval for ${candidate.fullName}`,
         });
         res.send("Approval reversed");
@@ -744,13 +744,13 @@ const resetAdminPassword = (req, res) => __awaiter(void 0, void 0, void 0, funct
                     resetToken
                 : "http://localhost:3000/admin/resetpassword/" + resetToken;
             adminPasswordResetQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
-                var _f;
+                var _a;
                 const link = resetLink(resetToken);
                 const phoneNumber = `234${account.phoneNumber.slice(1, account.phoneNumber.length)}`;
                 const message = `Dear ${account.firstName.toUpperCase()}, your password has been reset. Please click the link below to reset your password. ${link}`;
                 yield (0, nodemailer_1.sendMailFunc)(account.email, "PASSWORD RESET", (0, resetPasswordTemplate_1.resetPasswordTemplate)(account.firstName, link));
                 yield adminLogs_1.default.create({
-                    account: (_f = req.admin) === null || _f === void 0 ? void 0 : _f._id,
+                    account: (_a = req.admin) === null || _a === void 0 ? void 0 : _a._id,
                     action: `${account.firstName.toUpperCase()} applied to reset password`,
                 });
                 yield (0, smsHandler_1.SendSms)(message, phoneNumber);
@@ -767,7 +767,7 @@ const resetAdminPassword = (req, res) => __awaiter(void 0, void 0, void 0, funct
 });
 exports.resetAdminPassword = resetAdminPassword;
 const createNewPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _g;
+    var _a;
     try {
         //const { token } = req.params;
         const { password, token } = req.body;
@@ -787,7 +787,7 @@ const createNewPassword = (req, res) => __awaiter(void 0, void 0, void 0, functi
         yield admin.save();
         res.send("Password reset successful");
         yield adminLogs_1.default.create({
-            account: (_g = req.admin) === null || _g === void 0 ? void 0 : _g._id,
+            account: (_a = req.admin) === null || _a === void 0 ? void 0 : _a._id,
             action: `${admin.firstName.toUpperCase()} reset password successfully`,
         });
     }
@@ -810,7 +810,7 @@ const viewIndividualStaff = (req, res) => __awaiter(void 0, void 0, void 0, func
 });
 exports.viewIndividualStaff = viewIndividualStaff;
 const deleteDeskOfficer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _h, _j;
+    var _a, _b;
     try {
         const adminId = req.query.id;
         // Check if admin is tied to any candidate
@@ -835,8 +835,8 @@ const deleteDeskOfficer = (req, res) => __awaiter(void 0, void 0, void 0, functi
         const account = yield adminLogin_1.AdminModel.findByIdAndDelete(adminId);
         res.send("Staff deleted successfully");
         yield adminLogs_1.default.create({
-            account: (_h = req.admin) === null || _h === void 0 ? void 0 : _h._id,
-            action: `${(_j = req.admin) === null || _j === void 0 ? void 0 : _j.firstName.toUpperCase()} deleted ${account === null || account === void 0 ? void 0 : account.firstName} successfully`,
+            account: (_a = req.admin) === null || _a === void 0 ? void 0 : _a._id,
+            action: `${(_b = req.admin) === null || _b === void 0 ? void 0 : _b.firstName.toUpperCase()} deleted ${account === null || account === void 0 ? void 0 : account.firstName} successfully`,
         });
     }
     catch (error) {
@@ -846,7 +846,7 @@ const deleteDeskOfficer = (req, res) => __awaiter(void 0, void 0, void 0, functi
 });
 exports.deleteDeskOfficer = deleteDeskOfficer;
 const updateDeskOfficer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _k, _l;
+    var _a, _b;
     const officer = yield adminLogin_1.AdminModel.findById(req.body._id);
     if (!officer) {
         return res.status(400).send("Officer not found");
@@ -878,8 +878,8 @@ const updateDeskOfficer = (req, res) => __awaiter(void 0, void 0, void 0, functi
         },
     });
     yield adminLogs_1.default.create({
-        account: (_k = req.admin) === null || _k === void 0 ? void 0 : _k._id,
-        action: `${(_l = req.admin) === null || _l === void 0 ? void 0 : _l.firstName.toUpperCase()} updated ${account === null || account === void 0 ? void 0 : account.firstName} successfully`,
+        account: (_a = req.admin) === null || _a === void 0 ? void 0 : _a._id,
+        action: `${(_b = req.admin) === null || _b === void 0 ? void 0 : _b.firstName.toUpperCase()} updated ${account === null || account === void 0 ? void 0 : account.firstName} successfully`,
     });
     res.send("Desk Officer updated successfully");
 });
@@ -963,7 +963,7 @@ const fixApprovedCandidates = (req, res) => __awaiter(void 0, void 0, void 0, fu
 });
 exports.fixApprovedCandidates = fixApprovedCandidates;
 const updateCandidateContact = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _m, _o;
+    var _a, _b;
     try {
         console.log(req.body);
         //check if the phone number being updated to belongs to another
@@ -986,11 +986,11 @@ const updateCandidateContact = (req, res) => __awaiter(void 0, void 0, void 0, f
             $set: {
                 phoneNumber: req.body.phoneNumber,
                 email: req.body.email,
-                contactUpdatedBy: (_m = req.admin) === null || _m === void 0 ? void 0 : _m._id,
+                contactUpdatedBy: (_a = req.admin) === null || _a === void 0 ? void 0 : _a._id,
             },
         });
         yield adminLogs_1.default.create({
-            account: (_o = req.admin) === null || _o === void 0 ? void 0 : _o._id,
+            account: (_b = req.admin) === null || _b === void 0 ? void 0 : _b._id,
             action: `Updated contact for ${req.body.fullName}`,
         });
         res.send("Contact updated");
@@ -1006,7 +1006,7 @@ const notifyCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function
         return res.status(404).send("Candidate not found");
     }
     notificationQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
-        var _p, _q;
+        var _a, _b;
         try {
             const mailSent = yield (0, nodemailer_1.sendMailFunc)(candidate.email, "ACCOUNT CREATED", (0, emailTemplate_1.emailTemplate)(candidate.fullName, candidate.passwords[0], "https://promotion.fedcivilservice.gov.ng"));
             if (mailSent) {
@@ -1018,7 +1018,7 @@ const notifyCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function
                 });
                 console.log(`✅ Email sent to ${candidate.fullName}`);
                 yield adminLogs_1.default.create({
-                    account: (_p = req.admin) === null || _p === void 0 ? void 0 : _p._id,
+                    account: (_a = req.admin) === null || _a === void 0 ? void 0 : _a._id,
                     action: `Sent email notification to ${candidate.email}`,
                 });
             }
@@ -1042,7 +1042,7 @@ const notifyCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function
                 });
                 console.log(`✅ SMS sent to ${candidate.fullName}`);
                 yield adminLogs_1.default.create({
-                    account: (_q = req.admin) === null || _q === void 0 ? void 0 : _q._id,
+                    account: (_b = req.admin) === null || _b === void 0 ? void 0 : _b._id,
                     action: `Sent sms notification to ${candidate.email}`,
                 });
             }
