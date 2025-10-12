@@ -14,6 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.uploadFileToB2 = void 0;
 exports.safeB2Call = safeB2Call;
+exports.scheduleB2Reauth = scheduleB2Reauth;
 const promises_1 = __importDefault(require("fs/promises"));
 const path_1 = __importDefault(require("path"));
 const b2_1 = require("../b2");
@@ -92,3 +93,16 @@ const uploadFileToB2 = (localFilePath, mimeType) => __awaiter(void 0, void 0, vo
     }
 });
 exports.uploadFileToB2 = uploadFileToB2;
+function scheduleB2Reauth() {
+    const TWENTY_THREE_HOURS = 23 * 60 * 60 * 1000;
+    setInterval(() => __awaiter(this, void 0, void 0, function* () {
+        try {
+            console.log("🔄 Refreshing B2 token...");
+            yield b2_1.b2.authorize();
+            console.log("✅ B2 token refreshed successfully");
+        }
+        catch (err) {
+            console.error("❌ Failed to refresh B2 token:", err);
+        }
+    }), TWENTY_THREE_HOURS);
+}

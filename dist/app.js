@@ -15,12 +15,14 @@ const b2_1 = require("./b2");
 const adminRouter_1 = __importDefault(require("./routers/adminRouter"));
 const promotionRouter_1 = __importDefault(require("./routers/promotionRouter"));
 const hrRouter_1 = __importDefault(require("./routers/hrRouter"));
+const uploadToB2_1 = require("./utils/uploadToB2");
 // import crypto from "crypto";
 // const secret1 = crypto.randomBytes(256).toString("base64");
 // const secret2 = crypto.randomBytes(256).toString("base64");
 // console.log({ secret1, secret2 });
 dotenv_1.default.config();
 (0, b2_1.initB2)();
+(0, uploadToB2_1.scheduleB2Reauth)();
 (0, database_1.ConnectDatabase)();
 const app = (0, express_1.default)();
 const whitelist = [

@@ -10,6 +10,7 @@ import { initB2 } from "./b2";
 import adminRouter from "./routers/adminRouter";
 import promotionRouter from "./routers/promotionRouter";
 import hrRouter from "./routers/hrRouter";
+import { scheduleB2Reauth } from "./utils/uploadToB2";
 
 // import crypto from "crypto";
 
@@ -21,6 +22,8 @@ import hrRouter from "./routers/hrRouter";
 dotenv.config();
 
 initB2();
+
+scheduleB2Reauth();
 
 ConnectDatabase();
 const app = express();

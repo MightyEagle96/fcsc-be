@@ -98,3 +98,17 @@ export const uploadFileToB2 = async (
     return null;
   }
 };
+
+export function scheduleB2Reauth() {
+  const TWENTY_THREE_HOURS = 23 * 60 * 60 * 1000;
+
+  setInterval(async () => {
+    try {
+      console.log("🔄 Refreshing B2 token...");
+      await b2.authorize();
+      console.log("✅ B2 token refreshed successfully");
+    } catch (err) {
+      console.error("❌ Failed to refresh B2 token:", err);
+    }
+  }, TWENTY_THREE_HOURS);
+}
