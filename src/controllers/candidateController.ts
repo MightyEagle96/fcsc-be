@@ -423,7 +423,7 @@ export const viewRejections = async (
   })
     .populate([
       "rejectedBy",
-      { path: "candidate", select: "fullName ippisNumber" },
+      { path: "candidate", select: "fullName ippisNumber status" },
     ])
     .sort({ createdAt: -1 })
     .skip((page - 1) * limit)

@@ -362,7 +362,7 @@ const viewRejections = (req, res) => __awaiter(void 0, void 0, void 0, function*
     })
         .populate([
         "rejectedBy",
-        { path: "candidate", select: "fullName ippisNumber" },
+        { path: "candidate", select: "fullName ippisNumber status" },
     ])
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
