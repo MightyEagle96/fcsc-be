@@ -59,5 +59,7 @@ adminRouter
     .get("/rejections", jwtController_1.authenticateToken, candidateController_1.viewRejections)
     .patch("/updatecandidatecontact", jwtController_1.authenticateToken, adminController_1.updateCandidateContact)
     .get("/notifycandidate", jwtController_1.authenticateToken, adminController_1.notifyCandidate)
-    .get("/exportdataexcel", downloadController_1.exportCandidatesExcel);
+    .get("/exportdataexcel", downloadController_1.exportCandidatesExcel)
+    .get("/candidatecadre", candidateController_1.candidateCadre)
+    .post("/updatecadre", jwtController_1.authenticateToken, candidateController_1.updateCadre);
 exports.default = adminRouter;

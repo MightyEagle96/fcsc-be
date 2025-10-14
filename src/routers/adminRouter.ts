@@ -43,9 +43,11 @@ import {
   recommendedCandidates,
 } from "../controllers/promotionController";
 import {
+  candidateCadre,
   deleteCandidate,
   getCandidate,
   pushApplication,
+  updateCadre,
   viewCandidate,
   viewRejections,
 } from "../controllers/candidateController";
@@ -131,6 +133,10 @@ adminRouter
   .patch("/updatecandidatecontact", authenticateToken, updateCandidateContact)
   .get("/notifycandidate", authenticateToken, notifyCandidate)
 
-  .get("/exportdataexcel", exportCandidatesExcel);
+  .get("/exportdataexcel", exportCandidatesExcel)
+
+  .get("/candidatecadre", candidateCadre)
+
+  .post("/updatecadre", authenticateToken, updateCadre);
 
 export default adminRouter;

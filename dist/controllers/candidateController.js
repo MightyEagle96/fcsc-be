@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.retrieveCredentials = exports.viewRejections = exports.deleteCandidate = exports.viewCandidate = exports.pushApplication = exports.myCorrections = exports.getCandidate = exports.submitCorrection = exports.uploadDocument = exports.viewMyDocuments = exports.getRefreshToken = exports.logoutCandidate = exports.fullCandidateProfile = exports.myProfile = exports.loginCandidate = exports.batchUploadCandidates = void 0;
+exports.updateCadre = exports.candidateCadre = exports.retrieveCredentials = exports.viewRejections = exports.deleteCandidate = exports.viewCandidate = exports.pushApplication = exports.myCorrections = exports.getCandidate = exports.submitCorrection = exports.uploadDocument = exports.viewMyDocuments = exports.getRefreshToken = exports.logoutCandidate = exports.fullCandidateProfile = exports.myProfile = exports.loginCandidate = exports.batchUploadCandidates = void 0;
 const candidateModel_1 = require("../models/candidateModel");
 const generateRandomPassword_1 = __importDefault(require("../utils/generateRandomPassword"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
@@ -28,6 +28,7 @@ const console_1 = require("console");
 const correctionData_1 = require("../models/correctionData");
 const mongoose_1 = __importDefault(require("mongoose"));
 const rejectionModel_1 = require("../models/rejectionModel");
+const adminLogs_1 = __importDefault(require("../models/adminLogs"));
 const batchUploadCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //res.send("Hello");
     try {
@@ -393,3 +394,35 @@ const retrieveCredentials = (req, res) => __awaiter(void 0, void 0, void 0, func
     });
 });
 exports.retrieveCredentials = retrieveCredentials;
+const candidateCadre = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const candidate = yield candidateModel_1.Candidate.findById(req.query.candidate).lean();
+    res.send({
+        _id: candidate === null || candidate === void 0 ? void 0 : candidate._id,
+        fullName: (candidate === null || candidate === void 0 ? void 0 : candidate.fullName) || "Not set",
+        cadre: (candidate === null || candidate === void 0 ? void 0 : candidate.cadre) || "Not set",
+    });
+});
+exports.candidateCadre = candidateCadre;
+const cadreUpdateQueue = new DataQueue_1.ConcurrentJobQueue({
+    concurrency: 10,
+    maxQueueSize: 100,
+    retries: 3,
+    retryDelay: 1000,
+    shutdownTimeout: 20000,
+});
+const updateCadre = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const candidate = yield candidateModel_1.Candidate.findById(req.body.candidateId).lean();
+    if (!candidate) {
+        return res.status(404).send("Candidate not found");
+    }
+    cadreUpdateQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
+        var _a;
+        yield candidateModel_1.Candidate.updateOne({ _id: req.body.candidateId }, { $set: { cadre: req.body.newCadre } });
+        yield adminLogs_1.default.create({
+            account: (_a = req.admin) === null || _a === void 0 ? void 0 : _a._id,
+            action: `Updated cadre for ${candidate.fullName} (${candidate.ippisNumber}) from ${candidate.cadre} to ${req.body.newCadre}`,
+        });
+        res.send("Cadre updated successfully");
+    }));
+});
+exports.updateCadre = updateCadre;

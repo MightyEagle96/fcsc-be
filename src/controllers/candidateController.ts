@@ -23,6 +23,7 @@ import { error } from "console";
 import { CorrectionModel, ICorrection } from "../models/correctionData";
 import mongoose from "mongoose";
 import { RejectionModel } from "../models/rejectionModel";
+import AdminLogModel from "../models/adminLogs";
 
 export const batchUploadCandidates = async (req: Request, res: Response) => {
   //res.send("Hello");
@@ -458,5 +459,42 @@ export const retrieveCredentials = async (req: Request, res: Response) => {
     email: candidate.email,
     password: candidate.passwords[0],
     ippisNumber: candidate.ippisNumber,
+  });
+};
+
+export const candidateCadre = async (req: Request, res: Response) => {
+  const candidate = await Candidate.findById(req.query.candidate).lean();
+  res.send({
+    _id: candidate?._id,
+    fullName: candidate?.fullName || "Not set",
+    cadre: candidate?.cadre || "Not set",
+  });
+};
+
+const cadreUpdateQueue = new ConcurrentJobQueue({
+  concurrency: 10,
+  maxQueueSize: 100,
+  retries: 3,
+  retryDelay: 1000,
+  shutdownTimeout: 20000,
+});
+export const updateCadre = async (req: AuthenticatedAdmin, res: Response) => {
+  const candidate = await Candidate.findById(req.body.candidateId).lean();
+
+  if (!candidate) {
+    return res.status(404).send("Candidate not found");
+  }
+
+  cadreUpdateQueue.enqueue(async () => {
+    await Candidate.updateOne(
+      { _id: req.body.candidateId },
+      { $set: { cadre: req.body.newCadre } }
+    );
+
+    await AdminLogModel.create({
+      account: req.admin?._id,
+      action: `Updated cadre for ${candidate.fullName} (${candidate.ippisNumber}) from ${candidate.cadre} to ${req.body.newCadre}`,
+    });
+    res.send("Cadre updated successfully");
   });
 };
