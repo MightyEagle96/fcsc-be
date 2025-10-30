@@ -19,10 +19,7 @@ const bcrypt_1 = __importDefault(require("bcrypt"));
 const jwtController_1 = require("./jwtController");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const documents_1 = require("../utils/documents");
-const fs_1 = require("fs");
 const DataQueue_1 = require("../utils/DataQueue");
-const path_1 = __importDefault(require("path"));
-const uploadToB2_1 = require("../utils/uploadToB2");
 const adminLogin_1 = require("../models/adminLogin");
 const console_1 = require("console");
 const correctionData_1 = require("../models/correctionData");
@@ -215,59 +212,63 @@ const uploadQueue = new DataQueue_1.ConcurrentJobQueue({
     shutdownTimeout: 20000,
 });
 const uploadDocument = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
     try {
-        if (!req.file) {
-            return res.status(400).send("No file uploaded");
-        }
-        const extension = path_1.default.extname(req.file.originalname);
-        const fileData = {
-            oldName: `./uploads/${req.file.filename}`,
-            newName: `./uploads/${req.headers.documentid}${extension}`,
-            path: req.file.path,
-            candidate: (_a = req.candidate) === null || _a === void 0 ? void 0 : _a._id,
-            documentId: req.headers.documentid,
-            mimetype: req.file.mimetype,
-        };
-        uploadQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
-            (0, fs_1.rename)(fileData.oldName, fileData.newName, (err) => {
-                if (err) {
-                    console.error("Error renaming file:", err);
-                }
-                (0, uploadToB2_1.uploadFileToB2)(fileData.newName, fileData.mimetype)
-                    .then((result) => __awaiter(void 0, void 0, void 0, function* () {
-                    if (result) {
-                        yield candidateModel_1.Candidate.updateOne({
-                            _id: fileData.candidate,
-                            "uploadedDocuments._id": fileData.documentId,
-                        }, {
-                            $set: {
-                                "uploadedDocuments.$.fileUrl": result.fileUrl,
-                                "uploadedDocuments.$.fileName": result.fileName,
-                                "uploadedDocuments.$.fileId": result.fileId,
-                                "uploadedDocuments.$.updatedAt": new Date(),
-                            },
-                        });
-                        console.log(`File uploaded successfully ✅`);
-                    }
-                }))
-                    .catch((error) => {
-                    console.error("Error uploading file to B2:", error);
-                })
-                    .finally(() => {
-                    (0, fs_1.unlink)(fileData.newName, (err) => {
-                        if (err) {
-                            console.error("Error deleting file:", err);
-                        }
-                        console.log({
-                            activeCount: uploadQueue.activeCount,
-                            pending: uploadQueue.pendingCount,
-                        });
-                    });
-                });
-            });
-        }));
-        res.send("File uploaded successfully");
+        res.status(400).send("Registration window closed");
+        //return;
+        // if (!req.file) {
+        //   return res.status(400).send("No file uploaded");
+        // }
+        // const extension = path.extname(req.file.originalname);
+        // const fileData = {
+        //   oldName: `./uploads/${req.file.filename}`,
+        //   newName: `./uploads/${req.headers.documentid}${extension}`,
+        //   path: req.file.path,
+        //   candidate: req.candidate?._id,
+        //   documentId: req.headers.documentid,
+        //   mimetype: req.file.mimetype,
+        // };
+        // uploadQueue.enqueue(async () => {
+        //   rename(fileData.oldName, fileData.newName, (err) => {
+        //     if (err) {
+        //       console.error("Error renaming file:", err);
+        //     }
+        //     uploadFileToB2(fileData.newName, fileData.mimetype)
+        //       .then(async (result) => {
+        //         if (result) {
+        //           await Candidate.updateOne(
+        //             {
+        //               _id: fileData.candidate,
+        //               "uploadedDocuments._id": fileData.documentId,
+        //             },
+        //             {
+        //               $set: {
+        //                 "uploadedDocuments.$.fileUrl": result.fileUrl,
+        //                 "uploadedDocuments.$.fileName": result.fileName,
+        //                 "uploadedDocuments.$.fileId": result.fileId,
+        //                 "uploadedDocuments.$.updatedAt": new Date(),
+        //               },
+        //             }
+        //           );
+        //           console.log(`File uploaded successfully ✅`);
+        //         }
+        //       })
+        //       .catch((error) => {
+        //         console.error("Error uploading file to B2:", error);
+        //       })
+        //       .finally(() => {
+        //         unlink(fileData.newName, (err) => {
+        //           if (err) {
+        //             console.error("Error deleting file:", err);
+        //           }
+        //           console.log({
+        //             activeCount: uploadQueue.activeCount,
+        //             pending: uploadQueue.pendingCount,
+        //           });
+        //         });
+        //       });
+        //   });
+        // });
+        // res.send("File uploaded successfully");
     }
     catch (error) {
         res.status(500).send(new Error(error).message);
