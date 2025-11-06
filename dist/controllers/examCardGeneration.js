@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.viewCandidate = exports.generateLetter = void 0;
+exports.notifyParticipants = exports.printSlip = exports.viewMySlip = exports.viewCandidate = exports.generateLetter = void 0;
 exports.generateLetterFunc = generateLetterFunc;
 const candidateModel_1 = require("../models/candidateModel");
 const path_1 = __importDefault(require("path"));
@@ -20,6 +20,7 @@ const fs_1 = __importDefault(require("fs"));
 const puppeteer_1 = __importDefault(require("puppeteer"));
 const qrcode_1 = __importDefault(require("qrcode"));
 const uploadToB2_1 = require("../utils/uploadToB2");
+const smsHandler_1 = require("../utils/smsHandler");
 function generateLetterFunc(data) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -189,3 +190,46 @@ const viewCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     res.send(candidate);
 });
 exports.viewCandidate = viewCandidate;
+const viewMySlip = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const candidate = yield candidateModel_1.Candidate.findOne({
+        _id: (_a = req.candidate) === null || _a === void 0 ? void 0 : _a._id,
+        fileUrl: { $exists: true },
+    }).lean();
+    if (!candidate) {
+        return res.status(404).send("Candidate not found");
+    }
+    res.send(candidate.fileUrl);
+});
+exports.viewMySlip = viewMySlip;
+const printSlip = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const candidate = yield candidateModel_1.Candidate.findById((_a = req.candidate) === null || _a === void 0 ? void 0 : _a._id);
+    if (!candidate) {
+        return res.status(404).send("Candidate not found");
+    }
+    yield candidateModel_1.Candidate.updateOne({ _id: candidate._id }, {
+        $set: {
+            hasViewedSlip: true,
+            timeViewedSlip: new Date(),
+            printCount: candidate.printCount + 1,
+        },
+    });
+    res.send("Slip printed");
+});
+exports.printSlip = printSlip;
+const notifyParticipants = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    res.send("Sending out notifications");
+    const candidates = yield candidateModel_1.Candidate.find({
+        examCentreAddress: { $exists: true },
+        fileId: { $exists: true },
+        printCount: { $lt: 1 },
+    }).lean();
+    for (const candidate of candidates) {
+        const phoneNumber = `234${candidate.phoneNumber.slice(1)}`;
+        yield (0, smsHandler_1.SendSms)(smsMessage(candidate.fullName, candidate.examCentreAddress), phoneNumber);
+        console.log(`✅ Notified ${candidate.fullName}`);
+    }
+});
+exports.notifyParticipants = notifyParticipants;
+const smsMessage = (name, centre) => `Dear ${name}, your exam card is ready. Your centre is ${centre}. Kindly log on to https://promotion.fedcivilservice.gov.ng to print your card and ensure you present same at your centre.`;

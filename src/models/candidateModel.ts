@@ -69,6 +69,9 @@ export interface ICandidate {
   fileUrl: String;
   fileName: String;
   fileId: String;
+  hasViewedSlip: boolean;
+  timeViewed: Date;
+  printCount: number;
 }
 
 export interface AuthenticatedCandidate extends Request {
@@ -161,6 +164,9 @@ const candidateSchema = new Schema<ICandidate>(
     examTime: String,
     seatNumber: String,
     examNumber: String,
+    hasViewedSlip: { type: Boolean, default: false },
+    timeViewed: Date,
+    printCount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

@@ -95,6 +95,9 @@ const candidateSchema = new mongoose_1.Schema({
     examTime: String,
     seatNumber: String,
     examNumber: String,
+    hasViewedSlip: { type: Boolean, default: false },
+    timeViewed: Date,
+    printCount: { type: Number, default: 0 },
 }, { timestamps: true });
 // ✅ Explicit unique indexes
 // candidateSchema.index({ email: 1 }, { unique: true });

@@ -1,10 +1,11 @@
 import { Request, Response } from "express";
-import { Candidate } from "../models/candidateModel";
+import { AuthenticatedCandidate, Candidate } from "../models/candidateModel";
 import path from "path";
 import fs from "fs";
 import puppeteer from "puppeteer";
 import QRCode from "qrcode";
 import { uploadFileToB2WithFolder } from "../utils/uploadToB2";
+import { SendSms } from "../utils/smsHandler";
 
 export async function generateLetterFunc(data: any): Promise<string> {
   try {
@@ -223,3 +224,64 @@ export const viewCandidate = async (req: Request, res: Response) => {
   }
   res.send(candidate);
 };
+
+export const viewMySlip = async (
+  req: AuthenticatedCandidate,
+  res: Response
+) => {
+  const candidate = await Candidate.findOne({
+    _id: req.candidate?._id,
+    fileUrl: { $exists: true },
+  }).lean();
+
+  if (!candidate) {
+    return res.status(404).send("Candidate not found");
+  }
+
+  res.send(candidate.fileUrl);
+};
+
+export const printSlip = async (req: AuthenticatedCandidate, res: Response) => {
+  const candidate = await Candidate.findById(req.candidate?._id);
+
+  if (!candidate) {
+    return res.status(404).send("Candidate not found");
+  }
+
+  await Candidate.updateOne(
+    { _id: candidate._id },
+    {
+      $set: {
+        hasViewedSlip: true,
+        timeViewedSlip: new Date(),
+        printCount: candidate.printCount + 1,
+      },
+    }
+  );
+
+  res.send("Slip printed");
+};
+
+export const notifyParticipants = async (req: Request, res: Response) => {
+  res.send("Sending out notifications");
+
+  const candidates = await Candidate.find({
+    examCentreAddress: { $exists: true },
+    fileId: { $exists: true },
+    printCount: { $lt: 1 },
+  }).lean();
+
+  for (const candidate of candidates) {
+    const phoneNumber = `234${candidate.phoneNumber.slice(1)}`;
+
+    await SendSms(
+      smsMessage(candidate.fullName, candidate.examCentreAddress),
+      phoneNumber
+    );
+
+    console.log(`✅ Notified ${candidate.fullName}`);
+  }
+};
+
+const smsMessage = (name: string, centre: string) =>
+  `Dear ${name}, your exam card is ready. Your centre is ${centre}. Kindly log on to https://promotion.fedcivilservice.gov.ng to print your card and ensure you present same at your centre.`;
