@@ -6,6 +6,7 @@ import puppeteer from "puppeteer";
 import QRCode from "qrcode";
 import { uploadFileToB2WithFolder } from "../utils/uploadToB2";
 import { SendSms } from "../utils/smsHandler";
+import { AuthenticatedAdmin } from "../models/adminLogin";
 
 export async function generateLetterFunc(data: any): Promise<string> {
   try {
@@ -262,24 +263,86 @@ export const printSlip = async (req: AuthenticatedCandidate, res: Response) => {
   res.send("Slip printed");
 };
 
-export const notifyParticipants = async (req: Request, res: Response) => {
-  res.send("Sending out notifications");
+// export const notifyParticipants = async (req: Request, res: Response) => {
+//   res.send("Sending out notifications");
 
-  const candidates = await Candidate.find({
-    examCentreAddress: { $exists: true },
-    fileId: { $exists: true },
-    printCount: { $lt: 1 },
-  }).lean();
+//   const candidates = await Candidate.find({
+//     examCentreAddress: { $exists: true },
+//     fileId: { $exists: true },
+//     printCount: { $lt: 1 },
+//   }).lean();
 
-  for (const candidate of candidates) {
-    const phoneNumber = `234${candidate.phoneNumber.slice(1)}`;
+//   for (const candidate of candidates) {
+//     const phoneNumber = `234${candidate.phoneNumber.slice(1)}`;
 
-    await SendSms(
-      smsMessage(candidate.fullName, candidate.examCentreAddress),
-      phoneNumber
-    );
+//     await SendSms(
+//       smsMessage(candidate.fullName, candidate.examCentreAddress),
+//       phoneNumber
+//     );
 
-    console.log(`✅ Notified ${candidate.fullName}`);
+//     console.log(`✅ Notified ${candidate.fullName}`);
+//   }
+// };
+
+export const adminEmail = "mightyeaglecorp@gmail.com";
+export const notifyParticipants = async (
+  req: AuthenticatedAdmin,
+  res: Response
+) => {
+  try {
+    if (req.admin?.email !== adminEmail) {
+      return res.status(403).send("You are forbidden from doing this");
+    }
+    res.send("📢 Sending out notifications...");
+
+    const candidates = await Candidate.find({
+      examCentreAddress: { $exists: true },
+      fileId: { $exists: true },
+      //printCount: { $lt: 1 },
+    }).lean();
+
+    if (!candidates.length) {
+      console.log("No candidates to notify");
+      return;
+    }
+
+    console.log(`📨 Found ${candidates.length} candidates to notify.`);
+
+    for (let i = 0; i < candidates.length; i += BATCH_SIZE) {
+      const batch = candidates.slice(i, i + BATCH_SIZE);
+
+      await Promise.all(
+        batch.map(async (candidate) => {
+          try {
+            const phoneNumber = `234${candidate.phoneNumber.slice(1)}`;
+            const message = smsMessage(
+              candidate.fullName.toUpperCase(),
+              candidate.examCentreAddress.toUpperCase()
+            );
+
+            console.log({ message, phoneNumber });
+
+            //await SendSms(message, phoneNumber);
+
+            console.log(`✅ Notified ${candidate.fullName}`);
+
+            // optional: update printCount or add a log
+            // await Candidate.updateOne(
+            //   { _id: candidate._id },
+            //   { $inc: { printCount: 1 } }
+            // );
+          } catch (err) {
+            console.error(`❌ Error notifying ${candidate.fullName}:`, err);
+          }
+        })
+      );
+
+      console.log(`🚀 Batch ${Math.floor(i / BATCH_SIZE) + 1} completed`);
+    }
+
+    console.log("✅ All notifications sent successfully.");
+  } catch (err) {
+    console.error("❌ Error sending notifications:", err);
   }
 };
 

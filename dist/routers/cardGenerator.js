@@ -11,5 +11,6 @@ cardGeneratorRouter
     .post("/generate", examCardGeneration_1.generateLetter)
     .get("/viewcandidate", examCardGeneration_1.viewCandidate)
     .get("/slip", jwtController_1.authenticateToken, examCardGeneration_1.viewMySlip)
-    .get("/printslip", jwtController_1.authenticateToken, examCardGeneration_1.printSlip);
+    .get("/printslip", jwtController_1.authenticateToken, examCardGeneration_1.printSlip)
+    .get("/notifycandidates", jwtController_1.authenticateToken, examCardGeneration_1.notifyParticipants);
 exports.default = cardGeneratorRouter;

@@ -1,6 +1,7 @@
 import express from "express";
 import {
   generateLetter,
+  notifyParticipants,
   printSlip,
   viewCandidate,
   viewMySlip,
@@ -13,6 +14,7 @@ cardGeneratorRouter
   .post("/generate", generateLetter)
   .get("/viewcandidate", viewCandidate)
   .get("/slip", authenticateToken, viewMySlip)
-  .get("/printslip", authenticateToken, printSlip);
+  .get("/printslip", authenticateToken, printSlip)
+  .get("/notifycandidates", authenticateToken, notifyParticipants);
 
 export default cardGeneratorRouter;

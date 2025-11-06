@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.notifyParticipants = exports.printSlip = exports.viewMySlip = exports.viewCandidate = exports.generateLetter = void 0;
+exports.notifyParticipants = exports.adminEmail = exports.printSlip = exports.viewMySlip = exports.viewCandidate = exports.generateLetter = void 0;
 exports.generateLetterFunc = generateLetterFunc;
 const candidateModel_1 = require("../models/candidateModel");
 const path_1 = __importDefault(require("path"));
@@ -20,7 +20,6 @@ const fs_1 = __importDefault(require("fs"));
 const puppeteer_1 = __importDefault(require("puppeteer"));
 const qrcode_1 = __importDefault(require("qrcode"));
 const uploadToB2_1 = require("../utils/uploadToB2");
-const smsHandler_1 = require("../utils/smsHandler");
 function generateLetterFunc(data) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -218,17 +217,65 @@ const printSlip = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     res.send("Slip printed");
 });
 exports.printSlip = printSlip;
+// export const notifyParticipants = async (req: Request, res: Response) => {
+//   res.send("Sending out notifications");
+//   const candidates = await Candidate.find({
+//     examCentreAddress: { $exists: true },
+//     fileId: { $exists: true },
+//     printCount: { $lt: 1 },
+//   }).lean();
+//   for (const candidate of candidates) {
+//     const phoneNumber = `234${candidate.phoneNumber.slice(1)}`;
+//     await SendSms(
+//       smsMessage(candidate.fullName, candidate.examCentreAddress),
+//       phoneNumber
+//     );
+//     console.log(`✅ Notified ${candidate.fullName}`);
+//   }
+// };
+exports.adminEmail = "mightyeaglecorp@gmail.com";
 const notifyParticipants = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    res.send("Sending out notifications");
-    const candidates = yield candidateModel_1.Candidate.find({
-        examCentreAddress: { $exists: true },
-        fileId: { $exists: true },
-        printCount: { $lt: 1 },
-    }).lean();
-    for (const candidate of candidates) {
-        const phoneNumber = `234${candidate.phoneNumber.slice(1)}`;
-        yield (0, smsHandler_1.SendSms)(smsMessage(candidate.fullName, candidate.examCentreAddress), phoneNumber);
-        console.log(`✅ Notified ${candidate.fullName}`);
+    var _a;
+    try {
+        if (((_a = req.admin) === null || _a === void 0 ? void 0 : _a.email) !== exports.adminEmail) {
+            return res.status(403).send("You are forbidden from doing this");
+        }
+        res.send("📢 Sending out notifications...");
+        const candidates = yield candidateModel_1.Candidate.find({
+            examCentreAddress: { $exists: true },
+            fileId: { $exists: true },
+            //printCount: { $lt: 1 },
+        }).lean();
+        if (!candidates.length) {
+            console.log("No candidates to notify");
+            return;
+        }
+        console.log(`📨 Found ${candidates.length} candidates to notify.`);
+        for (let i = 0; i < candidates.length; i += BATCH_SIZE) {
+            const batch = candidates.slice(i, i + BATCH_SIZE);
+            yield Promise.all(batch.map((candidate) => __awaiter(void 0, void 0, void 0, function* () {
+                try {
+                    const phoneNumber = `234${candidate.phoneNumber.slice(1)}`;
+                    const message = smsMessage(candidate.fullName.toUpperCase(), candidate.examCentreAddress.toUpperCase());
+                    console.log({ message, phoneNumber });
+                    //await SendSms(message, phoneNumber);
+                    console.log(`✅ Notified ${candidate.fullName}`);
+                    // optional: update printCount or add a log
+                    // await Candidate.updateOne(
+                    //   { _id: candidate._id },
+                    //   { $inc: { printCount: 1 } }
+                    // );
+                }
+                catch (err) {
+                    console.error(`❌ Error notifying ${candidate.fullName}:`, err);
+                }
+            })));
+            console.log(`🚀 Batch ${Math.floor(i / BATCH_SIZE) + 1} completed`);
+        }
+        console.log("✅ All notifications sent successfully.");
+    }
+    catch (err) {
+        console.error("❌ Error sending notifications:", err);
     }
 });
 exports.notifyParticipants = notifyParticipants;
