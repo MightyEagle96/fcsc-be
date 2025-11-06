@@ -330,26 +330,27 @@ export const submitCorrection = async (
   req: AuthenticatedCandidate,
   res: Response
 ) => {
-  const correction: ICorrection = req.body;
+  res.status(400).send("Registration window closed");
+  //const correction: ICorrection = req.body;
 
-  correction.candidate = new mongoose.Types.ObjectId(
-    req.candidate?._id.toString()
-  );
-  const correctionData = await CorrectionModel.findOne({
-    candidate: correction.candidate,
-    correctionField: correction.correctionField,
-  });
+  // correction.candidate = new mongoose.Types.ObjectId(
+  //   req.candidate?._id.toString()
+  // );
+  // const correctionData = await CorrectionModel.findOne({
+  //   candidate: correction.candidate,
+  //   correctionField: correction.correctionField,
+  // });
 
-  if (correctionData) {
-    return res
-      .status(400)
-      .send("You have already submitted a correction for this field");
-  }
+  // if (correctionData) {
+  //   return res
+  //     .status(400)
+  //     .send("You have already submitted a correction for this field");
+  // }
 
-  res.send("Correction submitted. Awaiting approval");
-  correctionQueue.enqueue(async () => {
-    await CorrectionModel.create(correction);
-  });
+  // res.send("Correction submitted. Awaiting approval");
+  // correctionQueue.enqueue(async () => {
+  //   await CorrectionModel.create(correction);
+  // });
 };
 
 export const getCandidate = async (req: AuthenticatedAdmin, res: Response) => {
@@ -387,12 +388,13 @@ export const pushApplication = async (
   // await Candidate.findByIdAndUpdate(req.candidate?._id, {
   //   status: "pending",
   // });
-  await Candidate.findOneAndUpdate(
-    { _id: req.candidate?._id, status: "rejected" }, // condition
-    { $set: { status: "pending" } }, // update
-    { new: true } // return updated doc
-  );
-  res.send("Application submitted");
+  // await Candidate.findOneAndUpdate(
+  //   { _id: req.candidate?._id, status: "rejected" }, // condition
+  //   { $set: { status: "pending" } }, // update
+  //   { new: true } // return updated doc
+  // );
+  // res.send("Application submitted");
+  res.status(400).send("Registration window closed");
 };
 
 export const viewCandidate = async (req: AuthenticatedAdmin, res: Response) => {

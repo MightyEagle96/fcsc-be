@@ -23,7 +23,6 @@ const DataQueue_1 = require("../utils/DataQueue");
 const adminLogin_1 = require("../models/adminLogin");
 const console_1 = require("console");
 const correctionData_1 = require("../models/correctionData");
-const mongoose_1 = __importDefault(require("mongoose"));
 const rejectionModel_1 = require("../models/rejectionModel");
 const adminLogs_1 = __importDefault(require("../models/adminLogs"));
 const batchUploadCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -283,22 +282,24 @@ const correctionQueue = new DataQueue_1.ConcurrentJobQueue({
     shutdownTimeout: 20000,
 });
 const submitCorrection = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
-    const correction = req.body;
-    correction.candidate = new mongoose_1.default.Types.ObjectId((_a = req.candidate) === null || _a === void 0 ? void 0 : _a._id.toString());
-    const correctionData = yield correctionData_1.CorrectionModel.findOne({
-        candidate: correction.candidate,
-        correctionField: correction.correctionField,
-    });
-    if (correctionData) {
-        return res
-            .status(400)
-            .send("You have already submitted a correction for this field");
-    }
-    res.send("Correction submitted. Awaiting approval");
-    correctionQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
-        yield correctionData_1.CorrectionModel.create(correction);
-    }));
+    res.status(400).send("Registration window closed");
+    //const correction: ICorrection = req.body;
+    // correction.candidate = new mongoose.Types.ObjectId(
+    //   req.candidate?._id.toString()
+    // );
+    // const correctionData = await CorrectionModel.findOne({
+    //   candidate: correction.candidate,
+    //   correctionField: correction.correctionField,
+    // });
+    // if (correctionData) {
+    //   return res
+    //     .status(400)
+    //     .send("You have already submitted a correction for this field");
+    // }
+    // res.send("Correction submitted. Awaiting approval");
+    // correctionQueue.enqueue(async () => {
+    //   await CorrectionModel.create(correction);
+    // });
 });
 exports.submitCorrection = submitCorrection;
 const getCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -327,15 +328,16 @@ const myCorrections = (req, res) => __awaiter(void 0, void 0, void 0, function* 
 });
 exports.myCorrections = myCorrections;
 const pushApplication = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
     // await Candidate.findByIdAndUpdate(req.candidate?._id, {
     //   status: "pending",
     // });
-    yield candidateModel_1.Candidate.findOneAndUpdate({ _id: (_a = req.candidate) === null || _a === void 0 ? void 0 : _a._id, status: "rejected" }, // condition
-    { $set: { status: "pending" } }, // update
-    { new: true } // return updated doc
-    );
-    res.send("Application submitted");
+    // await Candidate.findOneAndUpdate(
+    //   { _id: req.candidate?._id, status: "rejected" }, // condition
+    //   { $set: { status: "pending" } }, // update
+    //   { new: true } // return updated doc
+    // );
+    // res.send("Application submitted");
+    res.status(400).send("Registration window closed");
 });
 exports.pushApplication = pushApplication;
 const viewCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {

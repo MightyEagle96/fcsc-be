@@ -16,6 +16,8 @@ const adminRouter_1 = __importDefault(require("./routers/adminRouter"));
 const promotionRouter_1 = __importDefault(require("./routers/promotionRouter"));
 const hrRouter_1 = __importDefault(require("./routers/hrRouter"));
 const uploadToB2_1 = require("./utils/uploadToB2");
+const cardGenerator_1 = __importDefault(require("./routers/cardGenerator"));
+const evsRouter_1 = __importDefault(require("./routers/evsRouter"));
 // import crypto from "crypto";
 // const secret1 = crypto.randomBytes(256).toString("base64");
 // const secret2 = crypto.randomBytes(256).toString("base64");
@@ -56,6 +58,8 @@ app
     .use("/api/admin", adminRouter_1.default)
     .use("/api/promotion", promotionRouter_1.default)
     .use("/api/hr", hrRouter_1.default)
+    .use("/api/card", cardGenerator_1.default)
+    .use("/api/evs", evsRouter_1.default)
     .use("/api/*", (req, res) => {
     res.status(404).send("Route not found");
 })

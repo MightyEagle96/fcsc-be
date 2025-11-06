@@ -11,6 +11,8 @@ import adminRouter from "./routers/adminRouter";
 import promotionRouter from "./routers/promotionRouter";
 import hrRouter from "./routers/hrRouter";
 import { scheduleB2Reauth } from "./utils/uploadToB2";
+import cardGeneratorRouter from "./routers/cardGenerator";
+import evsRouter from "./routers/evsRouter";
 
 // import crypto from "crypto";
 
@@ -69,6 +71,10 @@ app
   .use("/api/promotion", promotionRouter)
 
   .use("/api/hr", hrRouter)
+
+  .use("/api/card", cardGeneratorRouter)
+
+  .use("/api/evs", evsRouter)
 
   .use("/api/*", (req, res) => {
     res.status(404).send("Route not found");

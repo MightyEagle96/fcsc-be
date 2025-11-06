@@ -87,6 +87,14 @@ const candidateSchema = new mongoose_1.Schema({
     badEmail: Boolean,
     timeAttempted: Date,
     contactUpdatedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: "Admin" },
+    fileUrl: String,
+    fileName: String,
+    fileId: String,
+    examDate: String,
+    examCentreAddress: String,
+    examTime: String,
+    seatNumber: String,
+    examNumber: String,
 }, { timestamps: true });
 // ✅ Explicit unique indexes
 // candidateSchema.index({ email: 1 }, { unique: true });

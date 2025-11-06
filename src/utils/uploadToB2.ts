@@ -99,6 +99,78 @@ export const uploadFileToB2 = async (
   }
 };
 
+export const uploadFileToB2WithFolder = async (
+  localFilePath: string,
+  mimeType: string,
+  folder: string // e.g. "examcards"
+): Promise<IResult | null> => {
+  try {
+    const buffer = await fsPromises.readFile(localFilePath);
+    const baseName = path.basename(localFilePath);
+    const uploadName = `${folder}/${baseName}`; // Put file in folder inside bucket
+
+    console.log(`📁 Preparing upload to folder: ${folder}`);
+
+    // 🔍 Check if a file with same name exists in the folder
+    const existing = await safeB2Call(() =>
+      b2.listFileNames({
+        bucketId: process.env.B2_BUCKET_ID as string,
+        prefix: uploadName,
+        maxFileCount: 1,
+        startFileName: "",
+        delimiter: "",
+      })
+    );
+
+    if (existing?.data?.files?.length > 0) {
+      const oldFile = existing.data.files[0];
+      console.log(`🔄 File already exists (${oldFile.fileName}), deleting...`);
+
+      await safeB2Call(() =>
+        b2.deleteFileVersion({
+          fileId: oldFile.fileId,
+          fileName: oldFile.fileName,
+        })
+      );
+    }
+
+    // ⚙️ Get new upload URL
+    const { data } = await safeB2Call(() =>
+      b2.getUploadUrl({
+        bucketId: process.env.B2_BUCKET_ID as string,
+      })
+    );
+
+    console.log(`📤 Uploading ${uploadName} to B2...`);
+
+    // 🚀 Upload file
+    const result = await safeB2Call(() =>
+      b2.uploadFile({
+        uploadUrl: data.uploadUrl,
+        uploadAuthToken: data.authorizationToken,
+        fileName: uploadName, // includes folder
+        data: buffer,
+        mime: mimeType,
+      })
+    );
+
+    if (result) {
+      const fileUrl = `https://f005.backblazeb2.com/file/${process.env.B2_BUCKET_NAME}/${uploadName}`;
+
+      return {
+        fileUrl,
+        fileName: result.data.fileName,
+        fileId: result.data.fileId,
+      };
+    }
+
+    return null;
+  } catch (err) {
+    console.error("❌ Failed to upload file to B2 folder:", err);
+    return null;
+  }
+};
+
 export function scheduleB2Reauth() {
   const TWENTY_THREE_HOURS = 23 * 60 * 60 * 1000;
 

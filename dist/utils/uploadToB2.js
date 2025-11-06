@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.uploadFileToB2 = void 0;
+exports.uploadFileToB2WithFolder = exports.uploadFileToB2 = void 0;
 exports.safeB2Call = safeB2Call;
 exports.scheduleB2Reauth = scheduleB2Reauth;
 const promises_1 = __importDefault(require("fs/promises"));
@@ -93,6 +93,59 @@ const uploadFileToB2 = (localFilePath, mimeType) => __awaiter(void 0, void 0, vo
     }
 });
 exports.uploadFileToB2 = uploadFileToB2;
+const uploadFileToB2WithFolder = (localFilePath, mimeType, folder // e.g. "examcards"
+) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
+    try {
+        const buffer = yield promises_1.default.readFile(localFilePath);
+        const baseName = path_1.default.basename(localFilePath);
+        const uploadName = `${folder}/${baseName}`; // Put file in folder inside bucket
+        console.log(`📁 Preparing upload to folder: ${folder}`);
+        // 🔍 Check if a file with same name exists in the folder
+        const existing = yield safeB2Call(() => b2_1.b2.listFileNames({
+            bucketId: process.env.B2_BUCKET_ID,
+            prefix: uploadName,
+            maxFileCount: 1,
+            startFileName: "",
+            delimiter: "",
+        }));
+        if (((_b = (_a = existing === null || existing === void 0 ? void 0 : existing.data) === null || _a === void 0 ? void 0 : _a.files) === null || _b === void 0 ? void 0 : _b.length) > 0) {
+            const oldFile = existing.data.files[0];
+            console.log(`🔄 File already exists (${oldFile.fileName}), deleting...`);
+            yield safeB2Call(() => b2_1.b2.deleteFileVersion({
+                fileId: oldFile.fileId,
+                fileName: oldFile.fileName,
+            }));
+        }
+        // ⚙️ Get new upload URL
+        const { data } = yield safeB2Call(() => b2_1.b2.getUploadUrl({
+            bucketId: process.env.B2_BUCKET_ID,
+        }));
+        console.log(`📤 Uploading ${uploadName} to B2...`);
+        // 🚀 Upload file
+        const result = yield safeB2Call(() => b2_1.b2.uploadFile({
+            uploadUrl: data.uploadUrl,
+            uploadAuthToken: data.authorizationToken,
+            fileName: uploadName, // includes folder
+            data: buffer,
+            mime: mimeType,
+        }));
+        if (result) {
+            const fileUrl = `https://f005.backblazeb2.com/file/${process.env.B2_BUCKET_NAME}/${uploadName}`;
+            return {
+                fileUrl,
+                fileName: result.data.fileName,
+                fileId: result.data.fileId,
+            };
+        }
+        return null;
+    }
+    catch (err) {
+        console.error("❌ Failed to upload file to B2 folder:", err);
+        return null;
+    }
+});
+exports.uploadFileToB2WithFolder = uploadFileToB2WithFolder;
 function scheduleB2Reauth() {
     const TWENTY_THREE_HOURS = 23 * 60 * 60 * 1000;
     setInterval(() => __awaiter(this, void 0, void 0, function* () {

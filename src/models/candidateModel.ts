@@ -16,6 +16,11 @@ export interface ICandidate {
   currentMDA: string;
   cadre: string;
   gradeLevel: string;
+  examDate: string;
+  examTime: string;
+  examNumber: string;
+  seatNumber: string;
+  examCentreAddress: string;
   dateOfFirstAppointment: Date;
   dateOfConfirmation: Date;
   dateOfLastPromotion: Date;
@@ -61,6 +66,9 @@ export interface ICandidate {
   badEmail: boolean;
   timeAttempted: Date;
   contactUpdatedBy: Types.ObjectId;
+  fileUrl: String;
+  fileName: String;
+  fileId: String;
 }
 
 export interface AuthenticatedCandidate extends Request {
@@ -145,6 +153,14 @@ const candidateSchema = new Schema<ICandidate>(
     badEmail: Boolean,
     timeAttempted: Date,
     contactUpdatedBy: { type: Schema.Types.ObjectId, ref: "Admin" },
+    fileUrl: String,
+    fileName: String,
+    fileId: String,
+    examDate: String,
+    examCentreAddress: String,
+    examTime: String,
+    seatNumber: String,
+    examNumber: String,
   },
   { timestamps: true }
 );
