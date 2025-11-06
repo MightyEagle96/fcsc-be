@@ -322,7 +322,7 @@ export const notifyParticipants = async (
 
             console.log({ message, phoneNumber });
 
-            //await SendSms(message, phoneNumber);
+            await SendSms(message, phoneNumber);
 
             console.log(`✅ Notified ${candidate.fullName}`);
 

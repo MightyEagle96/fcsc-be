@@ -20,6 +20,7 @@ const fs_1 = __importDefault(require("fs"));
 const puppeteer_1 = __importDefault(require("puppeteer"));
 const qrcode_1 = __importDefault(require("qrcode"));
 const uploadToB2_1 = require("../utils/uploadToB2");
+const smsHandler_1 = require("../utils/smsHandler");
 function generateLetterFunc(data) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -258,7 +259,7 @@ const notifyParticipants = (req, res) => __awaiter(void 0, void 0, void 0, funct
                     const phoneNumber = `234${candidate.phoneNumber.slice(1)}`;
                     const message = smsMessage(candidate.fullName.toUpperCase(), candidate.examCentreAddress.toUpperCase());
                     console.log({ message, phoneNumber });
-                    //await SendSms(message, phoneNumber);
+                    yield (0, smsHandler_1.SendSms)(message, phoneNumber);
                     console.log(`✅ Notified ${candidate.fullName}`);
                     // optional: update printCount or add a log
                     // await Candidate.updateOne(
