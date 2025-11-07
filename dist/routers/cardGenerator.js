@@ -12,5 +12,8 @@ cardGeneratorRouter
     .get("/viewcandidate", examCardGeneration_1.viewCandidate)
     .get("/slip", jwtController_1.authenticateToken, examCardGeneration_1.viewMySlip)
     .get("/printslip", jwtController_1.authenticateToken, examCardGeneration_1.printSlip)
-    .get("/notifycandidates", jwtController_1.authenticateToken, examCardGeneration_1.notifyParticipants);
+    .get("/notifycandidates", jwtController_1.authenticateToken, examCardGeneration_1.notifyParticipants)
+    .post("/generatesingle", examCardGeneration_1.generateSlipForACandidate)
+    .get("/pdfaspassport", examCardGeneration_1.candidatesWithPdfAsPassport)
+    .get("/convertandreuploadpdf", examCardGeneration_1.convertAndReuploadPassportPdfs);
 exports.default = cardGeneratorRouter;

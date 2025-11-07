@@ -1,6 +1,9 @@
 import express from "express";
 import {
+  candidatesWithPdfAsPassport,
+  convertAndReuploadPassportPdfs,
   generateLetter,
+  generateSlipForACandidate,
   notifyParticipants,
   printSlip,
   viewCandidate,
@@ -15,6 +18,9 @@ cardGeneratorRouter
   .get("/viewcandidate", viewCandidate)
   .get("/slip", authenticateToken, viewMySlip)
   .get("/printslip", authenticateToken, printSlip)
-  .get("/notifycandidates", authenticateToken, notifyParticipants);
+  .get("/notifycandidates", authenticateToken, notifyParticipants)
+  .post("/generatesingle", generateSlipForACandidate)
+  .get("/pdfaspassport", candidatesWithPdfAsPassport)
+  .get("/convertandreuploadpdf", convertAndReuploadPassportPdfs);
 
 export default cardGeneratorRouter;

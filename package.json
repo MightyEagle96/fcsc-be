@@ -13,7 +13,7 @@
   "description": "",
   "dependencies": {
     "@types/node": "^24.3.0",
-    "axios": "^1.11.0",
+    "axios": "^1.13.2",
     "backblaze-b2": "^1.7.1",
     "bcrypt": "^6.0.0",
     "convert-excel-to-json": "^1.7.0",
@@ -30,6 +30,7 @@
     "nodemailer": "^7.0.6",
     "p-limit": "^7.1.1",
     "p-map": "^7.0.3",
+    "pdf-poppler": "^0.2.3",
     "puppeteer": "^24.29.0",
     "qrcode": "^1.5.4",
     "request": "^2.88.2",

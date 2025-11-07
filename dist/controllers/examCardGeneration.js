@@ -12,18 +12,22 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.notifyParticipants = exports.adminEmail = exports.printSlip = exports.viewMySlip = exports.viewCandidate = exports.generateLetter = void 0;
+exports.convertAndReuploadPassportPdfs = exports.candidatesWithPdfAsPassport = exports.generateSlipForACandidate = exports.notifyParticipants = exports.adminEmail = exports.printSlip = exports.viewMySlip = exports.viewCandidate = exports.generateLetter = void 0;
 exports.generateLetterFunc = generateLetterFunc;
 const candidateModel_1 = require("../models/candidateModel");
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
+const promises_1 = __importDefault(require("fs/promises"));
 const puppeteer_1 = __importDefault(require("puppeteer"));
 const qrcode_1 = __importDefault(require("qrcode"));
 const uploadToB2_1 = require("../utils/uploadToB2");
 const smsHandler_1 = require("../utils/smsHandler");
+const axios_1 = __importDefault(require("axios"));
+const pdf_poppler_1 = __importDefault(require("pdf-poppler"));
 function generateLetterFunc(data) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
+            console.log(data);
             const htmlPath = path_1.default.resolve(__dirname, "../assets/examcardTemplate.html");
             if (!fs_1.default.existsSync(htmlPath)) {
                 throw new Error(`Template file not found: ${htmlPath}`);
@@ -80,49 +84,6 @@ function generateLetterFunc(data) {
         }
     });
 }
-// export const generateLetter = async (req: Request, res: Response) => {
-//   const candidates = req.body;
-//   for (let i = 0; i < candidates.length; i++) {
-//     const candidate = await Candidate.findOne({
-//       ippisNumber: candidates[i].ippisNumber,
-//     }).lean();
-//     if (!candidate) {
-//       throw new Error(`Candidate not found: ${candidates[i].ippisNumber}`);
-//     }
-//     //update the candidate
-//     await Candidate.updateOne(
-//       { _id: candidate._id },
-//       { $set: { ...candidates[i] } }
-//     );
-//     const outputPath = await generateLetterFunc({
-//       ...candidate,
-//       ...candidates[i],
-//       passport:
-//         candidate.uploadedDocuments?.find(
-//           (c) => c.fileType === "Passport Photograph"
-//         )?.fileUrl || "",
-//     });
-//     const result = await uploadFileToB2WithFolder(
-//       outputPath,
-//       "application/pdf",
-//       "examcards"
-//     );
-//     if (result) {
-//       await Candidate.updateOne(
-//         { _id: candidate._id },
-//         {
-//           $set: {
-//             fileId: result.fileId,
-//             fileName: result.fileName,
-//             fileUrl: result.fileUrl,
-//           },
-//         }
-//       );
-//       fs.unlinkSync(outputPath);
-//     }
-//   }
-//   res.send("Generating data");
-// };
 const BATCH_SIZE = 5; // process 5 candidates in parallel
 const generateLetter = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -218,22 +179,6 @@ const printSlip = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     res.send("Slip printed");
 });
 exports.printSlip = printSlip;
-// export const notifyParticipants = async (req: Request, res: Response) => {
-//   res.send("Sending out notifications");
-//   const candidates = await Candidate.find({
-//     examCentreAddress: { $exists: true },
-//     fileId: { $exists: true },
-//     printCount: { $lt: 1 },
-//   }).lean();
-//   for (const candidate of candidates) {
-//     const phoneNumber = `234${candidate.phoneNumber.slice(1)}`;
-//     await SendSms(
-//       smsMessage(candidate.fullName, candidate.examCentreAddress),
-//       phoneNumber
-//     );
-//     console.log(`✅ Notified ${candidate.fullName}`);
-//   }
-// };
 exports.adminEmail = "mightyeaglecorp@gmail.com";
 const notifyParticipants = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
@@ -281,3 +226,138 @@ const notifyParticipants = (req, res) => __awaiter(void 0, void 0, void 0, funct
 });
 exports.notifyParticipants = notifyParticipants;
 const smsMessage = (name, centre) => `Dear ${name}, your exam card is ready. Your centre is ${centre}. Kindly log on to https://promotion.fedcivilservice.gov.ng to print your card and ensure you present same at your centre.`;
+const generateSlipForACandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
+    try {
+        const candidate = yield candidateModel_1.Candidate.findOne({
+            ippisNumber: req.body.ippisNumber,
+        }).lean();
+        if (!candidate) {
+            return res.status(404).send("Candidate not found");
+        }
+        if (!candidate.examCentreAddress) {
+            return res
+                .status(400)
+                .send("This candidate was not selected for this exam");
+        }
+        const outputPath = yield generateLetterFunc(Object.assign(Object.assign({}, candidate), { passport: ((_b = (_a = candidate.uploadedDocuments) === null || _a === void 0 ? void 0 : _a.find((c) => c.fileType === "Passport Photograph")) === null || _b === void 0 ? void 0 : _b.fileUrl) || "" }));
+        res.send("File generated");
+    }
+    catch (error) {
+        res.status(500).send("Server error");
+    }
+});
+exports.generateSlipForACandidate = generateSlipForACandidate;
+const candidatesWithPdfAsPassport = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const candidates = yield candidateModel_1.Candidate.aggregate([
+        // 1️⃣ Only candidates who have an examCentreAddress
+        { $match: { examCentreAddress: { $exists: true, $ne: "" } } },
+        // 2️⃣ Unwind the uploadedDocuments array to inspect each item individually
+        { $unwind: "$uploadedDocuments" },
+        // 3️⃣ Filter to only "Passport Photograph" PDFs
+        {
+            $match: {
+                "uploadedDocuments.fileType": "Passport Photograph",
+                $or: [
+                    { "uploadedDocuments.fileUrl": { $regex: /\.pdf$/i } },
+                    { "uploadedDocuments.fileName": { $regex: /\.pdf$/i } },
+                ],
+            },
+        },
+        // 4️⃣ Project just the info you want
+        {
+            $project: {
+                _id: 1,
+                fullName: 1,
+                ippisNumber: 1,
+                email: 1,
+                phoneNumber: 1,
+                examCentreAddress: 1,
+                // "uploadedDocuments.fileName": 1,
+                // "uploadedDocuments.fileUrl": 1,
+                // "uploadedDocuments.fileType": 1,
+            },
+        },
+    ]);
+    res.send(candidates);
+});
+exports.candidatesWithPdfAsPassport = candidatesWithPdfAsPassport;
+const TEMP_DIR = path_1.default.join(process.cwd(), "temp");
+if (!fs_1.default.existsSync(TEMP_DIR))
+    fs_1.default.mkdirSync(TEMP_DIR);
+const convertAndUploadPassportPdfs = () => __awaiter(void 0, void 0, void 0, function* () {
+    // Step 1: Find relevant candidates
+    const candidates = yield candidateModel_1.Candidate.aggregate([
+        { $match: { examCentreAddress: { $exists: true, $ne: "" } } },
+        { $unwind: "$uploadedDocuments" },
+        {
+            $match: {
+                "uploadedDocuments.fileType": "Passport Photograph",
+                $or: [
+                    { "uploadedDocuments.fileUrl": { $regex: /\.pdf$/i } },
+                    { "uploadedDocuments.fileName": { $regex: /\.pdf$/i } },
+                ],
+            },
+        },
+        {
+            $project: {
+                _id: 1,
+                "uploadedDocuments.fileUrl": 1,
+                "uploadedDocuments.fileName": 1,
+            },
+        },
+    ]);
+    console.log(`📄 Found ${candidates.length} PDF passport photos.`);
+    for (const cand of candidates) {
+        const { fileUrl, fileName } = cand.uploadedDocuments;
+        const pdfPath = path_1.default.join(TEMP_DIR, fileName || `${cand._id}.pdf`);
+        const jpgPrefix = path_1.default.basename(fileName, ".pdf");
+        try {
+            // Step 2: Download PDF
+            console.log(`⬇️ Downloading PDF for ${cand._id}`);
+            const response = yield axios_1.default.get(fileUrl, {
+                responseType: "arraybuffer",
+            });
+            yield promises_1.default.writeFile(pdfPath, response.data);
+            // Step 3: Convert PDF → JPG
+            console.log(`🖼️ Converting to JPG...`);
+            const opts = {
+                format: "jpeg",
+                out_dir: TEMP_DIR,
+                out_prefix: jpgPrefix,
+                page: 1, // convert only first page
+            };
+            yield pdf_poppler_1.default.convert(pdfPath, opts);
+            const jpgPath = path_1.default.join(TEMP_DIR, `${jpgPrefix}-1.jpg`);
+            // Step 4: Upload JPG to Backblaze
+            const uploadResult = yield (0, uploadToB2_1.uploadFileToB2)(jpgPath, "image/jpeg");
+            if (!uploadResult) {
+                console.error(`⚠️ Upload failed for ${cand._id}`);
+                continue;
+            }
+            // Step 5: Update MongoDB record
+            yield candidateModel_1.Candidate.updateOne({ _id: cand._id, "uploadedDocuments.fileUrl": fileUrl }, {
+                $set: {
+                    "uploadedDocuments.$.fileUrl": uploadResult.fileUrl,
+                    "uploadedDocuments.$.fileName": uploadResult.fileName,
+                    "uploadedDocuments.$.fileId": uploadResult.fileId,
+                },
+            });
+            console.log(`✅ Converted and updated candidate: ${cand._id}`);
+            // Cleanup
+            yield promises_1.default.unlink(pdfPath);
+            yield promises_1.default.unlink(jpgPath);
+        }
+        catch (err) {
+            console.error(`❌ Error processing ${cand._id}: ${err.message}`);
+        }
+    }
+    console.log("🎯 Conversion complete!");
+    process.exit();
+});
+//convertAndUploadPassportPdfs();
+const convertAndReuploadPassportPdfs = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    res.send("Conversion started!");
+    yield convertAndUploadPassportPdfs();
+});
+exports.convertAndReuploadPassportPdfs = convertAndReuploadPassportPdfs;

@@ -2,14 +2,18 @@ import { Request, Response } from "express";
 import { AuthenticatedCandidate, Candidate } from "../models/candidateModel";
 import path from "path";
 import fs from "fs";
+import fsPromises from "fs/promises";
 import puppeteer from "puppeteer";
 import QRCode from "qrcode";
-import { uploadFileToB2WithFolder } from "../utils/uploadToB2";
+import { uploadFileToB2, uploadFileToB2WithFolder } from "../utils/uploadToB2";
 import { SendSms } from "../utils/smsHandler";
 import { AuthenticatedAdmin } from "../models/adminLogin";
+import axios from "axios";
+import pdf from "pdf-poppler";
 
 export async function generateLetterFunc(data: any): Promise<string> {
   try {
+    console.log(data);
     const htmlPath = path.resolve(__dirname, "../assets/examcardTemplate.html");
 
     if (!fs.existsSync(htmlPath)) {
@@ -80,56 +84,6 @@ export async function generateLetterFunc(data: any): Promise<string> {
     return "";
   }
 }
-
-// export const generateLetter = async (req: Request, res: Response) => {
-//   const candidates = req.body;
-
-//   for (let i = 0; i < candidates.length; i++) {
-//     const candidate = await Candidate.findOne({
-//       ippisNumber: candidates[i].ippisNumber,
-//     }).lean();
-//     if (!candidate) {
-//       throw new Error(`Candidate not found: ${candidates[i].ippisNumber}`);
-//     }
-
-//     //update the candidate
-//     await Candidate.updateOne(
-//       { _id: candidate._id },
-//       { $set: { ...candidates[i] } }
-//     );
-
-//     const outputPath = await generateLetterFunc({
-//       ...candidate,
-//       ...candidates[i],
-//       passport:
-//         candidate.uploadedDocuments?.find(
-//           (c) => c.fileType === "Passport Photograph"
-//         )?.fileUrl || "",
-//     });
-
-//     const result = await uploadFileToB2WithFolder(
-//       outputPath,
-//       "application/pdf",
-//       "examcards"
-//     );
-
-//     if (result) {
-//       await Candidate.updateOne(
-//         { _id: candidate._id },
-//         {
-//           $set: {
-//             fileId: result.fileId,
-//             fileName: result.fileName,
-//             fileUrl: result.fileUrl,
-//           },
-//         }
-//       );
-
-//       fs.unlinkSync(outputPath);
-//     }
-//   }
-//   res.send("Generating data");
-// };
 
 const BATCH_SIZE = 5; // process 5 candidates in parallel
 
@@ -263,27 +217,6 @@ export const printSlip = async (req: AuthenticatedCandidate, res: Response) => {
   res.send("Slip printed");
 };
 
-// export const notifyParticipants = async (req: Request, res: Response) => {
-//   res.send("Sending out notifications");
-
-//   const candidates = await Candidate.find({
-//     examCentreAddress: { $exists: true },
-//     fileId: { $exists: true },
-//     printCount: { $lt: 1 },
-//   }).lean();
-
-//   for (const candidate of candidates) {
-//     const phoneNumber = `234${candidate.phoneNumber.slice(1)}`;
-
-//     await SendSms(
-//       smsMessage(candidate.fullName, candidate.examCentreAddress),
-//       phoneNumber
-//     );
-
-//     console.log(`✅ Notified ${candidate.fullName}`);
-//   }
-// };
-
 export const adminEmail = "mightyeaglecorp@gmail.com";
 export const notifyParticipants = async (
   req: AuthenticatedAdmin,
@@ -348,3 +281,174 @@ export const notifyParticipants = async (
 
 const smsMessage = (name: string, centre: string) =>
   `Dear ${name}, your exam card is ready. Your centre is ${centre}. Kindly log on to https://promotion.fedcivilservice.gov.ng to print your card and ensure you present same at your centre.`;
+
+export const generateSlipForACandidate = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const candidate = await Candidate.findOne({
+      ippisNumber: req.body.ippisNumber,
+    }).lean();
+
+    if (!candidate) {
+      return res.status(404).send("Candidate not found");
+    }
+
+    if (!candidate.examCentreAddress) {
+      return res
+        .status(400)
+        .send("This candidate was not selected for this exam");
+    }
+
+    const outputPath = await generateLetterFunc({
+      ...candidate,
+      passport:
+        candidate.uploadedDocuments?.find(
+          (c) => c.fileType === "Passport Photograph"
+        )?.fileUrl || "",
+    });
+
+    res.send("File generated");
+  } catch (error) {
+    res.status(500).send("Server error");
+  }
+};
+
+export const candidatesWithPdfAsPassport = async (
+  req: Request,
+  res: Response
+) => {
+  const candidates = await Candidate.aggregate([
+    // 1️⃣ Only candidates who have an examCentreAddress
+    { $match: { examCentreAddress: { $exists: true, $ne: "" } } },
+
+    // 2️⃣ Unwind the uploadedDocuments array to inspect each item individually
+    { $unwind: "$uploadedDocuments" },
+
+    // 3️⃣ Filter to only "Passport Photograph" PDFs
+    {
+      $match: {
+        "uploadedDocuments.fileType": "Passport Photograph",
+        $or: [
+          { "uploadedDocuments.fileUrl": { $regex: /\.pdf$/i } },
+          { "uploadedDocuments.fileName": { $regex: /\.pdf$/i } },
+        ],
+      },
+    },
+
+    // 4️⃣ Project just the info you want
+    {
+      $project: {
+        _id: 1,
+        fullName: 1,
+        ippisNumber: 1,
+        email: 1,
+        phoneNumber: 1,
+        examCentreAddress: 1,
+        // "uploadedDocuments.fileName": 1,
+        // "uploadedDocuments.fileUrl": 1,
+        // "uploadedDocuments.fileType": 1,
+      },
+    },
+  ]);
+
+  res.send(candidates);
+};
+
+const TEMP_DIR = path.join(process.cwd(), "temp");
+if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR);
+
+const convertAndUploadPassportPdfs = async () => {
+  // Step 1: Find relevant candidates
+  const candidates = await Candidate.aggregate([
+    { $match: { examCentreAddress: { $exists: true, $ne: "" } } },
+    { $unwind: "$uploadedDocuments" },
+    {
+      $match: {
+        "uploadedDocuments.fileType": "Passport Photograph",
+        $or: [
+          { "uploadedDocuments.fileUrl": { $regex: /\.pdf$/i } },
+          { "uploadedDocuments.fileName": { $regex: /\.pdf$/i } },
+        ],
+      },
+    },
+    {
+      $project: {
+        _id: 1,
+        "uploadedDocuments.fileUrl": 1,
+        "uploadedDocuments.fileName": 1,
+      },
+    },
+  ]);
+
+  console.log(`📄 Found ${candidates.length} PDF passport photos.`);
+
+  for (const cand of candidates) {
+    const { fileUrl, fileName } = cand.uploadedDocuments;
+    const pdfPath = path.join(TEMP_DIR, fileName || `${cand._id}.pdf`);
+    const jpgPrefix = path.basename(fileName, ".pdf");
+
+    try {
+      // Step 2: Download PDF
+      console.log(`⬇️ Downloading PDF for ${cand._id}`);
+      const response = await axios.get(fileUrl, {
+        responseType: "arraybuffer",
+      });
+      await fsPromises.writeFile(pdfPath, response.data);
+
+      // Step 3: Convert PDF → JPG
+      console.log(`🖼️ Converting to JPG...`);
+      const opts = {
+        format: "jpeg",
+        out_dir: TEMP_DIR,
+        out_prefix: jpgPrefix,
+        page: 1, // convert only first page
+      };
+      await pdf.convert(pdfPath, opts);
+
+      const jpgPath = path.join(TEMP_DIR, `${jpgPrefix}-1.jpg`);
+
+      // Step 4: Upload JPG to Backblaze
+      const uploadResult = await uploadFileToB2(jpgPath, "image/jpeg");
+
+      if (!uploadResult) {
+        console.error(`⚠️ Upload failed for ${cand._id}`);
+        continue;
+      }
+
+      // Step 5: Update MongoDB record
+      await Candidate.updateOne(
+        { _id: cand._id, "uploadedDocuments.fileUrl": fileUrl },
+        {
+          $set: {
+            "uploadedDocuments.$.fileUrl": uploadResult.fileUrl,
+            "uploadedDocuments.$.fileName": uploadResult.fileName,
+            "uploadedDocuments.$.fileId": uploadResult.fileId,
+          },
+        }
+      );
+
+      console.log(`✅ Converted and updated candidate: ${cand._id}`);
+
+      // Cleanup
+      await fsPromises.unlink(pdfPath);
+      await fsPromises.unlink(jpgPath);
+    } catch (err: any) {
+      console.error(`❌ Error processing ${cand._id}: ${err.message}`);
+    }
+  }
+
+  console.log("🎯 Conversion complete!");
+  process.exit();
+};
+
+//convertAndUploadPassportPdfs();
+
+export const convertAndReuploadPassportPdfs = async (
+  req: Request,
+  res: Response
+) => {
+  res.send("Conversion started!");
+  await convertAndUploadPassportPdfs();
+};
