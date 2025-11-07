@@ -10,10 +10,11 @@ import { SendSms } from "../utils/smsHandler";
 import { AuthenticatedAdmin } from "../models/adminLogin";
 import axios from "axios";
 import pdf from "pdf-poppler";
+import { fromPath } from "pdf2pic";
+import os from "os";
 
 export async function generateLetterFunc(data: any): Promise<string> {
   try {
-    console.log(data);
     const htmlPath = path.resolve(__dirname, "../assets/examcardTemplate.html");
 
     if (!fs.existsSync(htmlPath)) {
@@ -309,6 +310,33 @@ export const generateSlipForACandidate = async (
         )?.fileUrl || "",
     });
 
+    // ☁️ Upload to Backblaze B2
+    const result = await uploadFileToB2WithFolder(
+      outputPath,
+      "application/pdf",
+      "examcards"
+    );
+
+    if (result) {
+      // 🗃️ Update candidate record with uploaded file metadata
+      await Candidate.updateOne(
+        { _id: candidate._id },
+        {
+          $set: {
+            fileId: result.fileId,
+            fileName: result.fileName,
+            fileUrl: result.fileUrl,
+          },
+        }
+      );
+    }
+    // 🧹 Cleanup local file
+    try {
+      await fs.promises.unlink(outputPath);
+    } catch (unlinkErr) {
+      console.error(`⚠️ Could not delete ${outputPath}:`, unlinkErr);
+    }
+
     res.send("File generated");
   } catch (error) {
     res.status(500).send("Server error");
@@ -346,9 +374,9 @@ export const candidatesWithPdfAsPassport = async (
         email: 1,
         phoneNumber: 1,
         examCentreAddress: 1,
-        // "uploadedDocuments.fileName": 1,
-        // "uploadedDocuments.fileUrl": 1,
-        // "uploadedDocuments.fileType": 1,
+        "uploadedDocuments.fileName": 1,
+        "uploadedDocuments.fileUrl": 1,
+        "uploadedDocuments.fileType": 1,
       },
     },
   ]);
@@ -356,11 +384,21 @@ export const candidatesWithPdfAsPassport = async (
   res.send(candidates);
 };
 
-const TEMP_DIR = path.join(process.cwd(), "temp");
-if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR);
+export const convertAndReuploadPassportPdfs = async (
+  req: Request,
+  res: Response
+) => {
+  res.send("Conversion started!");
+  await convertAndUploadPassportPdfs();
+};
 
-const convertAndUploadPassportPdfs = async () => {
-  // Step 1: Find relevant candidates
+const TEMP_DIR = path.join(os.tmpdir(), "pdf_conversion");
+
+export const convertAndUploadPassportPdfs = async () => {
+  // ensure temp dir exists
+  await fs.promises.mkdir(TEMP_DIR, { recursive: true });
+
+  // Step 1: Find all candidates with PDF passport uploads
   const candidates = await Candidate.aggregate([
     { $match: { examCentreAddress: { $exists: true, $ne: "" } } },
     { $unwind: "$uploadedDocuments" },
@@ -386,8 +424,9 @@ const convertAndUploadPassportPdfs = async () => {
 
   for (const cand of candidates) {
     const { fileUrl, fileName } = cand.uploadedDocuments;
-    const pdfPath = path.join(TEMP_DIR, fileName || `${cand._id}.pdf`);
-    const jpgPrefix = path.basename(fileName, ".pdf");
+    const safeName = fileName || `${cand._id}.pdf`;
+    const pdfPath = path.join(TEMP_DIR, safeName);
+    const jpgBaseName = path.basename(safeName, ".pdf");
 
     try {
       // Step 2: Download PDF
@@ -395,23 +434,25 @@ const convertAndUploadPassportPdfs = async () => {
       const response = await axios.get(fileUrl, {
         responseType: "arraybuffer",
       });
-      await fsPromises.writeFile(pdfPath, response.data);
+      await fs.promises.writeFile(pdfPath, response.data);
 
-      // Step 3: Convert PDF → JPG
-      console.log(`🖼️ Converting to JPG...`);
-      const opts = {
-        format: "jpeg",
-        out_dir: TEMP_DIR,
-        out_prefix: jpgPrefix,
-        page: 1, // convert only first page
-      };
-      await pdf.convert(pdfPath, opts);
+      // Step 3: Convert PDF → JPG using pdf2pic
+      console.log(`🖼️ Converting ${safeName} to JPG...`);
+      const convert = fromPath(pdfPath, {
+        density: 150,
+        saveFilename: jpgBaseName,
+        savePath: TEMP_DIR,
+        format: "jpg",
+        width: 600,
+        height: 800,
+      });
 
-      const jpgPath = path.join(TEMP_DIR, `${jpgPrefix}-1.jpg`);
+      const result = await convert(1); // convert only first page
+      const jpgPath = result.path as string;
 
       // Step 4: Upload JPG to Backblaze
+      console.log(`☁️ Uploading JPG for ${cand._id}...`);
       const uploadResult = await uploadFileToB2(jpgPath, "image/jpeg");
-
       if (!uploadResult) {
         console.error(`⚠️ Upload failed for ${cand._id}`);
         continue;
@@ -425,17 +466,18 @@ const convertAndUploadPassportPdfs = async () => {
             "uploadedDocuments.$.fileUrl": uploadResult.fileUrl,
             "uploadedDocuments.$.fileName": uploadResult.fileName,
             "uploadedDocuments.$.fileId": uploadResult.fileId,
+            "uploadedDocuments.$.updatedAt": new Date(),
           },
         }
       );
 
       console.log(`✅ Converted and updated candidate: ${cand._id}`);
 
-      // Cleanup
-      await fsPromises.unlink(pdfPath);
-      await fsPromises.unlink(jpgPath);
+      // Step 6: Cleanup temp files
+      await fs.promises.unlink(pdfPath);
+      await fs.promises.unlink(jpgPath);
     } catch (err: any) {
-      console.error(`❌ Error processing ${cand._id}: ${err.message}`);
+      console.error(`❌ Error processing ${cand._id}:`, err.message);
     }
   }
 
@@ -443,12 +485,106 @@ const convertAndUploadPassportPdfs = async () => {
   process.exit();
 };
 
-//convertAndUploadPassportPdfs();
-
-export const convertAndReuploadPassportPdfs = async (
+export const generateSlipForCandidates = async (
   req: Request,
   res: Response
 ) => {
-  res.send("Conversion started!");
-  await convertAndUploadPassportPdfs();
+  const ippisObjects = req.body;
+  const BATCH_SIZE = 5;
+
+  // Validate input
+  if (!Array.isArray(ippisObjects) || ippisObjects.length === 0) {
+    return res.status(400).send("Array of { ippisNumber } objects required");
+  }
+
+  // Extract ippisNumbers into a simple array
+  const ippisNumbers = ippisObjects
+    .map((obj) => obj.ippisNumber)
+    .filter(Boolean);
+  if (ippisNumbers.length === 0) {
+    return res.status(400).send("No valid ippisNumbers provided");
+  }
+
+  const results = [];
+
+  try {
+    // Split into batches of 5
+    for (let i = 0; i < ippisNumbers.length; i += BATCH_SIZE) {
+      const batch = ippisNumbers.slice(i, i + BATCH_SIZE);
+      console.log(`🚀 Processing batch ${i / BATCH_SIZE + 1}:`, batch);
+
+      // Process each batch concurrently
+      const batchResults = await Promise.all(
+        batch.map(async (ippisNumber) => {
+          try {
+            const candidate = await Candidate.findOne({ ippisNumber }).lean();
+            if (!candidate) return { ippisNumber, status: "not_found" };
+
+            if (!candidate.examCentreAddress)
+              return { ippisNumber, status: "not_selected" };
+
+            const passport =
+              candidate.uploadedDocuments?.find(
+                (c) => c.fileType === "Passport Photograph"
+              )?.fileUrl || "";
+
+            console.log(`📄 Generating slip for ${ippisNumber}`);
+            const outputPath = await generateLetterFunc({
+              ...candidate,
+              passport,
+            });
+
+            const result = await uploadFileToB2WithFolder(
+              outputPath,
+              "application/pdf",
+              "examcards"
+            );
+
+            if (result) {
+              await Candidate.updateOne(
+                { _id: candidate._id },
+                {
+                  $set: {
+                    fileId: result.fileId,
+                    fileName: result.fileName,
+                    fileUrl: result.fileUrl,
+                  },
+                }
+              );
+            }
+
+            // 🧹 Cleanup local file
+            try {
+              await fs.promises.unlink(outputPath);
+            } catch (unlinkErr) {
+              console.error(`⚠️ Could not delete ${outputPath}:`, unlinkErr);
+            }
+
+            console.log(`✅ Done for ${ippisNumber}`);
+            return { ippisNumber, status: "success", fileUrl: result?.fileUrl };
+          } catch (err: any) {
+            console.error(`❌ Error processing ${ippisNumber}:`, err.message);
+            return { ippisNumber, status: "error", message: err.message };
+          }
+        })
+      );
+
+      results.push(...batchResults);
+      console.log(`✅ Batch ${i / BATCH_SIZE + 1} completed`);
+    }
+
+    // Summary
+    const summary = {
+      total: ippisNumbers.length,
+      success: results.filter((r) => r.status === "success").length,
+      failed: results.filter((r) => r.status === "error").length,
+      notFound: results.filter((r) => r.status === "not_found").length,
+      notSelected: results.filter((r) => r.status === "not_selected").length,
+    };
+
+    res.json({ summary, results });
+  } catch (err) {
+    console.error("❌ Fatal error:", err);
+    res.status(500).send("Server error");
+  }
 };

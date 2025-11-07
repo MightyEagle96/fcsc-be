@@ -12,22 +12,21 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.convertAndReuploadPassportPdfs = exports.candidatesWithPdfAsPassport = exports.generateSlipForACandidate = exports.notifyParticipants = exports.adminEmail = exports.printSlip = exports.viewMySlip = exports.viewCandidate = exports.generateLetter = void 0;
+exports.generateSlipForCandidates = exports.convertAndUploadPassportPdfs = exports.convertAndReuploadPassportPdfs = exports.candidatesWithPdfAsPassport = exports.generateSlipForACandidate = exports.notifyParticipants = exports.adminEmail = exports.printSlip = exports.viewMySlip = exports.viewCandidate = exports.generateLetter = void 0;
 exports.generateLetterFunc = generateLetterFunc;
 const candidateModel_1 = require("../models/candidateModel");
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
-const promises_1 = __importDefault(require("fs/promises"));
 const puppeteer_1 = __importDefault(require("puppeteer"));
 const qrcode_1 = __importDefault(require("qrcode"));
 const uploadToB2_1 = require("../utils/uploadToB2");
 const smsHandler_1 = require("../utils/smsHandler");
 const axios_1 = __importDefault(require("axios"));
-const pdf_poppler_1 = __importDefault(require("pdf-poppler"));
+const pdf2pic_1 = require("pdf2pic");
+const os_1 = __importDefault(require("os"));
 function generateLetterFunc(data) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            console.log(data);
             const htmlPath = path_1.default.resolve(__dirname, "../assets/examcardTemplate.html");
             if (!fs_1.default.existsSync(htmlPath)) {
                 throw new Error(`Template file not found: ${htmlPath}`);
@@ -241,6 +240,25 @@ const generateSlipForACandidate = (req, res) => __awaiter(void 0, void 0, void 0
                 .send("This candidate was not selected for this exam");
         }
         const outputPath = yield generateLetterFunc(Object.assign(Object.assign({}, candidate), { passport: ((_b = (_a = candidate.uploadedDocuments) === null || _a === void 0 ? void 0 : _a.find((c) => c.fileType === "Passport Photograph")) === null || _b === void 0 ? void 0 : _b.fileUrl) || "" }));
+        // ☁️ Upload to Backblaze B2
+        const result = yield (0, uploadToB2_1.uploadFileToB2WithFolder)(outputPath, "application/pdf", "examcards");
+        if (result) {
+            // 🗃️ Update candidate record with uploaded file metadata
+            yield candidateModel_1.Candidate.updateOne({ _id: candidate._id }, {
+                $set: {
+                    fileId: result.fileId,
+                    fileName: result.fileName,
+                    fileUrl: result.fileUrl,
+                },
+            });
+        }
+        // 🧹 Cleanup local file
+        try {
+            yield fs_1.default.promises.unlink(outputPath);
+        }
+        catch (unlinkErr) {
+            console.error(`⚠️ Could not delete ${outputPath}:`, unlinkErr);
+        }
         res.send("File generated");
     }
     catch (error) {
@@ -273,20 +291,25 @@ const candidatesWithPdfAsPassport = (req, res) => __awaiter(void 0, void 0, void
                 email: 1,
                 phoneNumber: 1,
                 examCentreAddress: 1,
-                // "uploadedDocuments.fileName": 1,
-                // "uploadedDocuments.fileUrl": 1,
-                // "uploadedDocuments.fileType": 1,
+                "uploadedDocuments.fileName": 1,
+                "uploadedDocuments.fileUrl": 1,
+                "uploadedDocuments.fileType": 1,
             },
         },
     ]);
     res.send(candidates);
 });
 exports.candidatesWithPdfAsPassport = candidatesWithPdfAsPassport;
-const TEMP_DIR = path_1.default.join(process.cwd(), "temp");
-if (!fs_1.default.existsSync(TEMP_DIR))
-    fs_1.default.mkdirSync(TEMP_DIR);
+const convertAndReuploadPassportPdfs = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    res.send("Conversion started!");
+    yield (0, exports.convertAndUploadPassportPdfs)();
+});
+exports.convertAndReuploadPassportPdfs = convertAndReuploadPassportPdfs;
+const TEMP_DIR = path_1.default.join(os_1.default.tmpdir(), "pdf_conversion");
 const convertAndUploadPassportPdfs = () => __awaiter(void 0, void 0, void 0, function* () {
-    // Step 1: Find relevant candidates
+    // ensure temp dir exists
+    yield fs_1.default.promises.mkdir(TEMP_DIR, { recursive: true });
+    // Step 1: Find all candidates with PDF passport uploads
     const candidates = yield candidateModel_1.Candidate.aggregate([
         { $match: { examCentreAddress: { $exists: true, $ne: "" } } },
         { $unwind: "$uploadedDocuments" },
@@ -310,26 +333,30 @@ const convertAndUploadPassportPdfs = () => __awaiter(void 0, void 0, void 0, fun
     console.log(`📄 Found ${candidates.length} PDF passport photos.`);
     for (const cand of candidates) {
         const { fileUrl, fileName } = cand.uploadedDocuments;
-        const pdfPath = path_1.default.join(TEMP_DIR, fileName || `${cand._id}.pdf`);
-        const jpgPrefix = path_1.default.basename(fileName, ".pdf");
+        const safeName = fileName || `${cand._id}.pdf`;
+        const pdfPath = path_1.default.join(TEMP_DIR, safeName);
+        const jpgBaseName = path_1.default.basename(safeName, ".pdf");
         try {
             // Step 2: Download PDF
             console.log(`⬇️ Downloading PDF for ${cand._id}`);
             const response = yield axios_1.default.get(fileUrl, {
                 responseType: "arraybuffer",
             });
-            yield promises_1.default.writeFile(pdfPath, response.data);
-            // Step 3: Convert PDF → JPG
-            console.log(`🖼️ Converting to JPG...`);
-            const opts = {
-                format: "jpeg",
-                out_dir: TEMP_DIR,
-                out_prefix: jpgPrefix,
-                page: 1, // convert only first page
-            };
-            yield pdf_poppler_1.default.convert(pdfPath, opts);
-            const jpgPath = path_1.default.join(TEMP_DIR, `${jpgPrefix}-1.jpg`);
+            yield fs_1.default.promises.writeFile(pdfPath, response.data);
+            // Step 3: Convert PDF → JPG using pdf2pic
+            console.log(`🖼️ Converting ${safeName} to JPG...`);
+            const convert = (0, pdf2pic_1.fromPath)(pdfPath, {
+                density: 150,
+                saveFilename: jpgBaseName,
+                savePath: TEMP_DIR,
+                format: "jpg",
+                width: 600,
+                height: 800,
+            });
+            const result = yield convert(1); // convert only first page
+            const jpgPath = result.path;
             // Step 4: Upload JPG to Backblaze
+            console.log(`☁️ Uploading JPG for ${cand._id}...`);
             const uploadResult = yield (0, uploadToB2_1.uploadFileToB2)(jpgPath, "image/jpeg");
             if (!uploadResult) {
                 console.error(`⚠️ Upload failed for ${cand._id}`);
@@ -341,23 +368,95 @@ const convertAndUploadPassportPdfs = () => __awaiter(void 0, void 0, void 0, fun
                     "uploadedDocuments.$.fileUrl": uploadResult.fileUrl,
                     "uploadedDocuments.$.fileName": uploadResult.fileName,
                     "uploadedDocuments.$.fileId": uploadResult.fileId,
+                    "uploadedDocuments.$.updatedAt": new Date(),
                 },
             });
             console.log(`✅ Converted and updated candidate: ${cand._id}`);
-            // Cleanup
-            yield promises_1.default.unlink(pdfPath);
-            yield promises_1.default.unlink(jpgPath);
+            // Step 6: Cleanup temp files
+            yield fs_1.default.promises.unlink(pdfPath);
+            yield fs_1.default.promises.unlink(jpgPath);
         }
         catch (err) {
-            console.error(`❌ Error processing ${cand._id}: ${err.message}`);
+            console.error(`❌ Error processing ${cand._id}:`, err.message);
         }
     }
     console.log("🎯 Conversion complete!");
     process.exit();
 });
-//convertAndUploadPassportPdfs();
-const convertAndReuploadPassportPdfs = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    res.send("Conversion started!");
-    yield convertAndUploadPassportPdfs();
+exports.convertAndUploadPassportPdfs = convertAndUploadPassportPdfs;
+const generateSlipForCandidates = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const ippisObjects = req.body;
+    const BATCH_SIZE = 5;
+    // Validate input
+    if (!Array.isArray(ippisObjects) || ippisObjects.length === 0) {
+        return res.status(400).send("Array of { ippisNumber } objects required");
+    }
+    // Extract ippisNumbers into a simple array
+    const ippisNumbers = ippisObjects
+        .map((obj) => obj.ippisNumber)
+        .filter(Boolean);
+    if (ippisNumbers.length === 0) {
+        return res.status(400).send("No valid ippisNumbers provided");
+    }
+    const results = [];
+    try {
+        // Split into batches of 5
+        for (let i = 0; i < ippisNumbers.length; i += BATCH_SIZE) {
+            const batch = ippisNumbers.slice(i, i + BATCH_SIZE);
+            console.log(`🚀 Processing batch ${i / BATCH_SIZE + 1}:`, batch);
+            // Process each batch concurrently
+            const batchResults = yield Promise.all(batch.map((ippisNumber) => __awaiter(void 0, void 0, void 0, function* () {
+                var _a, _b;
+                try {
+                    const candidate = yield candidateModel_1.Candidate.findOne({ ippisNumber }).lean();
+                    if (!candidate)
+                        return { ippisNumber, status: "not_found" };
+                    if (!candidate.examCentreAddress)
+                        return { ippisNumber, status: "not_selected" };
+                    const passport = ((_b = (_a = candidate.uploadedDocuments) === null || _a === void 0 ? void 0 : _a.find((c) => c.fileType === "Passport Photograph")) === null || _b === void 0 ? void 0 : _b.fileUrl) || "";
+                    console.log(`📄 Generating slip for ${ippisNumber}`);
+                    const outputPath = yield generateLetterFunc(Object.assign(Object.assign({}, candidate), { passport }));
+                    const result = yield (0, uploadToB2_1.uploadFileToB2WithFolder)(outputPath, "application/pdf", "examcards");
+                    if (result) {
+                        yield candidateModel_1.Candidate.updateOne({ _id: candidate._id }, {
+                            $set: {
+                                fileId: result.fileId,
+                                fileName: result.fileName,
+                                fileUrl: result.fileUrl,
+                            },
+                        });
+                    }
+                    // 🧹 Cleanup local file
+                    try {
+                        yield fs_1.default.promises.unlink(outputPath);
+                    }
+                    catch (unlinkErr) {
+                        console.error(`⚠️ Could not delete ${outputPath}:`, unlinkErr);
+                    }
+                    console.log(`✅ Done for ${ippisNumber}`);
+                    return { ippisNumber, status: "success", fileUrl: result === null || result === void 0 ? void 0 : result.fileUrl };
+                }
+                catch (err) {
+                    console.error(`❌ Error processing ${ippisNumber}:`, err.message);
+                    return { ippisNumber, status: "error", message: err.message };
+                }
+            })));
+            results.push(...batchResults);
+            console.log(`✅ Batch ${i / BATCH_SIZE + 1} completed`);
+        }
+        // Summary
+        const summary = {
+            total: ippisNumbers.length,
+            success: results.filter((r) => r.status === "success").length,
+            failed: results.filter((r) => r.status === "error").length,
+            notFound: results.filter((r) => r.status === "not_found").length,
+            notSelected: results.filter((r) => r.status === "not_selected").length,
+        };
+        res.json({ summary, results });
+    }
+    catch (err) {
+        console.error("❌ Fatal error:", err);
+        res.status(500).send("Server error");
+    }
 });
-exports.convertAndReuploadPassportPdfs = convertAndReuploadPassportPdfs;
+exports.generateSlipForCandidates = generateSlipForCandidates;

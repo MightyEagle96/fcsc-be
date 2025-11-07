@@ -4,6 +4,7 @@ import {
   convertAndReuploadPassportPdfs,
   generateLetter,
   generateSlipForACandidate,
+  generateSlipForCandidates,
   notifyParticipants,
   printSlip,
   viewCandidate,
@@ -21,6 +22,7 @@ cardGeneratorRouter
   .get("/notifycandidates", authenticateToken, notifyParticipants)
   .post("/generatesingle", generateSlipForACandidate)
   .get("/pdfaspassport", candidatesWithPdfAsPassport)
-  .get("/convertandreuploadpdf", convertAndReuploadPassportPdfs);
+  .get("/convertandreuploadpdf", convertAndReuploadPassportPdfs)
+  .post("/generatemultiple", generateSlipForCandidates);
 
 export default cardGeneratorRouter;
