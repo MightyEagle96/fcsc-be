@@ -12,10 +12,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createEVSAccount = void 0;
+exports.searchExamCard = exports.createEVSAccount = void 0;
 const DataQueue_1 = require("../utils/DataQueue");
 const evsAccountModel_1 = __importDefault(require("../models/evsAccountModel"));
 const generateRandomPassword_1 = __importDefault(require("../utils/generateRandomPassword"));
+const candidateModel_1 = require("../models/candidateModel");
 const accountQueue = new DataQueue_1.ConcurrentJobQueue({
     concurrency: 5,
     maxQueueSize: 100,
@@ -44,3 +45,16 @@ const createEVSAccount = (req, res) => __awaiter(void 0, void 0, void 0, functio
     }
 });
 exports.createEVSAccount = createEVSAccount;
+const searchExamCard = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const candidate = yield candidateModel_1.Candidate.findOne({
+        ippisNumber: req.body.ippisNumber,
+    });
+    if (!candidate) {
+        return res.status(404).send("Candidate not found");
+    }
+    if (!candidate.fileUrl) {
+        return res.status(404).send("This candidate does not have an exam card");
+    }
+    res.send(candidate.fileUrl);
+});
+exports.searchExamCard = searchExamCard;

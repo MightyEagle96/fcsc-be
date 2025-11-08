@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { ConcurrentJobQueue } from "../utils/DataQueue";
 import EvsAccountModel from "../models/evsAccountModel";
 import generateRandomPassword from "../utils/generateRandomPassword";
+import { Candidate } from "../models/candidateModel";
 
 const accountQueue = new ConcurrentJobQueue({
   concurrency: 5,
@@ -34,4 +35,20 @@ export const createEVSAccount = async (req: Request, res: Response) => {
   } catch (error) {
     res.status(500).send("Error occurred");
   }
+};
+
+export const searchExamCard = async (req: Request, res: Response) => {
+  const candidate = await Candidate.findOne({
+    ippisNumber: req.body.ippisNumber,
+  });
+
+  if (!candidate) {
+    return res.status(404).send("Candidate not found");
+  }
+
+  if (!candidate.fileUrl) {
+    return res.status(404).send("This candidate does not have an exam card");
+  }
+
+  res.send(candidate.fileUrl);
 };

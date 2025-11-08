@@ -6,5 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const evsController_1 = require("../controllers/evsController");
 const evsRouter = express_1.default.Router();
-evsRouter.post("/createaccount", evsController_1.createEVSAccount);
+evsRouter
+    .post("/createaccount", evsController_1.createEVSAccount)
+    .post("/searchexamcard", evsController_1.searchExamCard);
 exports.default = evsRouter;
