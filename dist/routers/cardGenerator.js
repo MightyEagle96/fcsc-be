@@ -16,5 +16,6 @@ cardGeneratorRouter
     .post("/generatesingle", examCardGeneration_1.generateSlipForACandidate)
     .get("/pdfaspassport", examCardGeneration_1.candidatesWithPdfAsPassport)
     .get("/convertandreuploadpdf", examCardGeneration_1.convertAndReuploadPassportPdfs)
-    .post("/generatemultiple", examCardGeneration_1.generateSlipForCandidates);
+    .post("/generatemultiple", examCardGeneration_1.generateSlipForCandidates)
+    .post("/bulknotify", examCardGeneration_1.bulkNotifyParticipants);
 exports.default = cardGeneratorRouter;

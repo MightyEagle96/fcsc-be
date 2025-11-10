@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generateSlipForCandidates = exports.convertAndUploadPassportPdfs = exports.convertAndReuploadPassportPdfs = exports.candidatesWithPdfAsPassport = exports.generateSlipForACandidate = exports.notifyParticipants = exports.adminEmail = exports.printSlip = exports.viewMySlip = exports.viewCandidate = exports.generateLetter = void 0;
+exports.bulkNotifyParticipants = exports.generateSlipForCandidates = exports.convertAndUploadPassportPdfs = exports.convertAndReuploadPassportPdfs = exports.candidatesWithPdfAsPassport = exports.generateSlipForACandidate = exports.notifyParticipants = exports.adminEmail = exports.printSlip = exports.viewMySlip = exports.viewCandidate = exports.generateLetter = void 0;
 exports.generateLetterFunc = generateLetterFunc;
 const candidateModel_1 = require("../models/candidateModel");
 const path_1 = __importDefault(require("path"));
@@ -225,6 +225,7 @@ const notifyParticipants = (req, res) => __awaiter(void 0, void 0, void 0, funct
 });
 exports.notifyParticipants = notifyParticipants;
 const smsMessage = (name, centre) => `Dear ${name}, your exam card is ready. Your centre is ${centre}. Kindly log on to https://promotion.fedcivilservice.gov.ng to print your card and ensure you present same at your centre.`;
+const reprintMessage = (name) => `Dear ${name}, kindly log on to https://promotion.fedcivilservice.gov.ng to reprint your examination card and ensure you present same at your centre.`;
 const generateSlipForACandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     try {
@@ -460,3 +461,35 @@ const generateSlipForCandidates = (req, res) => __awaiter(void 0, void 0, void 0
     }
 });
 exports.generateSlipForCandidates = generateSlipForCandidates;
+const bulkNotifyParticipants = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        res.send("Bulk notifications are in progress");
+        const ippisNumber = req.body.map((candidate) => {
+            return candidate.ippisNumber;
+        });
+        const candidates = yield candidateModel_1.Candidate.find({
+            ippisNumber: { $in: ippisNumber },
+        }).lean();
+        console.log(`📨 Found ${candidates.length} candidates to notify.`);
+        for (let i = 0; i < candidates.length; i += BATCH_SIZE) {
+            const batch = candidates.slice(i, i + BATCH_SIZE);
+            yield Promise.all(batch.map((candidate) => __awaiter(void 0, void 0, void 0, function* () {
+                try {
+                    const phoneNumber = `234${candidate.phoneNumber.slice(1)}`;
+                    const message = reprintMessage(candidate.fullName);
+                    yield (0, smsHandler_1.SendSms)(message, phoneNumber);
+                    console.log(`✅ Notified ${candidate.fullName}`);
+                }
+                catch (error) {
+                    console.error(`❌ Error notifying ${candidate.fullName}:`, error);
+                }
+            })));
+            console.log(`🚀 Batch ${Math.floor(i / BATCH_SIZE) + 1} completed`);
+        }
+        console.log("✅ All notifications sent successfully.");
+    }
+    catch (error) {
+        console.error("❌ Error sending notifications:", error);
+    }
+});
+exports.bulkNotifyParticipants = bulkNotifyParticipants;

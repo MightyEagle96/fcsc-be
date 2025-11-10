@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  bulkNotifyParticipants,
   candidatesWithPdfAsPassport,
   convertAndReuploadPassportPdfs,
   generateLetter,
@@ -23,6 +24,7 @@ cardGeneratorRouter
   .post("/generatesingle", generateSlipForACandidate)
   .get("/pdfaspassport", candidatesWithPdfAsPassport)
   .get("/convertandreuploadpdf", convertAndReuploadPassportPdfs)
-  .post("/generatemultiple", generateSlipForCandidates);
+  .post("/generatemultiple", generateSlipForCandidates)
+  .post("/bulknotify", bulkNotifyParticipants);
 
 export default cardGeneratorRouter;

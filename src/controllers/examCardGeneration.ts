@@ -283,6 +283,9 @@ export const notifyParticipants = async (
 const smsMessage = (name: string, centre: string) =>
   `Dear ${name}, your exam card is ready. Your centre is ${centre}. Kindly log on to https://promotion.fedcivilservice.gov.ng to print your card and ensure you present same at your centre.`;
 
+const reprintMessage = (name: string) =>
+  `Dear ${name}, kindly log on to https://promotion.fedcivilservice.gov.ng to reprint your examination card and ensure you present same at your centre.`;
+
 export const generateSlipForACandidate = async (
   req: Request,
   res: Response
@@ -586,5 +589,44 @@ export const generateSlipForCandidates = async (
   } catch (err) {
     console.error("❌ Fatal error:", err);
     res.status(500).send("Server error");
+  }
+};
+
+export const bulkNotifyParticipants = async (req: Request, res: Response) => {
+  try {
+    res.send("Bulk notifications are in progress");
+
+    const ippisNumber = req.body.map((candidate: any) => {
+      return candidate.ippisNumber;
+    });
+
+    const candidates = await Candidate.find({
+      ippisNumber: { $in: ippisNumber },
+    }).lean();
+
+    console.log(`📨 Found ${candidates.length} candidates to notify.`);
+
+    for (let i = 0; i < candidates.length; i += BATCH_SIZE) {
+      const batch = candidates.slice(i, i + BATCH_SIZE);
+
+      await Promise.all(
+        batch.map(async (candidate) => {
+          try {
+            const phoneNumber = `234${candidate.phoneNumber.slice(1)}`;
+
+            const message = reprintMessage(candidate.fullName);
+
+            await SendSms(message, phoneNumber);
+            console.log(`✅ Notified ${candidate.fullName}`);
+          } catch (error) {
+            console.error(`❌ Error notifying ${candidate.fullName}:`, error);
+          }
+        })
+      );
+      console.log(`🚀 Batch ${Math.floor(i / BATCH_SIZE) + 1} completed`);
+    }
+    console.log("✅ All notifications sent successfully.");
+  } catch (error) {
+    console.error("❌ Error sending notifications:", error);
   }
 };
