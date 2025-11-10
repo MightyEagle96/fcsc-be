@@ -461,15 +461,6 @@ const generateSlipForCandidates = (req, res) => __awaiter(void 0, void 0, void 0
     }
 });
 exports.generateSlipForCandidates = generateSlipForCandidates;
-/*************  ✨ Windsurf Command ⭐  *************/
-/**
- * Notify multiple candidates of their exam details via SMS.
- *
- * @param {Request} req - The Express request object
- * @param {Response} res - The Express response object
- * @returns {Promise<void>} - A promise that resolves when the notifications are sent
- */
-/*******  8471a8d7-aeb4-4b78-8f44-3246f718a5bb  *******/
 // export const bulkNotifyParticipants = async (req: Request, res: Response) => {
 //   try {
 //     const ippisNumber = req.body.map((candidate: any) => {
