@@ -592,41 +592,93 @@ export const generateSlipForCandidates = async (
   }
 };
 
+/*************  ✨ Windsurf Command ⭐  *************/
+/**
+ * Notify multiple candidates of their exam details via SMS.
+ *
+ * @param {Request} req - The Express request object
+ * @param {Response} res - The Express response object
+ * @returns {Promise<void>} - A promise that resolves when the notifications are sent
+ */
+/*******  8471a8d7-aeb4-4b78-8f44-3246f718a5bb  *******/
+// export const bulkNotifyParticipants = async (req: Request, res: Response) => {
+//   try {
+//     const ippisNumber = req.body.map((candidate: any) => {
+//       return candidate.ippisNumber;
+//     });
+
+//     const candidates = await Candidate.find({
+//       ippisNumber: { $in: ippisNumber },
+//     }).lean();
+
+//     console.log(`📨 Found ${candidates.length} candidates to notify.`);
+
+//     for (let i = 0; i < candidates.length; i += BATCH_SIZE) {
+//       const batch = candidates.slice(i, i + BATCH_SIZE);
+
+//       await Promise.all(
+//         batch.map(async (candidate) => {
+//           try {
+//             const phoneNumber = `234${candidate.phoneNumber.slice(1)}`;
+
+//             const message = reprintMessage(candidate.fullName);
+
+//             await SendSms(message, phoneNumber);
+//             console.log(`✅ Notified ${candidate.fullName}`);
+//           } catch (error) {
+//             console.error(`❌ Error notifying ${candidate.fullName}:`, error);
+//           }
+//         })
+//       );
+//       console.log(`🚀 Batch ${Math.floor(i / BATCH_SIZE) + 1} completed`);
+//     }
+//     console.log("✅ All notifications sent successfully.");
+//     res.send("Bulk notifications are in progress");
+//   } catch (error) {
+//     console.error("❌ Error sending notifications:", error);
+//   }
+// };
+
 export const bulkNotifyParticipants = async (req: Request, res: Response) => {
   try {
-    res.send("Bulk notifications are in progress");
+    // respond immediately
+    res.status(202).send("Bulk notifications queued for sending.");
 
-    const ippisNumber = req.body.map((candidate: any) => {
-      return candidate.ippisNumber;
+    // process asynchronously (no need to await)
+    process.nextTick(async () => {
+      const ippisNumber = req.body.map((c: any) => c.ippisNumber);
+
+      const candidates = await Candidate.find({
+        ippisNumber: { $in: ippisNumber },
+      }).lean();
+
+      console.log(`📨 Found ${candidates.length} candidates.`);
+
+      const BATCH_SIZE = 100;
+
+      for (let i = 0; i < candidates.length; i += BATCH_SIZE) {
+        const batch = candidates.slice(i, i + BATCH_SIZE);
+
+        await Promise.allSettled(
+          batch.map(async (candidate) => {
+            try {
+              const phoneNumber = `234${candidate.phoneNumber.slice(1)}`;
+              const message = reprintMessage(candidate.fullName);
+              await SendSms(message, phoneNumber);
+              console.log(`✅ Sent to ${candidate.fullName}`);
+            } catch (err) {
+              console.error(`❌ Failed for ${candidate.fullName}:`, err);
+            }
+          })
+        );
+
+        console.log(`🚀 Batch ${Math.floor(i / BATCH_SIZE) + 1} done`);
+      }
+
+      console.log("✅ All notifications completed.");
     });
-
-    const candidates = await Candidate.find({
-      ippisNumber: { $in: ippisNumber },
-    }).lean();
-
-    console.log(`📨 Found ${candidates.length} candidates to notify.`);
-
-    for (let i = 0; i < candidates.length; i += BATCH_SIZE) {
-      const batch = candidates.slice(i, i + BATCH_SIZE);
-
-      await Promise.all(
-        batch.map(async (candidate) => {
-          try {
-            const phoneNumber = `234${candidate.phoneNumber.slice(1)}`;
-
-            const message = reprintMessage(candidate.fullName);
-
-            await SendSms(message, phoneNumber);
-            console.log(`✅ Notified ${candidate.fullName}`);
-          } catch (error) {
-            console.error(`❌ Error notifying ${candidate.fullName}:`, error);
-          }
-        })
-      );
-      console.log(`🚀 Batch ${Math.floor(i / BATCH_SIZE) + 1} completed`);
-    }
-    console.log("✅ All notifications sent successfully.");
-  } catch (error) {
-    console.error("❌ Error sending notifications:", error);
+  } catch (err) {
+    console.error("❌ Error queuing notifications:", err);
+    res.status(500).send("Failed to start bulk notification");
   }
 };
