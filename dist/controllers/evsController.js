@@ -200,10 +200,29 @@ const accreditationDashboard = (req, res) => __awaiter(void 0, void 0, void 0, f
         const accredited = yield accreditationModel_1.default.countDocuments({
             accreditedBy: centre._id,
         });
+        const page = (req.query.page || 1);
+        const limit = (req.query.limit || 50);
+        const centreList = yield accreditationModel_1.default.find({
+            accreditedBy: centre._id,
+        })
+            .populate("candidate", { ippisNumber: 1 })
+            .limit(limit)
+            .sort({ createdAt: -1 })
+            .lean();
+        const totalAccreditedByCentre = yield accreditationModel_1.default.countDocuments({
+            accreditedBy: centre._id,
+        });
+        const mappedList = centreList.map((c, i) => {
+            return Object.assign(Object.assign({}, c), { id: (page - 1) * limit + i + 1 });
+        });
         res.send({
             total,
             accredited,
             expected,
+            centreList: mappedList,
+            page,
+            limit,
+            totalAccreditedByCentre,
         });
     }
     catch (error) {

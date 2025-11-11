@@ -215,11 +215,36 @@ export const accreditationDashboard: RequestHandler = async (req, res) => {
     const accredited = await AccreditationModel.countDocuments({
       accreditedBy: centre._id,
     });
+    const page = (req.query.page || 1) as number;
+    const limit = (req.query.limit || 50) as number;
+    const centreList = await AccreditationModel.find({
+      accreditedBy: centre._id,
+    })
+      .populate("candidate", { ippisNumber: 1 })
+      .limit(limit)
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const totalAccreditedByCentre = await AccreditationModel.countDocuments({
+      accreditedBy: centre._id,
+    });
+
+    const mappedList = centreList.map((c, i) => {
+      return {
+        ...c,
+        id: (page - 1) * limit + i + 1,
+      };
+    });
 
     res.send({
       total,
       accredited,
       expected,
+
+      centreList: mappedList,
+      page,
+      limit,
+      totalAccreditedByCentre,
     });
   } catch (error) {
     res.sendStatus(500);
