@@ -3,6 +3,7 @@ import {
   accreditCandidate,
   createEVSAccount,
   loginAccount,
+  logoutAccount,
   myCentre,
   refreshToken,
   searchExamCard,
@@ -19,5 +20,6 @@ evsRouter
   .post("/searchexamcard", searchExamCard)
   .get("/viewcandidate", viewCandidate)
   .get("/accreditcandidate", authenticateCentreToken, accreditCandidate)
-  .get("/refresh", refreshToken);
+  .get("/refresh", refreshToken)
+  .get("/logoutaccount", logoutAccount);
 export default evsRouter;

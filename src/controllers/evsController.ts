@@ -210,3 +210,10 @@ export const accreditationDashboard: RequestHandler = async (req, res) => {
     res.sendStatus(500);
   }
 };
+
+export const logoutAccount = async (req: Request, res: Response) => {
+  res
+    .clearCookie(tokens.auth_token)
+    .clearCookie(tokens.refresh_token)
+    .send("Logged Out");
+};

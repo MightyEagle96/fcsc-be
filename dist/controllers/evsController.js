@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.accreditationDashboard = exports.refreshToken = exports.accreditCandidate = exports.viewCandidate = exports.myCentre = exports.searchExamCard = exports.loginAccount = exports.createEVSAccount = void 0;
+exports.logoutAccount = exports.accreditationDashboard = exports.refreshToken = exports.accreditCandidate = exports.viewCandidate = exports.myCentre = exports.searchExamCard = exports.loginAccount = exports.createEVSAccount = void 0;
 const DataQueue_1 = require("../utils/DataQueue");
 const evsAccountModel_1 = __importDefault(require("../models/evsAccountModel"));
 const generateRandomPassword_1 = __importDefault(require("../utils/generateRandomPassword"));
@@ -199,3 +199,10 @@ const accreditationDashboard = (req, res) => __awaiter(void 0, void 0, void 0, f
     }
 });
 exports.accreditationDashboard = accreditationDashboard;
+const logoutAccount = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    res
+        .clearCookie(jwtController_1.tokens.auth_token)
+        .clearCookie(jwtController_1.tokens.refresh_token)
+        .send("Logged Out");
+});
+exports.logoutAccount = logoutAccount;

@@ -14,5 +14,6 @@ evsRouter
     .post("/searchexamcard", evsController_1.searchExamCard)
     .get("/viewcandidate", evsController_1.viewCandidate)
     .get("/accreditcandidate", jwtController_1.authenticateCentreToken, evsController_1.accreditCandidate)
-    .get("/refresh", evsController_1.refreshToken);
+    .get("/refresh", evsController_1.refreshToken)
+    .get("/logoutaccount", evsController_1.logoutAccount);
 exports.default = evsRouter;
