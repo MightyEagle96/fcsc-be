@@ -114,6 +114,7 @@ const viewCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         passport: ((_b = (_a = candidate.uploadedDocuments) === null || _a === void 0 ? void 0 : _a.find((c) => c.fileType === "Passport Photograph")) === null || _b === void 0 ? void 0 : _b.fileUrl) || "",
         ippisNumber: candidate.ippisNumber,
         name: candidate.fullName,
+        centreName: candidate.examCentreAddress,
     });
 });
 exports.viewCandidate = viewCandidate;
@@ -192,11 +193,11 @@ const refreshToken = (req, res) => __awaiter(void 0, void 0, void 0, function* (
 exports.refreshToken = refreshToken;
 const accreditationDashboard = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        const centre = req.centre;
         const total = yield accreditationModel_1.default.countDocuments();
         const expected = yield candidateModel_1.Candidate.countDocuments({
-            examCentreAddress: { $exists: true },
+            examCentreAddress: centre.centreName,
         });
-        const centre = req.centre;
         const accredited = yield accreditationModel_1.default.countDocuments({
             accreditedBy: centre._id,
         });

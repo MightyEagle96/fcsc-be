@@ -122,6 +122,7 @@ export const viewCandidate = async (req: Request, res: Response) => {
       )?.fileUrl || "",
     ippisNumber: candidate.ippisNumber,
     name: candidate.fullName,
+    centreName: candidate.examCentreAddress,
   });
 };
 
@@ -206,12 +207,12 @@ export const refreshToken = async (req: Request, res: Response) => {
 
 export const accreditationDashboard: RequestHandler = async (req, res) => {
   try {
+    const centre = (req as AuthenticatedCentre).centre;
     const total = await AccreditationModel.countDocuments();
     const expected = await Candidate.countDocuments({
-      examCentreAddress: { $exists: true },
+      examCentreAddress: centre.centreName,
     });
 
-    const centre = (req as AuthenticatedCentre).centre;
     const accredited = await AccreditationModel.countDocuments({
       accreditedBy: centre._id,
     });
