@@ -49,7 +49,7 @@ const createEVSAccount = (req, res) => __awaiter(void 0, void 0, void 0, functio
 });
 exports.createEVSAccount = createEVSAccount;
 const viewEvsAccounts = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const accounts = yield evsAccountModel_1.default.find().lean();
+    const accounts = yield evsAccountModel_1.default.find().sort({ centreId: 1 }).lean();
     const mappedAccounts = accounts.map((account, i) => {
         return Object.assign(Object.assign({}, account), { id: i + 1 });
     });
@@ -104,7 +104,6 @@ const myCentre = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 exports.myCentre = myCentre;
 const viewCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
-    console.log(req.query);
     const candidate = yield candidateModel_1.Candidate.findById(req.query.id).lean();
     if (!candidate) {
         return res.status(404).send("Candidate not found");

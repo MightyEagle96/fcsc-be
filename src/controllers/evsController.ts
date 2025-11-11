@@ -44,7 +44,7 @@ export const createEVSAccount = async (req: Request, res: Response) => {
 };
 
 export const viewEvsAccounts = async (req: Request, res: Response) => {
-  const accounts = await EvsAccountModel.find().lean();
+  const accounts = await EvsAccountModel.find().sort({ centreId: 1 }).lean();
 
   const mappedAccounts = accounts.map((account, i) => {
     return {
@@ -107,7 +107,6 @@ export const myCentre: RequestHandler = async (req, res) => {
 };
 
 export const viewCandidate = async (req: Request, res: Response) => {
-  console.log(req.query);
   const candidate = await Candidate.findById(req.query.id).lean();
 
   if (!candidate) {
