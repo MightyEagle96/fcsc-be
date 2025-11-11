@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.logoutAccount = exports.accreditationDashboard = exports.refreshToken = exports.accreditCandidate = exports.viewCandidate = exports.myCentre = exports.searchExamCard = exports.loginAccount = exports.createEVSAccount = void 0;
+exports.logoutAccount = exports.accreditationDashboard = exports.refreshToken = exports.accreditCandidate = exports.viewCandidate = exports.myCentre = exports.searchExamCard = exports.loginAccount = exports.viewEvsAccounts = exports.createEVSAccount = void 0;
 const DataQueue_1 = require("../utils/DataQueue");
 const evsAccountModel_1 = __importDefault(require("../models/evsAccountModel"));
 const generateRandomPassword_1 = __importDefault(require("../utils/generateRandomPassword"));
@@ -48,6 +48,14 @@ const createEVSAccount = (req, res) => __awaiter(void 0, void 0, void 0, functio
     }
 });
 exports.createEVSAccount = createEVSAccount;
+const viewEvsAccounts = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const accounts = yield evsAccountModel_1.default.find().lean();
+    const mappedAccounts = accounts.map((account, i) => {
+        return Object.assign(Object.assign({}, account), { id: i + 1 });
+    });
+    res.send(mappedAccounts);
+});
+exports.viewEvsAccounts = viewEvsAccounts;
 const loginAccount = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { body } = req;
     const account = yield evsAccountModel_1.default.findOne({
@@ -185,6 +193,9 @@ exports.refreshToken = refreshToken;
 const accreditationDashboard = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const total = yield accreditationModel_1.default.countDocuments();
+        const expected = yield candidateModel_1.Candidate.countDocuments({
+            examCentreAddress: { $exists: true },
+        });
         const centre = req.centre;
         const accredited = yield accreditationModel_1.default.countDocuments({
             accreditedBy: centre._id,
@@ -192,6 +203,7 @@ const accreditationDashboard = (req, res) => __awaiter(void 0, void 0, void 0, f
         res.send({
             total,
             accredited,
+            expected,
         });
     }
     catch (error) {

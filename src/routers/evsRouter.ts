@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  accreditationDashboard,
   accreditCandidate,
   createEVSAccount,
   loginAccount,
@@ -8,6 +9,7 @@ import {
   refreshToken,
   searchExamCard,
   viewCandidate,
+  viewEvsAccounts,
 } from "../controllers/evsController";
 import { authenticateCentreToken } from "../controllers/jwtController";
 
@@ -21,5 +23,11 @@ evsRouter
   .get("/viewcandidate", viewCandidate)
   .get("/accreditcandidate", authenticateCentreToken, accreditCandidate)
   .get("/refresh", refreshToken)
-  .get("/logoutaccount", logoutAccount);
+  .get("/logoutaccount", logoutAccount)
+  .get("/accounts", viewEvsAccounts)
+  .get(
+    "/accreditationdashboard",
+    authenticateCentreToken,
+    accreditationDashboard
+  );
 export default evsRouter;

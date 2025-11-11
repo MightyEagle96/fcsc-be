@@ -43,6 +43,17 @@ export const createEVSAccount = async (req: Request, res: Response) => {
   }
 };
 
+export const viewEvsAccounts = async (req: Request, res: Response) => {
+  const accounts = await EvsAccountModel.find().lean();
+
+  const mappedAccounts = accounts.map((account, i) => {
+    return {
+      ...account,
+      id: i + 1,
+    };
+  });
+  res.send(mappedAccounts);
+};
 export const loginAccount = async (req: Request, res: Response) => {
   const { body } = req;
 
@@ -196,6 +207,9 @@ export const refreshToken = async (req: Request, res: Response) => {
 export const accreditationDashboard: RequestHandler = async (req, res) => {
   try {
     const total = await AccreditationModel.countDocuments();
+    const expected = await Candidate.countDocuments({
+      examCentreAddress: { $exists: true },
+    });
 
     const centre = (req as AuthenticatedCentre).centre;
     const accredited = await AccreditationModel.countDocuments({
@@ -205,6 +219,7 @@ export const accreditationDashboard: RequestHandler = async (req, res) => {
     res.send({
       total,
       accredited,
+      expected,
     });
   } catch (error) {
     res.sendStatus(500);
