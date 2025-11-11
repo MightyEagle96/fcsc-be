@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from "express";
+import { NextFunction, Request, Response, RequestHandler } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import dotenv from "dotenv";
 import {
@@ -7,6 +7,10 @@ import {
   ICandidate,
 } from "../models/candidateModel";
 import { AdminModel, AuthenticatedAdmin, IAdmin } from "../models/adminLogin";
+import EvsAccountModel, {
+  AuthenticatedCentre,
+  IEvsAccount,
+} from "../models/evsAccountModel";
 // import {
 //   AuthenticatedStudent,
 //   IStudent,
@@ -84,3 +88,64 @@ export async function authenticateToken(
     return res.status(403).json("Invalid token");
   }
 }
+
+// export async function authenticateCentreToken(
+//   req: AuthenticatedCentre,
+//   res: Response,
+//   next: NextFunction
+// ) {
+//   try {
+//     const token = req.cookies[tokens.auth_token];
+//     if (!token) return res.sendStatus(401);
+
+//     const decoded = jwt.verify(
+//       token,
+//       process.env.ACCESS_TOKEN as string
+//     ) as JwtPayload & IEvsAccount;
+
+//     if (!decoded?.centreId) return res.sendStatus(401);
+
+//     const evsAccount = await EvsAccountModel.findOne({
+//       centreId: decoded.centreId,
+//     });
+
+//     if (!evsAccount) return res.sendStatus(401);
+
+//     req.centre = decoded;
+//     next();
+//   } catch (err) {
+//     console.error("Auth error:", err);
+//     return res.sendStatus(401);
+//   }
+// }
+
+export const authenticateCentreToken: RequestHandler = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    const token = req.cookies[tokens.auth_token];
+    if (!token) return res.sendStatus(401);
+
+    const decoded = jwt.verify(
+      token,
+      process.env.ACCESS_TOKEN as string
+    ) as JwtPayload & IEvsAccount;
+
+    if (!decoded?.centreId) return res.sendStatus(401);
+
+    const evsAccount = await EvsAccountModel.findOne({
+      centreId: decoded.centreId,
+    });
+
+    if (!evsAccount) return res.sendStatus(401);
+
+    // Cast req to your extended type when assigning
+    (req as AuthenticatedCentre).centre = decoded;
+    next();
+  } catch (err) {
+    console.error("Auth error:", err);
+    return res.sendStatus(401);
+  }
+};

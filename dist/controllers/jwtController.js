@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.tokens = void 0;
+exports.authenticateCentreToken = exports.tokens = void 0;
 exports.generateToken = generateToken;
 exports.generateRefreshToken = generateRefreshToken;
 exports.authenticateToken = authenticateToken;
@@ -20,6 +20,7 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const candidateModel_1 = require("../models/candidateModel");
 const adminLogin_1 = require("../models/adminLogin");
+const evsAccountModel_1 = __importDefault(require("../models/evsAccountModel"));
 // import {
 //   AuthenticatedStudent,
 //   IStudent,
@@ -79,3 +80,50 @@ function authenticateToken(req, res, next) {
         }
     });
 }
+// export async function authenticateCentreToken(
+//   req: AuthenticatedCentre,
+//   res: Response,
+//   next: NextFunction
+// ) {
+//   try {
+//     const token = req.cookies[tokens.auth_token];
+//     if (!token) return res.sendStatus(401);
+//     const decoded = jwt.verify(
+//       token,
+//       process.env.ACCESS_TOKEN as string
+//     ) as JwtPayload & IEvsAccount;
+//     if (!decoded?.centreId) return res.sendStatus(401);
+//     const evsAccount = await EvsAccountModel.findOne({
+//       centreId: decoded.centreId,
+//     });
+//     if (!evsAccount) return res.sendStatus(401);
+//     req.centre = decoded;
+//     next();
+//   } catch (err) {
+//     console.error("Auth error:", err);
+//     return res.sendStatus(401);
+//   }
+// }
+const authenticateCentreToken = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const token = req.cookies[exports.tokens.auth_token];
+        if (!token)
+            return res.sendStatus(401);
+        const decoded = jsonwebtoken_1.default.verify(token, process.env.ACCESS_TOKEN);
+        if (!(decoded === null || decoded === void 0 ? void 0 : decoded.centreId))
+            return res.sendStatus(401);
+        const evsAccount = yield evsAccountModel_1.default.findOne({
+            centreId: decoded.centreId,
+        });
+        if (!evsAccount)
+            return res.sendStatus(401);
+        // Cast req to your extended type when assigning
+        req.centre = decoded;
+        next();
+    }
+    catch (err) {
+        console.error("Auth error:", err);
+        return res.sendStatus(401);
+    }
+});
+exports.authenticateCentreToken = authenticateCentreToken;

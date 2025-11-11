@@ -12,11 +12,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.searchExamCard = exports.loginAccount = exports.createEVSAccount = void 0;
+exports.accreditationDashboard = exports.refreshToken = exports.accreditCandidate = exports.viewCandidate = exports.myCentre = exports.searchExamCard = exports.loginAccount = exports.createEVSAccount = void 0;
 const DataQueue_1 = require("../utils/DataQueue");
 const evsAccountModel_1 = __importDefault(require("../models/evsAccountModel"));
 const generateRandomPassword_1 = __importDefault(require("../utils/generateRandomPassword"));
 const candidateModel_1 = require("../models/candidateModel");
+const jwtController_1 = require("./jwtController");
+const accreditationModel_1 = __importDefault(require("../models/accreditationModel"));
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const accountQueue = new DataQueue_1.ConcurrentJobQueue({
     concurrency: 5,
     maxQueueSize: 100,
@@ -50,11 +53,27 @@ const loginAccount = (req, res) => __awaiter(void 0, void 0, void 0, function* (
     const account = yield evsAccountModel_1.default.findOne({
         centreId: body.centreId,
         password: body.password,
-    });
+    }).lean();
     if (!account) {
         return res.status(400).send("Invalid credentials");
     }
-    res.send(account);
+    const accessToken = (0, jwtController_1.generateToken)(account);
+    const refreshToken = (0, jwtController_1.generateRefreshToken)(account);
+    res
+        .cookie(jwtController_1.tokens.auth_token, accessToken, {
+        httpOnly: false,
+        secure: true,
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        maxAge: 1000 * 60 * 60, // 1h
+    })
+        .cookie(jwtController_1.tokens.refresh_token, refreshToken, {
+        httpOnly: false,
+        secure: true,
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        maxAge: 1000 * 60 * 60 * 24 * 7, // 7d
+    })
+        .send("Login successful");
+    // res.send(account);
 });
 exports.loginAccount = loginAccount;
 const searchExamCard = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -70,3 +89,113 @@ const searchExamCard = (req, res) => __awaiter(void 0, void 0, void 0, function*
     res.send(candidate.fileUrl);
 });
 exports.searchExamCard = searchExamCard;
+const myCentre = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const centre = req.centre;
+    res.send(centre);
+});
+exports.myCentre = myCentre;
+const viewCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
+    console.log(req.query);
+    const candidate = yield candidateModel_1.Candidate.findById(req.query.id).lean();
+    if (!candidate) {
+        return res.status(404).send("Candidate not found");
+    }
+    res.send({
+        _id: candidate._id,
+        passport: ((_b = (_a = candidate.uploadedDocuments) === null || _a === void 0 ? void 0 : _a.find((c) => c.fileType === "Passport Photograph")) === null || _b === void 0 ? void 0 : _b.fileUrl) || "",
+        ippisNumber: candidate.ippisNumber,
+        name: candidate.fullName,
+    });
+});
+exports.viewCandidate = viewCandidate;
+const accreditationQueue = new DataQueue_1.ConcurrentJobQueue({
+    concurrency: 5,
+    maxQueueSize: 100,
+    retries: 3,
+    retryDelay: 5000,
+    shutdownTimeout: 20000,
+});
+const accreditCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        accreditationQueue.enqueue(() => __awaiter(void 0, void 0, void 0, function* () {
+            try {
+                const centre = req.centre;
+                const existing = yield accreditationModel_1.default.findOne({
+                    candidate: req.query.id,
+                });
+                if (existing) {
+                    return res.status(400).send("Candidate already accredited");
+                }
+                if (!existing) {
+                    yield accreditationModel_1.default.create({
+                        candidate: req.query.id,
+                        accreditedBy: centre._id,
+                    });
+                }
+                res.send("Candidate accredited");
+            }
+            catch (error) {
+                res.sendStatus(500);
+            }
+        }));
+    }
+    catch (error) {
+        res.sendStatus(500);
+    }
+});
+exports.accreditCandidate = accreditCandidate;
+const refreshToken = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const refreshToken = req.cookies[jwtController_1.tokens.refresh_token];
+    if (!refreshToken) {
+        return res.status(401).send("Not authenticated");
+    }
+    try {
+        const decoded = jsonwebtoken_1.default.verify(refreshToken, process.env.REFRESH_TOKEN);
+        if (!(decoded === null || decoded === void 0 ? void 0 : decoded.centreId))
+            return res.sendStatus(401);
+        const evsAccount = yield evsAccountModel_1.default.findOne({
+            centreId: decoded.centreId,
+        }).lean();
+        if (!evsAccount)
+            return res.sendStatus(401);
+        const newAccessToken = (0, jwtController_1.generateToken)(evsAccount);
+        const newRefreshToken = (0, jwtController_1.generateRefreshToken)(evsAccount);
+        res
+            .cookie(jwtController_1.tokens.auth_token, newAccessToken, {
+            httpOnly: false,
+            secure: true,
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+            maxAge: 1000 * 60 * 60, // 1h
+        })
+            .cookie(jwtController_1.tokens.refresh_token, newRefreshToken, {
+            httpOnly: false,
+            secure: true,
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+            maxAge: 1000 * 60 * 60 * 24 * 7, // 7d
+        })
+            .send("Token refreshed");
+    }
+    catch (error) {
+        console.log(error);
+        res.sendStatus(401);
+    }
+});
+exports.refreshToken = refreshToken;
+const accreditationDashboard = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const total = yield accreditationModel_1.default.countDocuments();
+        const centre = req.centre;
+        const accredited = yield accreditationModel_1.default.countDocuments({
+            accreditedBy: centre._id,
+        });
+        res.send({
+            total,
+            accredited,
+        });
+    }
+    catch (error) {
+        res.sendStatus(500);
+    }
+});
+exports.accreditationDashboard = accreditationDashboard;
