@@ -35,7 +35,7 @@ const whitelist = [
     "http://localhost:3456",
     "https://fcsc.onrender.com",
     "https://promotion.fedcivilservice.gov.ng",
-    "https://fcscevs.web.app/",
+    "https://fcscevs.web.app",
     //"https://accreditation.jamb.gov.ng",
 ];
 const corsOptions = {
