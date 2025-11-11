@@ -212,8 +212,18 @@ export const accreditationDashboard: RequestHandler = async (req, res) => {
 };
 
 export const logoutAccount = async (req: Request, res: Response) => {
+  const cookieOptions = {
+    httpOnly: false,
+    secure: true,
+    sameSite: (process.env.NODE_ENV === "production" ? "none" : "lax") as
+      | "none"
+      | "lax"
+      | "strict",
+    path: "/",
+  };
+
   res
-    .clearCookie(tokens.auth_token)
-    .clearCookie(tokens.refresh_token)
+    .clearCookie(tokens.auth_token, cookieOptions)
+    .clearCookie(tokens.refresh_token, cookieOptions)
     .send("Logged Out");
 };

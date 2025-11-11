@@ -200,9 +200,15 @@ const accreditationDashboard = (req, res) => __awaiter(void 0, void 0, void 0, f
 });
 exports.accreditationDashboard = accreditationDashboard;
 const logoutAccount = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const cookieOptions = {
+        httpOnly: false,
+        secure: true,
+        sameSite: (process.env.NODE_ENV === "production" ? "none" : "lax"),
+        path: "/",
+    };
     res
-        .clearCookie(jwtController_1.tokens.auth_token)
-        .clearCookie(jwtController_1.tokens.refresh_token)
+        .clearCookie(jwtController_1.tokens.auth_token, cookieOptions)
+        .clearCookie(jwtController_1.tokens.refresh_token, cookieOptions)
         .send("Logged Out");
 });
 exports.logoutAccount = logoutAccount;
