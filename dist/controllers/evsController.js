@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.searchExamCard = exports.createEVSAccount = void 0;
+exports.searchExamCard = exports.loginAccount = exports.createEVSAccount = void 0;
 const DataQueue_1 = require("../utils/DataQueue");
 const evsAccountModel_1 = __importDefault(require("../models/evsAccountModel"));
 const generateRandomPassword_1 = __importDefault(require("../utils/generateRandomPassword"));
@@ -45,6 +45,18 @@ const createEVSAccount = (req, res) => __awaiter(void 0, void 0, void 0, functio
     }
 });
 exports.createEVSAccount = createEVSAccount;
+const loginAccount = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { body } = req;
+    const account = yield evsAccountModel_1.default.findOne({
+        centreId: body.centreId,
+        password: body.password,
+    });
+    if (!account) {
+        return res.status(400).send("Invalid credentials");
+    }
+    res.send(account);
+});
+exports.loginAccount = loginAccount;
 const searchExamCard = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const candidate = yield candidateModel_1.Candidate.findOne({
         ippisNumber: req.body.ippisNumber,

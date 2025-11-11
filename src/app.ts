@@ -33,6 +33,7 @@ const app = express();
 const whitelist = [
   "http://192.168.137.1:5173",
   "http://localhost:3000",
+  "http://localhost:3001",
   "http://192.168.16.78:3000",
   "http://localhost:3456",
   "https://fcsc.onrender.com",

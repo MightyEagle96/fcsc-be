@@ -37,6 +37,17 @@ export const createEVSAccount = async (req: Request, res: Response) => {
   }
 };
 
+export const loginAccount = async (req: Request, res: Response) => {
+  const { body } = req;
+  const account = await EvsAccountModel.findOne({
+    centreId: body.centreId,
+    password: body.password,
+  });
+  if (!account) {
+    return res.status(400).send("Invalid credentials");
+  }
+  res.send(account);
+};
 export const searchExamCard = async (req: Request, res: Response) => {
   const candidate = await Candidate.findOne({
     ippisNumber: req.body.ippisNumber,

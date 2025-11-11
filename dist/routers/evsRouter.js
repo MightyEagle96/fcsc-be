@@ -8,5 +8,6 @@ const evsController_1 = require("../controllers/evsController");
 const evsRouter = express_1.default.Router();
 evsRouter
     .post("/createaccount", evsController_1.createEVSAccount)
+    .post("/loginaccount", evsController_1.loginAccount)
     .post("/searchexamcard", evsController_1.searchExamCard);
 exports.default = evsRouter;
