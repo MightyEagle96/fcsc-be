@@ -274,3 +274,73 @@ export const logoutAccount = async (req: Request, res: Response) => {
     .clearCookie(tokens.refresh_token, cookieOptions)
     .send("Logged Out");
 };
+
+export const adminDashboard = async (req: Request, res: Response) => {
+  try {
+    // const accountsWithAccreditationCount = await EvsAccountModel.aggregate([
+    //   {
+    //     $lookup: {
+    //       from: "accreditations", // 👈 collection name (lowercase + pluralized)
+    //       localField: "_id", // field in EvsAccount
+    //       foreignField: "accreditedBy", // field in Accreditation
+    //       as: "accreditations",
+    //     },
+    //   },
+    //   {
+    //     $project: {
+    //       centreId: 1,
+    //       centreName: 1,
+    //       accreditationCount: { $size: "$accreditations" }, // 👈 count how many
+    //     },
+    //   },
+    //   { $sort: { accreditationCount: -1 } }, // optional: highest first
+    // ]);
+
+    // res.send(accountsWithAccreditationCount);
+    const accountsSummary = await EvsAccountModel.aggregate([
+      // 1️⃣ Lookup accreditations linked to this account
+      {
+        $lookup: {
+          from: "accreditations", // collection name
+          localField: "_id", // EvsAccount._id
+          foreignField: "accreditedBy", // Accreditation.accreditedBy
+          as: "accreditations",
+        },
+      },
+
+      // 2️⃣ Lookup candidates whose examCentreAddress matches centreName
+      {
+        $lookup: {
+          from: "candidates", // collection name
+          localField: "centreName",
+          foreignField: "examCentreAddress",
+          as: "expectedCandidates",
+        },
+      },
+
+      // 3️⃣ Project what you want in the response
+      {
+        $project: {
+          centreId: 1,
+          centreName: 1,
+          accreditationCount: { $size: "$accreditations" },
+          expectedCandidatesCount: { $size: "$expectedCandidates" },
+        },
+      },
+
+      // 4️⃣ Optional: sort by accreditationCount descending
+      { $sort: { centreId: -1 } },
+    ]);
+
+    const mappedSummary = accountsSummary
+      .sort((a, b) => a.centreId.localeCompare(b.centreId)) // 👈 sorts alphabetically by centreId
+      .map((account, i) => ({
+        ...account,
+        id: i + 1,
+      }));
+
+    res.send(mappedSummary);
+  } catch (error) {
+    res.sendStatus(500);
+  }
+};

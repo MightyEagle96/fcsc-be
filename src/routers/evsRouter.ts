@@ -2,6 +2,7 @@ import express from "express";
 import {
   accreditationDashboard,
   accreditCandidate,
+  adminDashboard,
   createEVSAccount,
   loginAccount,
   logoutAccount,
@@ -29,5 +30,6 @@ evsRouter
     "/accreditationdashboard",
     authenticateCentreToken,
     accreditationDashboard
-  );
+  )
+  .get("/admindashboard", adminDashboard);
 export default evsRouter;

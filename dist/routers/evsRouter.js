@@ -17,5 +17,6 @@ evsRouter
     .get("/refresh", evsController_1.refreshToken)
     .get("/logoutaccount", evsController_1.logoutAccount)
     .get("/accounts", evsController_1.viewEvsAccounts)
-    .get("/accreditationdashboard", jwtController_1.authenticateCentreToken, evsController_1.accreditationDashboard);
+    .get("/accreditationdashboard", jwtController_1.authenticateCentreToken, evsController_1.accreditationDashboard)
+    .get("/admindashboard", evsController_1.adminDashboard);
 exports.default = evsRouter;

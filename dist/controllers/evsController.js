@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.logoutAccount = exports.accreditationDashboard = exports.refreshToken = exports.accreditCandidate = exports.viewCandidate = exports.myCentre = exports.searchExamCard = exports.loginAccount = exports.viewEvsAccounts = exports.createEVSAccount = void 0;
+exports.adminDashboard = exports.logoutAccount = exports.accreditationDashboard = exports.refreshToken = exports.accreditCandidate = exports.viewCandidate = exports.myCentre = exports.searchExamCard = exports.loginAccount = exports.viewEvsAccounts = exports.createEVSAccount = void 0;
 const DataQueue_1 = require("../utils/DataQueue");
 const evsAccountModel_1 = __importDefault(require("../models/evsAccountModel"));
 const generateRandomPassword_1 = __importDefault(require("../utils/generateRandomPassword"));
@@ -251,3 +251,65 @@ const logoutAccount = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         .send("Logged Out");
 });
 exports.logoutAccount = logoutAccount;
+const adminDashboard = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        // const accountsWithAccreditationCount = await EvsAccountModel.aggregate([
+        //   {
+        //     $lookup: {
+        //       from: "accreditations", // 👈 collection name (lowercase + pluralized)
+        //       localField: "_id", // field in EvsAccount
+        //       foreignField: "accreditedBy", // field in Accreditation
+        //       as: "accreditations",
+        //     },
+        //   },
+        //   {
+        //     $project: {
+        //       centreId: 1,
+        //       centreName: 1,
+        //       accreditationCount: { $size: "$accreditations" }, // 👈 count how many
+        //     },
+        //   },
+        //   { $sort: { accreditationCount: -1 } }, // optional: highest first
+        // ]);
+        // res.send(accountsWithAccreditationCount);
+        const accountsSummary = yield evsAccountModel_1.default.aggregate([
+            // 1️⃣ Lookup accreditations linked to this account
+            {
+                $lookup: {
+                    from: "accreditations", // collection name
+                    localField: "_id", // EvsAccount._id
+                    foreignField: "accreditedBy", // Accreditation.accreditedBy
+                    as: "accreditations",
+                },
+            },
+            // 2️⃣ Lookup candidates whose examCentreAddress matches centreName
+            {
+                $lookup: {
+                    from: "candidates", // collection name
+                    localField: "centreName",
+                    foreignField: "examCentreAddress",
+                    as: "expectedCandidates",
+                },
+            },
+            // 3️⃣ Project what you want in the response
+            {
+                $project: {
+                    centreId: 1,
+                    centreName: 1,
+                    accreditationCount: { $size: "$accreditations" },
+                    expectedCandidatesCount: { $size: "$expectedCandidates" },
+                },
+            },
+            // 4️⃣ Optional: sort by accreditationCount descending
+            { $sort: { centreId: -1 } },
+        ]);
+        const mappedSummary = accountsSummary
+            .sort((a, b) => a.centreId.localeCompare(b.centreId)) // 👈 sorts alphabetically by centreId
+            .map((account, i) => (Object.assign(Object.assign({}, account), { id: i + 1 })));
+        res.send(mappedSummary);
+    }
+    catch (error) {
+        res.sendStatus(500);
+    }
+});
+exports.adminDashboard = adminDashboard;
