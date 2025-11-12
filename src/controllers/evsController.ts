@@ -110,22 +110,26 @@ export const myCentre: RequestHandler = async (req, res) => {
 };
 
 export const viewCandidate = async (req: Request, res: Response) => {
-  const candidate = await Candidate.findById(req.query.id).lean();
+  try {
+    const candidate = await Candidate.findById(req.query.id).lean();
 
-  if (!candidate) {
-    return res.status(404).send("Candidate not found");
+    if (!candidate) {
+      return res.status(404).send("Candidate not found");
+    }
+
+    res.send({
+      _id: candidate._id,
+      passport:
+        candidate.uploadedDocuments?.find(
+          (c) => c.fileType === "Passport Photograph"
+        )?.fileUrl || "",
+      ippisNumber: candidate.ippisNumber,
+      name: candidate.fullName,
+      centreName: candidate.examCentreAddress,
+    });
+  } catch (error) {
+    res.status(400).send("Candidate not found");
   }
-
-  res.send({
-    _id: candidate._id,
-    passport:
-      candidate.uploadedDocuments?.find(
-        (c) => c.fileType === "Passport Photograph"
-      )?.fileUrl || "",
-    ippisNumber: candidate.ippisNumber,
-    name: candidate.fullName,
-    centreName: candidate.examCentreAddress,
-  });
 };
 
 const accreditationQueue = new ConcurrentJobQueue({

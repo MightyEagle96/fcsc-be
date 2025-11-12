@@ -107,17 +107,22 @@ const myCentre = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 exports.myCentre = myCentre;
 const viewCandidate = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
-    const candidate = yield candidateModel_1.Candidate.findById(req.query.id).lean();
-    if (!candidate) {
-        return res.status(404).send("Candidate not found");
+    try {
+        const candidate = yield candidateModel_1.Candidate.findById(req.query.id).lean();
+        if (!candidate) {
+            return res.status(404).send("Candidate not found");
+        }
+        res.send({
+            _id: candidate._id,
+            passport: ((_b = (_a = candidate.uploadedDocuments) === null || _a === void 0 ? void 0 : _a.find((c) => c.fileType === "Passport Photograph")) === null || _b === void 0 ? void 0 : _b.fileUrl) || "",
+            ippisNumber: candidate.ippisNumber,
+            name: candidate.fullName,
+            centreName: candidate.examCentreAddress,
+        });
     }
-    res.send({
-        _id: candidate._id,
-        passport: ((_b = (_a = candidate.uploadedDocuments) === null || _a === void 0 ? void 0 : _a.find((c) => c.fileType === "Passport Photograph")) === null || _b === void 0 ? void 0 : _b.fileUrl) || "",
-        ippisNumber: candidate.ippisNumber,
-        name: candidate.fullName,
-        centreName: candidate.examCentreAddress,
-    });
+    catch (error) {
+        res.status(400).send("Candidate not found");
+    }
 });
 exports.viewCandidate = viewCandidate;
 const accreditationQueue = new DataQueue_1.ConcurrentJobQueue({
