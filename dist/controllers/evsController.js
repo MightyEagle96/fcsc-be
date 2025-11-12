@@ -71,15 +71,15 @@ const loginAccount = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         .cookie(jwtController_1.tokens.auth_token, accessToken, {
         httpOnly: true,
         secure: true,
-        sameSite: "lax",
-        //sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        //sameSite: "lax",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
         maxAge: 1000 * 60 * 60, // 1h
     })
         .cookie(jwtController_1.tokens.refresh_token, refreshToken, {
         httpOnly: true,
         secure: true,
-        sameSite: "lax",
-        //sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        //sameSite: "lax",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
         maxAge: 1000 * 60 * 60 * 24 * 7, // 7d
     })
         .send("Login successful");
