@@ -226,7 +226,12 @@ export const accreditationDashboard: RequestHandler = async (req, res) => {
     const centreList = await AccreditationModel.find({
       accreditedBy: centre._id,
     })
-      .populate("candidate", { ippisNumber: 1, seatNumber: 1, examTime: 1 })
+      .populate("candidate", {
+        ippisNumber: 1,
+        seatNumber: 1,
+        examTime: 1,
+        examDate: 1,
+      })
       .limit(limit)
       .sort({ createdAt: -1 })
       .lean();
