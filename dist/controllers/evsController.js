@@ -57,7 +57,6 @@ const viewEvsAccounts = (req, res) => __awaiter(void 0, void 0, void 0, function
 });
 exports.viewEvsAccounts = viewEvsAccounts;
 const loginAccount = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log(req.headers);
     const { body } = req;
     const account = yield evsAccountModel_1.default.findOne({
         centreId: body.centreId,
@@ -213,7 +212,7 @@ const accreditationDashboard = (req, res) => __awaiter(void 0, void 0, void 0, f
         const centreList = yield accreditationModel_1.default.find({
             accreditedBy: centre._id,
         })
-            .populate("candidate", { ippisNumber: 1 })
+            .populate("candidate", { ippisNumber: 1, seatNumber: 1, examTime: 1 })
             .limit(limit)
             .sort({ createdAt: -1 })
             .lean();

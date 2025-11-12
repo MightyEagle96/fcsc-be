@@ -55,7 +55,6 @@ export const viewEvsAccounts = async (req: Request, res: Response) => {
   res.send(mappedAccounts);
 };
 export const loginAccount = async (req: Request, res: Response) => {
-  console.log(req.headers);
   const { body } = req;
 
   const account = await EvsAccountModel.findOne({
@@ -227,7 +226,7 @@ export const accreditationDashboard: RequestHandler = async (req, res) => {
     const centreList = await AccreditationModel.find({
       accreditedBy: centre._id,
     })
-      .populate("candidate", { ippisNumber: 1 })
+      .populate("candidate", { ippisNumber: 1, seatNumber: 1, examTime: 1 })
       .limit(limit)
       .sort({ createdAt: -1 })
       .lean();
