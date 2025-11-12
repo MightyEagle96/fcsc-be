@@ -57,6 +57,7 @@ const viewEvsAccounts = (req, res) => __awaiter(void 0, void 0, void 0, function
 });
 exports.viewEvsAccounts = viewEvsAccounts;
 const loginAccount = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log(req.headers);
     const { body } = req;
     const account = yield evsAccountModel_1.default.findOne({
         centreId: body.centreId,

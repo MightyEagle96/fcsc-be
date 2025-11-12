@@ -55,6 +55,7 @@ export const viewEvsAccounts = async (req: Request, res: Response) => {
   res.send(mappedAccounts);
 };
 export const loginAccount = async (req: Request, res: Response) => {
+  console.log(req.headers);
   const { body } = req;
 
   const account = await EvsAccountModel.findOne({
