@@ -69,13 +69,13 @@ const loginAccount = (req, res) => __awaiter(void 0, void 0, void 0, function* (
     const refreshToken = (0, jwtController_1.generateRefreshToken)(account);
     res
         .cookie(jwtController_1.tokens.auth_token, accessToken, {
-        httpOnly: false,
+        httpOnly: true,
         secure: true,
         sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
         maxAge: 1000 * 60 * 60, // 1h
     })
         .cookie(jwtController_1.tokens.refresh_token, refreshToken, {
-        httpOnly: false,
+        httpOnly: true,
         secure: true,
         sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
         maxAge: 1000 * 60 * 60 * 24 * 7, // 7d

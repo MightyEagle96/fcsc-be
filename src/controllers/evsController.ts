@@ -71,13 +71,13 @@ export const loginAccount = async (req: Request, res: Response) => {
 
   res
     .cookie(tokens.auth_token, accessToken, {
-      httpOnly: false,
+      httpOnly: true,
       secure: true,
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 1000 * 60 * 60, // 1h
     })
     .cookie(tokens.refresh_token, refreshToken, {
-      httpOnly: false,
+      httpOnly: true,
       secure: true,
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7d
