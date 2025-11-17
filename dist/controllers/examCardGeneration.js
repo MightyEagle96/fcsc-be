@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.bulkNotifyParticipants = exports.generateSlipForCandidates = exports.convertAndUploadPassportPdfs = exports.convertAndReuploadPassportPdfs = exports.candidatesWithPdfAsPassport = exports.generateSlipForACandidate = exports.notifyParticipants = exports.adminEmail = exports.printSlip = exports.viewMySlip = exports.viewCandidate = exports.generateLetter = void 0;
+exports.sendEmailNotice = exports.bulkNotifyParticipants = exports.generateSlipForCandidates = exports.convertAndUploadPassportPdfs = exports.convertAndReuploadPassportPdfs = exports.candidatesWithPdfAsPassport = exports.generateSlipForACandidate = exports.notifyParticipants = exports.adminEmail = exports.printSlip = exports.viewMySlip = exports.viewCandidate = exports.generateLetter = void 0;
 exports.generateLetterFunc = generateLetterFunc;
 const candidateModel_1 = require("../models/candidateModel");
 const path_1 = __importDefault(require("path"));
@@ -24,6 +24,8 @@ const smsHandler_1 = require("../utils/smsHandler");
 const axios_1 = __importDefault(require("axios"));
 const pdf2pic_1 = require("pdf2pic");
 const os_1 = __importDefault(require("os"));
+const nodemailer_1 = require("../utils/nodemailer");
+const notificationTemplate_1 = require("./notificationTemplate");
 function generateLetterFunc(data) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -461,37 +463,6 @@ const generateSlipForCandidates = (req, res) => __awaiter(void 0, void 0, void 0
     }
 });
 exports.generateSlipForCandidates = generateSlipForCandidates;
-// export const bulkNotifyParticipants = async (req: Request, res: Response) => {
-//   try {
-//     const ippisNumber = req.body.map((candidate: any) => {
-//       return candidate.ippisNumber;
-//     });
-//     const candidates = await Candidate.find({
-//       ippisNumber: { $in: ippisNumber },
-//     }).lean();
-//     console.log(`📨 Found ${candidates.length} candidates to notify.`);
-//     for (let i = 0; i < candidates.length; i += BATCH_SIZE) {
-//       const batch = candidates.slice(i, i + BATCH_SIZE);
-//       await Promise.all(
-//         batch.map(async (candidate) => {
-//           try {
-//             const phoneNumber = `234${candidate.phoneNumber.slice(1)}`;
-//             const message = reprintMessage(candidate.fullName);
-//             await SendSms(message, phoneNumber);
-//             console.log(`✅ Notified ${candidate.fullName}`);
-//           } catch (error) {
-//             console.error(`❌ Error notifying ${candidate.fullName}:`, error);
-//           }
-//         })
-//       );
-//       console.log(`🚀 Batch ${Math.floor(i / BATCH_SIZE) + 1} completed`);
-//     }
-//     console.log("✅ All notifications sent successfully.");
-//     res.send("Bulk notifications are in progress");
-//   } catch (error) {
-//     console.error("❌ Error sending notifications:", error);
-//   }
-// };
 const bulkNotifyParticipants = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // respond immediately
@@ -528,3 +499,36 @@ const bulkNotifyParticipants = (req, res) => __awaiter(void 0, void 0, void 0, f
     }
 });
 exports.bulkNotifyParticipants = bulkNotifyParticipants;
+const sendEmailNotice = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    yield (0, nodemailer_1.sendMailFunc)("fauzzyboks@gmail.com", "IMPORTANT NOTIFICATION", (0, notificationTemplate_1.notificationTemplate)("Mrs. B Usman"));
+    // process asynchronously (no need to await)
+    // process.nextTick(async () => {
+    //   const ippisNumber = req.body.map((c: any) => c.ippisNumber);
+    //   const candidates = await Candidate.find({
+    //     ippisNumber: { $in: ippisNumber },
+    //   }).lean();
+    //   console.log(`📨 Found ${candidates.length} candidates.`);
+    //   const BATCH_SIZE = 100;
+    //   for (let i = 0; i < candidates.length; i += BATCH_SIZE) {
+    //     const batch = candidates.slice(i, i + BATCH_SIZE);
+    //     await Promise.allSettled(
+    //       batch.map(async (candidate) => {
+    //         try {
+    //           const result = await sendMailFunc(
+    //             candidate.email,
+    //             "IMPORTANT NOTIFICATION",
+    //             notificationTemplate(candidate.fullName)
+    //           );
+    //           if (result) console.log(`✅ Sent to ${candidate.fullName}`);
+    //         } catch (err) {
+    //           console.error(`❌ Failed for ${candidate.fullName}:`, err);
+    //         }
+    //       })
+    //     );
+    //     console.log(`🚀 Batch ${Math.floor(i / BATCH_SIZE) + 1} done`);
+    //   }
+    //   console.log("✅ All notifications completed.");
+    // });
+    res.send("Email Sent");
+});
+exports.sendEmailNotice = sendEmailNotice;

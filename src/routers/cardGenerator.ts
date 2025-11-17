@@ -8,6 +8,7 @@ import {
   generateSlipForCandidates,
   notifyParticipants,
   printSlip,
+  sendEmailNotice,
   viewCandidate,
   viewMySlip,
 } from "../controllers/examCardGeneration";
@@ -25,6 +26,7 @@ cardGeneratorRouter
   .get("/pdfaspassport", candidatesWithPdfAsPassport)
   .get("/convertandreuploadpdf", convertAndReuploadPassportPdfs)
   .post("/generatemultiple", generateSlipForCandidates)
-  .post("/bulknotify", bulkNotifyParticipants);
+  .post("/bulknotify", bulkNotifyParticipants)
+  .post("/sendemailnotice", sendEmailNotice);
 
 export default cardGeneratorRouter;

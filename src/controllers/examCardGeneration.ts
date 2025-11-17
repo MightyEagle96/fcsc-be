@@ -12,6 +12,8 @@ import axios from "axios";
 import pdf from "pdf-poppler";
 import { fromPath } from "pdf2pic";
 import os from "os";
+import { sendMailFunc } from "../utils/nodemailer";
+import { notificationTemplate } from "./notificationTemplate";
 
 export async function generateLetterFunc(data: any): Promise<string> {
   try {
@@ -592,44 +594,6 @@ export const generateSlipForCandidates = async (
   }
 };
 
-// export const bulkNotifyParticipants = async (req: Request, res: Response) => {
-//   try {
-//     const ippisNumber = req.body.map((candidate: any) => {
-//       return candidate.ippisNumber;
-//     });
-
-//     const candidates = await Candidate.find({
-//       ippisNumber: { $in: ippisNumber },
-//     }).lean();
-
-//     console.log(`📨 Found ${candidates.length} candidates to notify.`);
-
-//     for (let i = 0; i < candidates.length; i += BATCH_SIZE) {
-//       const batch = candidates.slice(i, i + BATCH_SIZE);
-
-//       await Promise.all(
-//         batch.map(async (candidate) => {
-//           try {
-//             const phoneNumber = `234${candidate.phoneNumber.slice(1)}`;
-
-//             const message = reprintMessage(candidate.fullName);
-
-//             await SendSms(message, phoneNumber);
-//             console.log(`✅ Notified ${candidate.fullName}`);
-//           } catch (error) {
-//             console.error(`❌ Error notifying ${candidate.fullName}:`, error);
-//           }
-//         })
-//       );
-//       console.log(`🚀 Batch ${Math.floor(i / BATCH_SIZE) + 1} completed`);
-//     }
-//     console.log("✅ All notifications sent successfully.");
-//     res.send("Bulk notifications are in progress");
-//   } catch (error) {
-//     console.error("❌ Error sending notifications:", error);
-//   }
-// };
-
 export const bulkNotifyParticipants = async (req: Request, res: Response) => {
   try {
     // respond immediately
@@ -672,4 +636,51 @@ export const bulkNotifyParticipants = async (req: Request, res: Response) => {
     console.error("❌ Error queuing notifications:", err);
     res.status(500).send("Failed to start bulk notification");
   }
+};
+
+export const sendEmailNotice = async (req: Request, res: Response) => {
+  await sendMailFunc(
+    "fauzzyboks@gmail.com",
+    "IMPORTANT NOTIFICATION",
+    notificationTemplate("Mrs. B Usman")
+  );
+
+  // process asynchronously (no need to await)
+  // process.nextTick(async () => {
+  //   const ippisNumber = req.body.map((c: any) => c.ippisNumber);
+
+  //   const candidates = await Candidate.find({
+  //     ippisNumber: { $in: ippisNumber },
+  //   }).lean();
+
+  //   console.log(`📨 Found ${candidates.length} candidates.`);
+
+  //   const BATCH_SIZE = 100;
+
+  //   for (let i = 0; i < candidates.length; i += BATCH_SIZE) {
+  //     const batch = candidates.slice(i, i + BATCH_SIZE);
+
+  //     await Promise.allSettled(
+  //       batch.map(async (candidate) => {
+  //         try {
+  //           const result = await sendMailFunc(
+  //             candidate.email,
+  //             "IMPORTANT NOTIFICATION",
+  //             notificationTemplate(candidate.fullName)
+  //           );
+
+  //           if (result) console.log(`✅ Sent to ${candidate.fullName}`);
+  //         } catch (err) {
+  //           console.error(`❌ Failed for ${candidate.fullName}:`, err);
+  //         }
+  //       })
+  //     );
+
+  //     console.log(`🚀 Batch ${Math.floor(i / BATCH_SIZE) + 1} done`);
+  //   }
+
+  //   console.log("✅ All notifications completed.");
+  // });
+
+  res.send("Email Sent");
 };
