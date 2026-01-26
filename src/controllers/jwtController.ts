@@ -89,36 +89,6 @@ export async function authenticateToken(
   }
 }
 
-// export async function authenticateCentreToken(
-//   req: AuthenticatedCentre,
-//   res: Response,
-//   next: NextFunction
-// ) {
-//   try {
-//     const token = req.cookies[tokens.auth_token];
-//     if (!token) return res.sendStatus(401);
-
-//     const decoded = jwt.verify(
-//       token,
-//       process.env.ACCESS_TOKEN as string
-//     ) as JwtPayload & IEvsAccount;
-
-//     if (!decoded?.centreId) return res.sendStatus(401);
-
-//     const evsAccount = await EvsAccountModel.findOne({
-//       centreId: decoded.centreId,
-//     });
-
-//     if (!evsAccount) return res.sendStatus(401);
-
-//     req.centre = decoded;
-//     next();
-//   } catch (err) {
-//     console.error("Auth error:", err);
-//     return res.sendStatus(401);
-//   }
-// }
-
 export const authenticateCentreToken: RequestHandler = async (
   req,
   res,

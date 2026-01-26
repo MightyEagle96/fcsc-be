@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.adminDashboard = exports.logoutAccount = exports.accreditationDashboard = exports.refreshToken = exports.accreditCandidate = exports.viewCandidate = exports.myCentre = exports.searchExamCard = exports.loginAccount = exports.viewEvsAccounts = exports.createEVSAccount = void 0;
+exports.retrieveAttendanceData = exports.adminDashboard = exports.logoutAccount = exports.accreditationDashboard = exports.refreshToken = exports.accreditCandidate = exports.viewCandidate = exports.myCentre = exports.searchExamCard = exports.loginAccount = exports.viewEvsAccounts = exports.createEVSAccount = void 0;
 const DataQueue_1 = require("../utils/DataQueue");
 const evsAccountModel_1 = __importDefault(require("../models/evsAccountModel"));
 const generateRandomPassword_1 = __importDefault(require("../utils/generateRandomPassword"));
@@ -317,3 +317,74 @@ const adminDashboard = (req, res) => __awaiter(void 0, void 0, void 0, function*
     }
 });
 exports.adminDashboard = adminDashboard;
+const retrieveAttendanceData = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const account = yield evsAccountModel_1.default.findOne({
+            centreId: req.body.centreId,
+        }).lean();
+        if (!account) {
+            return res.status(404).send("Account not found");
+        }
+        const totalAccredited = yield accreditationModel_1.default.find({
+            accreditedBy: account._id,
+        }).populate("candidate", {
+            ippisNumber: 1,
+            fullName: 1,
+            examCentreAddress: 1,
+            emailAddress: 1,
+        });
+        const absentCandidates = yield candidateModel_1.Candidate.find({
+            examCentreAddress: account.centreName,
+            _id: { $nin: totalAccredited.map((c) => c.candidate._id) },
+        }).select({
+            ippisNumber: 1,
+            fullName: 1,
+            examCentreAddress: 1,
+            emailAddress: 1,
+            dateRecommended: 1,
+            dateApproved: 1,
+            dateRejected: 1,
+            dateDisqualified: 1,
+        });
+        const formattedAccredited = totalAccredited.map((acc, i) => {
+            return {
+                ID: i + 1,
+                "IPPIS NUMBER": acc.candidate.ippisNumber,
+                NAME: acc.candidate.fullName,
+                "CENTRE NAME": acc.candidate.examCentreAddress,
+                "TIME LOGGED": new Date(acc.createdAt).toLocaleString(),
+            };
+        });
+        const formatAbsent = absentCandidates.map((c, i) => {
+            return {
+                ID: i + 1,
+                "IPPIS NUMBER": c.ippisNumber,
+                NAME: c.fullName,
+                "CENTRE NAME": c.examCentreAddress,
+                "EMAIL ADDRRESS": c.emailAddress,
+                "DATE RECOMMENDED": c.dateRecommended
+                    ? new Date(c.dateRecommended).toLocaleString()
+                    : "-",
+                "DATE APPROVED": c.dateApproved
+                    ? new Date(c.dateApproved).toLocaleString()
+                    : "-",
+                "DATE REJECTED": c.dateRejected
+                    ? new Date(c.dateRejected).toLocaleString()
+                    : "-",
+                "DATE DISQUALIFIED": c.dateDisqualified
+                    ? new Date(c.dateDisqualified).toLocaleString()
+                    : "-",
+            };
+        });
+        res.send({
+            account,
+            totalAccredited: formattedAccredited,
+            absentCandidates: formatAbsent,
+        });
+    }
+    catch (error) {
+        console.log(error);
+        res.sendStatus(500);
+    }
+});
+exports.retrieveAttendanceData = retrieveAttendanceData;

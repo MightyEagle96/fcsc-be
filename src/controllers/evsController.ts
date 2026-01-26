@@ -120,7 +120,7 @@ export const viewCandidate = async (req: Request, res: Response) => {
       _id: candidate._id,
       passport:
         candidate.uploadedDocuments?.find(
-          (c) => c.fileType === "Passport Photograph"
+          (c) => c.fileType === "Passport Photograph",
         )?.fileUrl || "",
       ippisNumber: candidate.ippisNumber,
       name: candidate.fullName,
@@ -177,7 +177,7 @@ export const refreshToken = async (req: Request, res: Response) => {
   try {
     const decoded = jwt.verify(
       refreshToken,
-      process.env.REFRESH_TOKEN as string
+      process.env.REFRESH_TOKEN as string,
     ) as JwtPayload & IEvsAccount;
 
     if (!decoded?.centreId) return res.sendStatus(401);
@@ -345,6 +345,81 @@ export const adminDashboard = async (req: Request, res: Response) => {
 
     res.send(mappedSummary);
   } catch (error) {
+    res.sendStatus(500);
+  }
+};
+
+export const retrieveAttendanceData = async (req: Request, res: Response) => {
+  try {
+    const account = await EvsAccountModel.findOne({
+      centreId: req.body.centreId,
+    }).lean();
+
+    if (!account) {
+      return res.status(404).send("Account not found");
+    }
+
+    const totalAccredited = await AccreditationModel.find({
+      accreditedBy: account._id,
+    }).populate("candidate", {
+      ippisNumber: 1,
+      fullName: 1,
+      examCentreAddress: 1,
+      emailAddress: 1,
+    });
+
+    const absentCandidates = await Candidate.find({
+      examCentreAddress: account.centreName,
+      _id: { $nin: totalAccredited.map((c: any) => c.candidate._id) },
+    }).select({
+      ippisNumber: 1,
+      fullName: 1,
+      examCentreAddress: 1,
+      emailAddress: 1,
+      dateRecommended: 1,
+      dateApproved: 1,
+      dateRejected: 1,
+      dateDisqualified: 1,
+    });
+
+    const formattedAccredited = totalAccredited.map((acc: any, i: number) => {
+      return {
+        ID: i + 1,
+        "IPPIS NUMBER": acc.candidate.ippisNumber,
+        NAME: acc.candidate.fullName,
+        "CENTRE NAME": acc.candidate.examCentreAddress,
+        "TIME LOGGED": new Date(acc.createdAt).toLocaleString(),
+      };
+    });
+
+    const formatAbsent = absentCandidates.map((c: any, i) => {
+      return {
+        ID: i + 1,
+        "IPPIS NUMBER": c.ippisNumber,
+        NAME: c.fullName,
+        "CENTRE NAME": c.examCentreAddress,
+        "EMAIL ADDRRESS": c.emailAddress,
+        "DATE RECOMMENDED": c.dateRecommended
+          ? new Date(c.dateRecommended).toLocaleString()
+          : "-",
+        "DATE APPROVED": c.dateApproved
+          ? new Date(c.dateApproved).toLocaleString()
+          : "-",
+        "DATE REJECTED": c.dateRejected
+          ? new Date(c.dateRejected).toLocaleString()
+          : "-",
+        "DATE DISQUALIFIED": c.dateDisqualified
+          ? new Date(c.dateDisqualified).toLocaleString()
+          : "-",
+      };
+    });
+    res.send({
+      account,
+      totalAccredited: formattedAccredited,
+      absentCandidates: formatAbsent,
+    });
+  } catch (error) {
+    console.log(error);
     res.sendStatus(500);
   }
 };

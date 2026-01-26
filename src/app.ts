@@ -13,6 +13,7 @@ import hrRouter from "./routers/hrRouter";
 import { scheduleB2Reauth } from "./utils/uploadToB2";
 import cardGeneratorRouter from "./routers/cardGenerator";
 import evsRouter from "./routers/evsRouter";
+import { retrieveAttendanceData } from "./controllers/evsController";
 
 // import crypto from "crypto";
 
@@ -74,9 +75,11 @@ app
 
   .use("/api/hr", hrRouter)
 
-  .use("/api/card", cardGeneratorRouter)
+  // .use("/api/card", cardGeneratorRouter)
 
   .use("/api/evs", evsRouter)
+
+  .post("/api/retrieveattendancedata", retrieveAttendanceData)
 
   .use("/api/*", (req, res) => {
     res.status(404).send("Route not found");
